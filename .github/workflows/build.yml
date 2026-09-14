@@ -165,7 +165,14 @@ jobs:
       # the first PR after a release finds a warm key.
       - name: Restore built libnode
         id: libnode-cache
-        if: steps.rel.outputs.cold != 'true'
+        # NOTE (this copy): upstream skips this restore on the publish path so
+        # that "the shipped binary was compiled in this run" is a property of
+        # the workflow. This mirror repository has no untrusted contributors
+        # and no cross-branch shared cache, and the cache key covers every
+        # build input (the src/deps/lib/tools trees plus the gyp/configure
+        # files and the build flags), so a hit cannot change the artifact —
+        # it only avoids a 1.5-3h recompile on a release run that touched
+        # tests or docs. See NOTICE.md.
         uses: actions/cache/restore@v6
         with:
           path: out_android
@@ -312,7 +319,8 @@ jobs:
       # build-android.
       - name: Restore built libnode
         id: libnode-cache
-        if: steps.rel.outputs.cold != 'true'
+        # NOTE (this copy): restore on the publish path too — see
+        # build-android.
         uses: actions/cache/restore@v6
         with:
           path: out_ios_${{ env.TARGET_ARCH }}

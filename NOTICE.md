@@ -28,6 +28,7 @@ UPSTREAM_REPO=${UPSTREAM_REPO:-https://github.com/nodejs/node.git}
 | 删除 `.github/workflows/cache-credentials.yml` | 该 workflow 用于探测 Cloudflare R2 的 sccache 凭据，本仓库没有 R2 secrets |
 | `upstream-base` 检查降级：仓库内没有该分支时只告警不失败；分支存在但指向错误提交时仍然报错 | 建立该分支需要推送 nodejs/node 的完整历史（约 1.5 GB）。本仓库的发布 tag 直接建立在物化树上，不依赖这条分支的祖先关系；它只作为"基线漂移"的提示保留 |
 | 删除 `.github/dependabot.yml` | 本仓库是构建配方镜像，不需要自动依赖升级 PR |
+| 发布路径同样允许复用 `actions/cache` 里的 libnode 构建产物（上游只在非发布路径复用） | 上游的目的是保证"发布产物是本次运行编译出来的"。本仓库没有不可信贡献者、也没有跨分支共享缓存，且缓存 key 覆盖全部构建输入（src/deps/lib/tools 目录树 + gyp/configure 文件 + 链接参数与 targetSdk），命中不会改变产物内容，只避免"仅改测试/文档也要重编 1.5–3 小时" |
 | 新增 `LICENSE` | `recipe` 分支本身不含许可文件，而它会重建并分发 Node.js 源码树 |
 
 其余文件（补丁系列、`mobile-src/` 覆盖层、`scripts/`、其余 workflow）与来源提交一致。
