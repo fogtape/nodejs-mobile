@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
 <a href="#24.19.0-2">24.19.0-2</a><br/>
 <a href="#24.19.0-1">24.19.0-1</a><br/>
@@ -38,8 +39,16 @@
 </tr>
 </table>
 
+<a id="24.21.0-0"></a>
+## 2026-09-14, Version 24.21.0-0 (Current)
+
+### Notable Changes
+
+- **Engine: Node.js 24.20.0 → 24.21.0** (OpenSSL 3.5.8, undici 7.29.1, root certificates NSS 3.126).
+- **Tests:** skip the new upstream child-process spawners and the `--permission`-without-`--allow-fs-write` cases on Android and iOS (see `docs/UPGRADING.md`, "New upstream tests").
+
 <a id="24.20.0-0"></a>
-## 2026-09-02, Version 24.20.0-0 (Current)
+## 2026-09-02, Version 24.20.0-0
 
 ### Notable Changes
 

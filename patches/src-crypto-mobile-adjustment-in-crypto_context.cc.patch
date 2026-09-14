@@ -19,7 +19,7 @@ Co-authored-by: Julia Samól <j.samol@papers.ch>
  1 file changed, 17 insertions(+)
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 05fc2a00b3..b61f7d9eca 100644
+index af8d52fbe6..ea1cce665a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -335,6 +335,9 @@ bool isSelfIssued(X509* cert) {

@@ -23,14 +23,14 @@ is read only from the default branch and is left untouched.
  .github/ISSUE_TEMPLATE/config.yml             |  14 -
  .github/SUPPORT.md                            |  27 --
  .github/label-pr-config.yml                   | 224 ------------
- .github/workflows/auto-start-ci.yml           |  74 ----
+ .github/workflows/auto-start-ci.yml           |  78 -----
  .github/workflows/build-tarball.yml           |  96 ------
  .github/workflows/close-stalled.yml           |  36 --
  .github/workflows/codeql.yml                  |  42 ---
  .github/workflows/comment-labeled.yml         |  57 ----
  .../commit-lint-problem-matcher.json          |  13 -
  .github/workflows/commit-lint.yml             |  35 --
- .github/workflows/commit-queue.yml            |  99 ------
+ .github/workflows/commit-queue.yml            | 173 ----------
  .../workflows/coverage-linux-without-intl.yml |  84 -----
  .github/workflows/coverage-linux.yml          |  84 -----
  .github/workflows/coverage-windows.yml        |  98 ------
@@ -62,7 +62,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/update-openssl.yml          |  61 ----
  .github/workflows/update-v8.yml               |  57 ----
  .github/workflows/update-wpt.yml              |  95 ------
- 42 files changed, 3286 deletions(-)
+ 42 files changed, 3364 deletions(-)
  delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
  delete mode 100644 .github/SUPPORT.md
  delete mode 100644 .github/label-pr-config.yml
@@ -391,10 +391,13 @@ index 8b36066473..0000000000
 -  - zlib
 diff --git a/.github/workflows/auto-start-ci.yml b/.github/workflows/auto-start-ci.yml
 deleted file mode 100644
-index 34488eeed6..0000000000
+index 0a69ff636f..0000000000
 --- a/.github/workflows/auto-start-ci.yml
 +++ /dev/null
-@@ -1,74 +0,0 @@
+@@ -1,78 +0,0 @@
+-# This action uses the following secrets:
+-#   JENKINS_USER: GitHub user whose Jenkins token is defined below
+-#   JENKINS_TOKEN: Jenkins token, to be used to start CI
 -name: Auto Start CI
 -
 -on:
@@ -433,11 +436,13 @@ index 34488eeed6..0000000000
 -                  -t '{{ range . }}{{ .number }} {{ end }}' \
 -                  --limit 5)" >> "$GITHUB_OUTPUT"
 -        env:
--          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-          GH_TOKEN: ${{ github.token }}
 -  start-ci:
 -    permissions:
+-      checks: read
 -      contents: read
 -      pull-requests: write
+-      statuses: read
 -    needs: get-prs-for-ci
 -    if: needs.get-prs-for-ci.outputs.numbers != ''
 -    runs-on: ubuntu-slim
@@ -456,10 +461,10 @@ index 34488eeed6..0000000000
 -          ncu-config set token "$GH_TOKEN"
 -          ncu-config set jenkins_token "$JENKINS_TOKEN"
 -          ncu-config set owner "$GITHUB_REPOSITORY_OWNER"
--          ncu-config set repo "$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)"
+-          ncu-config set repo "${GITHUB_REPOSITORY#*/}"
 -        env:
 -          USERNAME: ${{ secrets.JENKINS_USER }}
--          GH_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          GH_TOKEN: ${{ github.token }}
 -          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
 -
 -      - name: Start the CI
@@ -467,11 +472,10 @@ index 34488eeed6..0000000000
 -          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_SHA}/tools/actions/start-ci.sh" \
 -          | sh -s -- ${{ needs.get-prs-for-ci.outputs.numbers }}
 -        env:
--          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
--          GH_REPO: ${{ github.repository }}
+-          GH_TOKEN: ${{ github.token }}
 diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
 deleted file mode 100644
-index 0f17013755..0000000000
+index 4bb9702797..0000000000
 --- a/.github/workflows/build-tarball.yml
 +++ /dev/null
 @@ -1,96 +0,0 @@
@@ -558,7 +562,7 @@ index 0f17013755..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Download tarball
 -        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
 -        with:
@@ -786,10 +790,10 @@ index 896340ba3a..0000000000
 -          git rev-parse HEAD~${{ steps.nb-of-commits.outputs.minusOne }} | xargs npx -q core-validate-commit --no-validate-metadata --tap
 diff --git a/.github/workflows/commit-queue.yml b/.github/workflows/commit-queue.yml
 deleted file mode 100644
-index 7af7122687..0000000000
+index a1d691e9e1..0000000000
 --- a/.github/workflows/commit-queue.yml
 +++ /dev/null
-@@ -1,99 +0,0 @@
+@@ -1,173 +0,0 @@
 -# This action requires the following secrets to be set on the repository:
 -#   GH_USER_TOKEN: GitHub user token, to be used by ncu and to push changes
 -#   JENKINS_USER: GitHub user whose Jenkins token is defined below
@@ -814,44 +818,139 @@ index 7af7122687..0000000000
 -  contents: read
 -
 -jobs:
--  get_mergeable_prs:
+-  get_candidate_prs:
 -    permissions:
 -      pull-requests: read
 -    if: github.repository == 'nodejs/node'
 -    runs-on: ubuntu-slim
 -    outputs:
--      numbers: ${{ steps.get_mergeable_prs.outputs.numbers }}
+-      candidates: ${{ steps.get_candidate_prs.outputs.candidates }}
 -    steps:
--      - name: Get Pull Requests
--        id: get_mergeable_prs
+-      - name: Get Pull Request Candidates
+-        id: get_candidate_prs
 -        run: |
--          prs=$(gh pr list \
+-          list_prs() {
+-            gh pr list \
 -                  --repo "$GITHUB_REPOSITORY" \
 -                  --base "$GITHUB_REF_NAME" \
 -                  --label 'commit-queue' \
+-                  "$@" \
 -                  --json 'number' \
--                  --search "created:<=$(date --date="2 days ago"  +"%Y-%m-%dT%H:%M:%S%z") -label:blocked" \
 -                  -t '{{ range . }}{{ .number }} {{ end }}' \
--                  --limit 100)
--          fast_track_prs=$(gh pr list \
--                  --repo "$GITHUB_REPOSITORY" \
--                  --base "$GITHUB_REF_NAME" \
--                  --label 'commit-queue' \
+-                  --limit 100
+-          }
+-          aged_prs=$(list_prs \
+-                  --search "created:<=$(date --date="2 days ago"  +"%Y-%m-%dT%H:%M:%S%z") -label:blocked")
+-          fast_track_prs=$(list_prs \
 -                  --label 'fast-track' \
--                  --search "-label:blocked" \
--                  --json 'number' \
--                  -t '{{ range . }}{{ .number }} {{ end }}' \
--                  --limit 100)
--          numbers=$(echo $prs' '$fast_track_prs | jq -r -s 'unique | join(" ")')
--          echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
+-                  --search "-label:blocked")
+-          candidates=$(printf '%s %s\n' "$fast_track_prs" "$aged_prs" |
+-                  jq -r -s 'reduce .[] as $pr ([]; if index($pr) then . else . + [$pr] end) | join(" ")')
+-          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
 -        env:
--          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-          GH_TOKEN: ${{ github.token }}
 -  commitQueue:
--    needs: get_mergeable_prs
--    if: needs.get_mergeable_prs.outputs.numbers != ''
+-    needs: get_candidate_prs
+-    if: needs.get_candidate_prs.outputs.candidates != ''
+-    permissions:
+-      checks: read
+-      contents: read
+-      pull-requests: read
+-      statuses: read
 -    runs-on: ubuntu-slim
 -    steps:
+-      - name: Install Node.js
+-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
+-
+-      - name: Install @node-core/utils
+-        run: npm install -g @node-core/utils
+-
+-      - name: Configure @node-core/utils
+-        run: |
+-          # Keep the config outside the workspace so checkout does not remove it.
+-          ncu-config --global set branch "${GITHUB_REF_NAME}"
+-          ncu-config --global set upstream origin
+-          ncu-config --global set username "$USERNAME"
+-          ncu-config --global set token "$GH_TOKEN"
+-          ncu-config --global set jenkins_token "$JENKINS_TOKEN"
+-          ncu-config --global set repo "${GITHUB_REPOSITORY#*/}"
+-          ncu-config --global set owner "${GITHUB_REPOSITORY_OWNER}"
+-        env:
+-          USERNAME: ${{ secrets.JENKINS_USER }}
+-          GH_TOKEN: ${{ github.token }}
+-          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+-
+-      - name: Filter Pull Requests
+-        id: get_mergeable_prs
+-        run: |
+-          readme="${RUNNER_TEMP}/README.md"
+-          curl -fsSLo "$readme" "https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_SHA}/README.md"
+-
+-          numbers=
+-          # shellcheck disable=SC2086
+-          for pr in $CANDIDATES; do
+-            metadata="${RUNNER_TEMP}/metadata-${pr}.json"
+-            output="${RUNNER_TEMP}/metadata-${pr}.txt"
+-            if git node metadata "$pr" \
+-                    --readme "$readme" \
+-                    --json > "$metadata" 2> "$output"; then
+-              metadata_status=0
+-            else
+-              metadata_status=$?
+-            fi
+-
+-            if [ -s "$output" ]; then
+-              cat "$output"
+-            fi
+-
+-            case "$metadata_status" in
+-              0|2[0-9]|4[0-9]) ;;
+-              *)
+-                echo "git node metadata failed for pr ${pr} with exit code ${metadata_status}"
+-                exit 1
+-                ;;
+-            esac
+-
+-            metadata_exit_code=$(jq -r '.exitCode' "$metadata") || {
+-              echo "failed to parse metadata JSON for pr ${pr}"
+-              exit 1
+-            }
+-            if [ "$metadata_exit_code" != "$metadata_status" ]; then
+-              echo "metadata JSON exitCode mismatch for pr ${pr}"
+-              exit 1
+-            fi
+-            metadata_reason_codes=$(jq -r '.reasonCodes | join(", ")' "$metadata") || {
+-              echo "failed to parse metadata reason codes for pr ${pr}"
+-              exit 1
+-            }
+-
+-            if [ "$metadata_status" -eq 0 ]; then
+-              echo "pr ${pr} is ready for the commit queue"
+-              numbers="$numbers $pr"
+-              continue
+-            fi
+-
+-            if [ "$metadata_status" -ge 20 ] && [ "$metadata_status" -le 29 ]; then
+-              echo "pr ${pr} skipped, not ready to land"
+-              echo "reason codes: ${metadata_reason_codes}"
+-              continue
+-            fi
+-
+-            echo "pr ${pr} will be handled by the commit queue"
+-            echo "reason codes: ${metadata_reason_codes}"
+-            numbers="$numbers $pr"
+-          done
+-
+-          numbers=$(echo "$numbers" | xargs)
+-          echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
+-        env:
+-          CANDIDATES: ${{ needs.get_candidate_prs.outputs.candidates }}
+-          GH_TOKEN: ${{ github.token }}
+-
 -      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+-        if: steps.get_mergeable_prs.outputs.numbers != ''
 -        with:
 -          # A personal token is required because pushing with GITHUB_TOKEN will
 -          # prevent commits from running CI after they land. It needs
@@ -859,39 +958,18 @@ index 7af7122687..0000000000
 -          # for push as well.
 -          token: ${{ secrets.GH_USER_TOKEN }}
 -
--      # Install dependencies
--      - name: Install Node.js
--        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
--        with:
--          node-version: ${{ env.NODE_VERSION }}
--      - name: Install @node-core/utils
--        run: npm install -g @node-core/utils
--
--      - name: Set variables
--        run: |
--          echo "REPOSITORY=$(echo "$GITHUB_REPOSITORY" | cut -d/ -f2)" >> "$GITHUB_ENV"
--
--      - name: Configure @node-core/utils
--        run: |
--          ncu-config set branch "${GITHUB_REF_NAME}"
--          ncu-config set upstream origin
--          ncu-config set username "$USERNAME"
--          ncu-config set token "$GITHUB_TOKEN"
--          ncu-config set jenkins_token "$JENKINS_TOKEN"
--          ncu-config set repo "${REPOSITORY}"
--          ncu-config set owner "${GITHUB_REPOSITORY_OWNER}"
--        env:
--          USERNAME: ${{ secrets.JENKINS_USER }}
--          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
--          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
--
 -      - name: Start the Commit Queue
--        run: ./tools/actions/commit-queue.sh "${GITHUB_REPOSITORY_OWNER}" "${REPOSITORY}" ${{ needs.get_mergeable_prs.outputs.numbers }}
+-        if: steps.get_mergeable_prs.outputs.numbers != ''
+-        run: |
+-          git config --local user.email "github-bot@iojs.org"
+-          git config --local user.name "Node.js GitHub Bot"
+-          ncu-config set token "$GH_TOKEN"
+-          ./tools/actions/commit-queue.sh ${{ steps.get_mergeable_prs.outputs.numbers }}
 -        env:
--          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          GH_TOKEN: ${{ secrets.GH_USER_TOKEN }}
 diff --git a/.github/workflows/coverage-linux-without-intl.yml b/.github/workflows/coverage-linux-without-intl.yml
 deleted file mode 100644
-index a76d4d47e5..0000000000
+index 19e03391f1..0000000000
 --- a/.github/workflows/coverage-linux-without-intl.yml
 +++ /dev/null
 @@ -1,84 +0,0 @@
@@ -957,7 +1035,7 @@ index a76d4d47e5..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Install gcovr
 -        run: pip install gcovr==7.2
 -      - name: Configure
@@ -981,7 +1059,7 @@ index a76d4d47e5..0000000000
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-linux.yml b/.github/workflows/coverage-linux.yml
 deleted file mode 100644
-index 65f52f5b36..0000000000
+index c2c4b22c57..0000000000
 --- a/.github/workflows/coverage-linux.yml
 +++ /dev/null
 @@ -1,84 +0,0 @@
@@ -1047,7 +1125,7 @@ index 65f52f5b36..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Install gcovr
 -        run: pip install gcovr==7.2
 -      - name: Configure
@@ -2544,7 +2622,7 @@ index eb5921edb9..0000000000
 -          remove-stale-when-updated: true
 diff --git a/.github/workflows/stress-test.yml b/.github/workflows/stress-test.yml
 deleted file mode 100644
-index eca8c6aa5a..0000000000
+index 10f61e8f92..0000000000
 --- a/.github/workflows/stress-test.yml
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -2628,7 +2706,7 @@ index eca8c6aa5a..0000000000
 -      - name: Set up sccache
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      # This is needed due to https://github.com/nodejs/build/issues/3878
 -      - name: Cleanup
 -        if: runner.os == 'macOS'
@@ -2664,7 +2742,7 @@ index eca8c6aa5a..0000000000
 -            "$TEST_PATH"
 diff --git a/.github/workflows/test-internet.yml b/.github/workflows/test-internet.yml
 deleted file mode 100644
-index bbc9fc9436..0000000000
+index 2bc7a1f029..0000000000
 --- a/.github/workflows/test-internet.yml
 +++ /dev/null
 @@ -1,64 +0,0 @@
@@ -2727,14 +2805,14 @@ index bbc9fc9436..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Build
 -        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn"
 -      - name: Test Internet
 -        run: make test-internet -j4 V=1;
 diff --git a/.github/workflows/test-linux-quic.yml b/.github/workflows/test-linux-quic.yml
 deleted file mode 100644
-index 64c2e7d7ea..0000000000
+index 9916b7993d..0000000000
 --- a/.github/workflows/test-linux-quic.yml
 +++ /dev/null
 @@ -1,69 +0,0 @@
@@ -2797,7 +2875,7 @@ index 64c2e7d7ea..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Build
 -        working-directory: node
 -        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn --experimental-quic"
@@ -2809,7 +2887,7 @@ index 64c2e7d7ea..0000000000
 -        run: git add -A && git diff --name-only --exit-code --staged
 diff --git a/.github/workflows/test-linux.yml b/.github/workflows/test-linux.yml
 deleted file mode 100644
-index 887db1dab8..0000000000
+index e154ee866d..0000000000
 --- a/.github/workflows/test-linux.yml
 +++ /dev/null
 @@ -1,85 +0,0 @@
@@ -2881,7 +2959,7 @@ index 887db1dab8..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      - name: Build
 -        working-directory: node
 -        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn"
@@ -2900,7 +2978,7 @@ index 887db1dab8..0000000000
 -          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
 diff --git a/.github/workflows/test-macos.yml b/.github/workflows/test-macos.yml
 deleted file mode 100644
-index 7db72c8568..0000000000
+index 943ea4cb6c..0000000000
 --- a/.github/workflows/test-macos.yml
 +++ /dev/null
 @@ -1,102 +0,0 @@
@@ -2970,7 +3048,7 @@ index 7db72c8568..0000000000
 -        if: github.base_ref == 'main' || github.ref_name == 'main'
 -        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba  # v0.0.11
 -        with:
--          version: v0.16.0
+-          version: v0.17.0
 -      # The `npm ci` for this step fails a lot as part of the Test step. Run it
 -      # now so that we don't have to wait 2 hours for the Build step to pass
 -      # first before that failure happens. (And if there's something about
