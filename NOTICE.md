@@ -1,0 +1,34 @@
+# 来源与差异说明（本副本）
+
+本仓库是 **方案 A（一次性引入配方）** 的产物：把上游的"配方"复制进自己的仓库，
+此后构建链路只依赖 `nodejs/node` 官方源码，不再依赖任何第三方 fork 的产物。
+
+## 来源
+
+- 配方来源：`digidem/nodejs-mobile` 的 `recipe` 分支，提交 `de44804`（2026-09-03）。
+- 血统：该 fork 派生自官方 `nodejs-mobile/nodejs-mobile`。
+- 许可：Node.js 及本配方系列均为 MIT 系许可，完整文本见本仓库 `LICENSE`。
+
+## 构建时实际拉取的内容
+
+`scripts/prepare.sh` 的默认上游是官方仓库，不存在任何第三方中间产物：
+
+```
+UPSTREAM_REPO=${UPSTREAM_REPO:-https://github.com/nodejs/node.git}
+```
+
+流程为：浅克隆 `nodejs/node` 的指定 tag（见 `upstream-base.txt`，当前 `v24.20.0`）
+→ 应用 `patches/` 补丁系列 → 覆盖 `mobile-src/` → 与 `expected-tree.txt` 校验整树哈希。
+
+## 相对上游配方的差异
+
+| 改动 | 原因 |
+|---|---|
+| 删除 `.github/workflows/browserstack-smoke.yml`，并移除 `build.yml` 中的 `real-device-smoke-android` / `real-device-smoke-ios` 两个 job 及 `publish.needs` 中的对应项 | 本仓库没有 `BROWSERSTACK_USER` / `BROWSERSTACK_PW` 凭据；模拟器/模拟器 smoke、curated 设备测试与 full device suite 仍然作为发布门禁保留 |
+| 删除 `.github/workflows/cache-credentials.yml` | 该 workflow 用于探测 Cloudflare R2 的 sccache 凭据，本仓库没有 R2 secrets |
+| 新增 `LICENSE` | `recipe` 分支本身不含许可文件，而它会重建并分发 Node.js 源码树 |
+
+其余文件（补丁系列、`mobile-src/` 覆盖层、`scripts/`、其余 workflow）与来源提交一致。
+
+说明：`docs/BUILDING.md` 仍会提到"CI 编译器缓存"与 `cache-credentials.yml`，
+那是上游仓库的凭据体系；在本副本中 sccache 后端为空，构建回退为本机磁盘缓存。
