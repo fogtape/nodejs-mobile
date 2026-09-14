@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1482 +++++++++++++++++
+ test/parallel/parallel.status                 | 1498 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -51,13 +51,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1792 insertions(+), 46 deletions(-)
+ 35 files changed, 1808 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..72a186497a 100644
+index d13efc8ac1..f52cc544b2 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1488 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1504 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -81,6 +81,14 @@ index d13efc8ac1..72a186497a 100644
 +test-permission-openssl-store: SKIP
 +test-runner-mock-dual-package: SKIP
 +test-webcrypto-prototype-pollution: SKIP
++#
++# Two more found by the release run's device suite (same classes as above):
++# test-debugger-no-inspect-brk is a new parallel-directory debugger test that
++# the sequential `test-debug*` glob does not cover, and test-fs-glob gained a
++# sub-test that spawns a child through process.execPath.
++#
++test-debugger-no-inspect-brk: SKIP
++test-fs-glob: SKIP
 +#
 +# Reverted to upstream (kept node:test); the jitless V8 build emits the short
 +# assert diff format, so these fail the .out comparison on mobile. None are in
@@ -734,6 +742,14 @@ index d13efc8ac1..72a186497a 100644
 +test-permission-openssl-store: SKIP
 +test-runner-mock-dual-package: SKIP
 +test-webcrypto-prototype-pollution: SKIP
++#
++# Two more found by the release run's device suite (same classes as above):
++# test-debugger-no-inspect-brk is a new parallel-directory debugger test that
++# the sequential `test-debug*` glob does not cover, and test-fs-glob gained a
++# sub-test that spawns a child through process.execPath.
++#
++test-debugger-no-inspect-brk: SKIP
++test-fs-glob: SKIP
 +#
 +# Reverted to upstream (kept node:test); the jitless V8 build emits the short
 +# assert diff format, so these fail the .out comparison on mobile. None are in
