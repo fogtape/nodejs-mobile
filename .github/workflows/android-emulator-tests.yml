@@ -98,7 +98,7 @@ jobs:
             || { echo "::error::libnode.so missing from nodejs-mobile-android${FLAVOR_SUFFIX}"; ls -R nm-android || true; exit 1; }
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
