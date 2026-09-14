@@ -26,6 +26,8 @@ UPSTREAM_REPO=${UPSTREAM_REPO:-https://github.com/nodejs/node.git}
 |---|---|
 | 删除 `.github/workflows/browserstack-smoke.yml`，并移除 `build.yml` 中的 `real-device-smoke-android` / `real-device-smoke-ios` 两个 job 及 `publish.needs` 中的对应项 | 本仓库没有 `BROWSERSTACK_USER` / `BROWSERSTACK_PW` 凭据；模拟器/模拟器 smoke、curated 设备测试与 full device suite 仍然作为发布门禁保留 |
 | 删除 `.github/workflows/cache-credentials.yml` | 该 workflow 用于探测 Cloudflare R2 的 sccache 凭据，本仓库没有 R2 secrets |
+| `upstream-base` 检查降级：仓库内没有该分支时只告警不失败；分支存在但指向错误提交时仍然报错 | 建立该分支需要推送 nodejs/node 的完整历史（约 1.5 GB）。本仓库的发布 tag 直接建立在物化树上，不依赖这条分支的祖先关系；它只作为"基线漂移"的提示保留 |
+| 删除 `.github/dependabot.yml` | 本仓库是构建配方镜像，不需要自动依赖升级 PR |
 | 新增 `LICENSE` | `recipe` 分支本身不含许可文件，而它会重建并分发 Node.js 源码树 |
 
 其余文件（补丁系列、`mobile-src/` 覆盖层、`scripts/`、其余 workflow）与来源提交一致。

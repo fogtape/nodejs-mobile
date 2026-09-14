@@ -1103,7 +1103,21 @@ jobs:
             exit 0
           fi
 
-          echo "::error::upstream-base is not at ${BASE}; a maintainer must push it before a release can be tagged (see docs/UPGRADING.md)"
+          # NOTE (this copy): the local branch is absent, not stale, when this
+          # repository has never imported the upstream base commit. Importing
+          # it means pushing nodejs/node's full history (the commit needs all
+          # of its ancestors), which is not worth the transfer here: the
+          # release tags this repo creates already carry the materialized tree
+          # they were built from. Absence is therefore a warning; a branch
+          # that exists but points somewhere else is still an error, since
+          # that is real drift.
+          if [ -z "$HAVE" ]; then
+            echo "::warning::upstream-base branch is not present in this repository; skipping the ancestry check for ${BASE}"
+            echo "  (to create it: git fetch https://github.com/nodejs/node.git refs/tags/${BASE} && git push --force --no-follow-tags <remote> ${WANT}:refs/heads/upstream-base)"
+            exit 0
+          fi
+
+          echo "::error::upstream-base is at ${HAVE}, but ${BASE} is ${WANT}"
           cat >&2 <<EOF
 
           upstream-base is at: ${HAVE:-(no such branch)}
