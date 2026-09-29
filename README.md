@@ -9,7 +9,7 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 26** (`v26.1.0`, CI preview).
+Current line: **Node.js 26** (`v26.1.0`, prerelease line).
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
 See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
 build instructions and download locations. `process.version` reports the
@@ -18,8 +18,9 @@ mobile build is identified by `process.versions.mobile` (e.g. `"26.1.0-0"`).
 
 ## Get it
 
-Node 26 preview packages are available from successful **Build** runs on
-`recipe-v26`. Published Node 24 assets remain on the Releases page.
+Node 26 prereleases are published from `recipe-v26` after the release gates
+pass. CI preview packages are also available from successful **Build** runs.
+Published Node 24 assets remain on the Releases page.
 The Node 26 port currently disables `node:ffi` and Temporal in both flavors;
 see [version-specific configuration](docs/VERSION-LINES.md#node-26-configuration).
 
@@ -106,11 +107,10 @@ carries no docs of its own.
 ## Testing and releases
 
 Every push reconstructs the tree, validates each patch individually, and
-builds all platforms and both flavors. A release additionally runs the
-curated Node.js test subset on an Android emulator and an iOS simulator, and
-a real-device smoke on physical hardware (BrowserStack: Android arm64 with
-16 KB pages, and an iPhone) that boots the shipped binary and loads a real
-N-API addon. Publishing is gated on all of it — see
+builds all platforms and both flavors. Publishing requires host verification,
+boot and N-API addon smokes, curated tests, and full test suites on Android
+emulators and iOS simulators. This mirror has no BrowserStack credentials
+and does not claim physical-device validation. See
 [TESTING.md](docs/TESTING.md) and
 [docs/RELEASING.md](docs/RELEASING.md).
 

@@ -35,9 +35,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Require the stable release line
+      - name: Require a maintained release line
         run: |
-          [ "$GITHUB_REF_NAME" = recipe ] || { echo "::error::The Node 26 line currently produces CI preview packages; use the Build workflow on recipe-v26."; exit 1; }
+          case "$GITHUB_REF_NAME" in
+            recipe|recipe-v26) ;;
+            *) echo "::error::Select recipe or recipe-v26"; exit 1 ;;
+          esac
 
       - name: Compute next version
         id: v
@@ -85,6 +88,12 @@ jobs:
           p = 'docs/CHANGELOG.md'
           s = open(p).read()
           date = datetime.date.today().isoformat()
+          # A new major's preview already has its version section. Replace it
+          # with the release-review stub instead of creating duplicate anchors.
+          s = re.sub(r'^<a id="' + re.escape(v) + r'"></a>\n.*?(?=^<a id="|\Z)',
+                     '', s, flags=re.M | re.S)
+          s = re.sub(r'^<a href="#' + re.escape(v) + r'">[^<]*</a><br/>\n',
+                     '', s, flags=re.M)
           section = (f'<a id="{v}"></a>\n## {date}, Version {v} (Current)\n\n'
                      '- _TODO: summarize changes before merging._\n\n')
           # Insert the section before the first existing anchor, drop the old
@@ -107,6 +116,11 @@ jobs:
           sed -i -E "s/^[0-9a-f]{40}$/${GOT}/" expected-tree.txt
           grep -E '^[0-9a-f]{40}$' expected-tree.txt
 
+      - name: Arm this version for publication
+        env:
+          V: ${{ steps.v.outputs.v }}
+        run: printf '%s\n' "$V" > release-ready.txt
+
       - name: Open release PR
         env:
           V: ${{ steps.v.outputs.v }}
@@ -115,15 +129,22 @@ jobs:
           git config user.name "nodejs-mobile-bot"
           git config user.email "bot@users.noreply.github.com"
           git checkout -b "$BR"
-          git commit -aqm "release: nodejs-mobile ${V}"
-          git push -f origin "$BR"
-          gh pr create --base recipe --head "$BR" \
+          git add mobile-src/src/node_mobile_version.h docs/CHANGELOG.md expected-tree.txt release-ready.txt
+          git commit -m "release: nodejs-mobile ${V}"
+          git push origin "$BR"
+          cat > "$RUNNER_TEMP/release-pr.md" <<EOF
+          Automated release PR for **nodejs-mobile ${V}** (see docs/RELEASING.md).
+
+          - [x] Version and revision computed from upstream and existing tags.
+          - [x] Source checksum reconstructed with prepare.sh.
+          - [ ] English CHANGELOG entry completed and reviewed.
+          - [ ] Release diff reviewed before merge.
+
+          Merging arms this version for publication. The merge push runs all
+          builds, host checks, boot and addon smokes, curated tests, and full
+          emulator/simulator suites before publishing a prerelease. This mirror
+          does not claim physical-device validation.
+          EOF
+          gh pr create --base "$GITHUB_REF_NAME" --head "$BR" \
             --title "release: nodejs-mobile ${V}" \
-            --body "Automated release PR for **nodejs-mobile ${V}** (see docs/RELEASING.md).
-
-          - [x] version of record bumped (revision computed from existing tags)
-          - [x] \`expected-tree.txt\` re-anchored via \`prepare.sh\`
-          - [ ] CHANGELOG entry filled in (the \`release-notes\` check fails while the \`_TODO_\` stub is there)
-          - [ ] review + merge = release sign-off
-
-          Merging makes the version-of-record untagged-at-HEAD, so the merge push runs the **full gate chain** (build matrix, boot smokes, curated and full device suites, real devices) and, if everything is green, tags \`v${V}\` and publishes the prerelease. PR checks do not run on this bot-pushed branch — your CHANGELOG commit is what starts them, and it is also what clears the \`release-notes\` check. Nothing publishes unverified either way (all gates re-run on the merge push)."
+            --body-file "$RUNNER_TEMP/release-pr.md"

@@ -53,6 +53,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http-response-setheaders.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http2-respond-file-error-dir.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-connect-options-fd.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-pipe-connect-errors.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-os.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-parse-args.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-process-constants-noatime.js

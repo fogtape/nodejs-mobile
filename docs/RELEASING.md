@@ -1,108 +1,63 @@
-# Release Instructions
+# Release instructions
 
-Releasing is a button, a review, and (optionally) an approval:
+Each maintained Node major has its own release line: `recipe` for Node 24
+and `recipe-v26` for Node 26. Select the intended branch in every workflow
+and open its release PR against that same branch. Node 26 releases never
+replace Node 24's branch, tags or assets.
 
-1. **Actions → "Cut release" → Run workflow** (no inputs). It computes the
-   next version — `X.Y.Z` from `upstream-base.txt`, the `-R` revision as the
-   next free one derived from existing tags (nobody types a revision) —
-   bumps `mobile-src/src/node_mobile_version.h`, stubs a dated CHANGELOG
-   section, re-anchors `expected-tree.txt` by running `prepare.sh`, and
-   opens a **release PR**.
-2. **Fill in the CHANGELOG entry, review, and merge.** Merging is the
-   release sign-off. (The bot's own push doesn't trigger PR checks — a
-   `GITHUB_TOKEN` limitation — but your CHANGELOG commit does, and nothing
-   publishes unverified either way: every gate re-runs on the merge push,
-   and `release-check` is guarded off `pull_request` so the release chain
-   can never fire from the unmerged PR.)
+## Cut, review and publish
 
-   The `release-notes` job (part of `ci-required`) checks the entry on the
-   PR: it fails while the first CHANGELOG section is still the `_TODO_`
-   stub, or isn't the section for the version being released. Run
-   `scripts/release-notes.py` locally to see exactly what publish will
-   ship. `publish` asserts the same thing, but by then the PR is merged
-   and closed, and the only way out is another push to `recipe`.
+1. Run **Cut release** on the selected branch. The workflow derives the
+   upstream version from `upstream-base.txt`, selects the next unused mobile
+   revision, updates the version header, creates a CHANGELOG review stub,
+   reconstructs the source checksum and opens a release PR.
+2. Fill in the English CHANGELOG entry, review the PR and merge with squash
+   or rebase. The PR also writes `release-ready.txt` with the version to
+   publish. On Node 26, this marker must match the version header before any
+   push may publish; normal port updates do not arm a release.
+3. The merge push runs both flavors for every platform, boot and native-addon
+   smokes, host tests, curated device tests and full device suites. A failed
+   gate prevents publication. Fix the selected branch; the next push retries
+   the still-unreleased version.
+4. The publish job runs in the `release` Environment, materializes the exact
+   verified source tree, packages the current run's artifacts and publishes
+   `vX.Y.Z-R` as a GitHub **prerelease**, with `latest=false`.
 
-   **Use squash or rebase, not a merge commit.** `release-check` reads
-   `git log -1 --format=%s` to spot a `release-dryrun:` rehearsal, and a
-   merge commit replaces that subject with `Merge pull request #N from …`,
-   silently turning a rehearsal into a normal push. The *release* trigger
-   itself is content-derived and unaffected — it's the dry run that breaks.
-   Requiring linear history on `recipe` enforces this.
-3. The merge push makes the version of record **untagged at HEAD**, which
-   is the release trigger (`release-check` in `build.yml` — content-derived
-   and idempotent; no magic commit wording). One run then carries the full
-   gate chain — build matrix both flavors, boot smokes, NAPI smoke, the
-   curated and full device suites, BrowserStack real devices — and the
-   publish job, which `needs:` all of it.
+The four archives are
+`nodejs-mobile-{android,ios}{,-lite}-X.Y.Z-R.zip`, accompanied by
+`SHA256SUMS`. Android includes arm64-v8a, armeabi-v7a and x86_64. iOS includes
+arm64 device and simulator slices. Verify the checksum after downloading.
 
-   One of those needs is `upstream-base`, which is plumbing rather than a
-   gate. The tag is pushed from a tree materialized by a depth-1 clone, so
-   its history stops at the upstream base and the remote will only accept it
-   if it already holds that base and everything under it. This fork's
-   `upstream-base` branch is what puts those objects there and keeps them
-   reachable, and the job checks it is on the pinned tag. Moving it is a
-   manual step taken once per upgrade, so on a release run this only ever
-   confirms what the upgrade already did.
-   → [UPGRADING.md](./UPGRADING.md)
-4. **Optional human gate:** the publish job runs in the `release`
-   Environment. Add required reviewers under Settings → Environments →
-   release and the pipeline pauses for an approval click before tagging.
-   With no reviewers configured it proceeds automatically.
-5. Publish tags **`vX.Y.Z-R`** on a materialized full-source commit (the
-   release stays browsable as a complete tree) and creates the GitHub
-   **prerelease** with four zips: `nodejs-mobile-{android,ios}{,-lite}-X.Y.Z-R.zip`.
-   Promote (untick "prerelease") when satisfied — both iOS flavors have
-   passed a real device by construction, as has Android `full`; Android
-   `lite` is still emulator-tested only.
+The initial Node 26 port disables `node:ffi` and Temporal in both flavors;
+iOS uses jitless V8 and the bundled WebAssembly polyfill. See
+[VERSION-LINES.md](VERSION-LINES.md) for compatibility limits.
 
-A failed gate means no tag and no release; fix on `recipe` and the next
-push retries automatically (the version is still untagged — the trigger is
-self-healing). For a full rehearsal without tagging/publishing, push a
-commit whose subject starts with `release-dryrun:`.
+## Source tags and provenance
 
-## A release run builds cold
+Tags point at full-source snapshot commits whose tree matches
+`expected-tree.txt`. These mirror-local commits have no parents, avoiding a
+shallow-history push that depends on importing all upstream Node history.
+The source snapshot records its upstream version and recipe commit. The
+annotated tag also carries `Recipe-Commit` and `Source-Tree` trailers, and
+the release body links the recipe commit.
 
-Budget **3–4 hours** for the build matrix on a release, against well under an
-hour for a typical warm push. A release run compiles with no shared compiler
-cache at all: no sccache, no R2 credentials in the job, and no restore of the
-prebuilt `libnode` from the Actions cache. That is deliberate, and it is the
-one measure that takes cache poisoning out of the supply chain rather than
-merely making it harder — the bytes that ship are compiled in the run that
-ships them. [BUILDING.md](./BUILDING.md#the-ci-compiler-cache) has the model
-and the wiring.
+Do not push release tags or upload assets manually. The pipeline is the
+publisher and its prerequisite jobs enforce validation. Draft-first asset
+upload keeps an incomplete release from being published. This mirror has no
+BrowserStack credentials: device builds are compiled, while runtime tests
+run on Android emulators and iOS simulators. Do not claim physical-device
+validation in release notes.
 
-Two consequences worth knowing before you start one:
+## Build time and cache policy
 
-- A `release-dryrun:` rehearsal builds cold too. It has to, or it isn't
-  rehearsing the release. Expect it to take as long as the real thing.
-- Re-running a failed release gate re-runs the cold build. Prefer fixing on
-  `recipe` and letting the next push retry (which is the self-healing path
-  anyway) over "Re-run all jobs" on a run whose build matrix already
-  succeeded.
+This mirror reuses completed mobile libraries only when their exact build
+input keys match. A test-only fix can therefore rerun the device gates
+without recompiling Node. The release path does not use shared compiler
+objects or R2 credentials; a mobile-library cache miss builds cold. Host
+verification also builds cold because it has no completed-binary cache.
+See [BUILDING.md](BUILDING.md#the-ci-compiler-cache).
 
-This is not new cost in practice: the version bump changes `HEAD:src`, which
-already invalidated the `libnode` cache key on every release. It is now
-structural rather than incidental.
-
-## Versioning and tags
-
-- `process.version` stays upstream's (`v24.18.0`) so every tool that parses
-  Node versions keeps working; the mobile release is readable at runtime as
-  **`process.versions.mobile`** (`"24.18.0-0"`, `-pre`-suffixed on
-  non-release builds).
-- Tags are `vX.Y.Z-R` (semver reads `-R` as a prerelease qualifier — apt
-  for a variant build, and irrelevant to tag/URL consumers). Releases
-  before the rename used `nodejs-mobile-X.Y.Z-R`; both spellings count as
-  "already released" to `release-check` and to Cut release's revision
-  computation.
-- The annotated tag message carries **`Recipe-Commit: <sha>`** — the exact
-  recipe-branch commit whose pipeline produced the release (`git show vX.Y.Z-R`
-  answers "what generated this"); the release notes repeat it as a link. The
-  tag itself points at the materialized tree, which is what the release was
-  *built from* — the trailer records what it was *generated by*.
-
-## Post-release
-
-Bump the consumer plugins (`nodejs-mobile-react-native`, `-cordova`) as
-needed. No version-unflag commit: the stack keeps upstream's release-tagged
-`NODE_VERSION_IS_RELEASE` as-is.
+`release-dryrun:` rehearsals on an armed release line run the same gates
+without tagging or publishing. An untagged version is retried after a fix;
+for an interrupted publish that already created its tag, inspect and rerun
+the publish job from that release run instead of creating a second version.

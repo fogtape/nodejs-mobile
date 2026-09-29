@@ -275,145 +275,63 @@ at all about address-space behaviour.
 
 ## The CI compiler cache
 
-CI compiles Node from scratch in eleven jobs per run, so it keeps a shared
-compiler cache: [sccache](https://github.com/mozilla/sccache) against a
-Cloudflare R2 bucket, wired in `.github/workflows/build.yml`. R2 rather than
-the GitHub Actions cache because Actions' 200-uploads-per-minute-per-repo
-limit cannot serve this workload at any tuning — the long comment on
-`build-android`'s `sccache stats` step has the measurements.
+There are two distinct caches in `build.yml`:
 
-The thing to understand before touching any of it: **an sccache entry is a
-claim the reader never verifies.** The key is a hash of the preprocessed
-source and the compiler; the value is the object file that is supposed to
-result. Nothing re-derives it on the way out. Whoever can write to the bucket
-can therefore choose the object files a later build links — which, for the
-release run, means choosing the bytes that ship. Two measures follow from
-that, and they are independent on purpose.
+1. **Completed libraries:** Android `out_android` and each iOS framework slice
+   use exact keys covering the source/dependency trees, build scripts and
+   target settings. A hit skips compilation. Test-only and documentation-only
+   changes retain these keys; changes to `node.gyp`, compiler settings or
+   runtime sources invalidate them. Never add a broad restore prefix to a
+   completed-library cache: that could restore an obsolete binary.
+2. **Compiler objects:** non-release jobs use sccache. This mirror has no R2
+   credentials, so its backend is a local directory. The
+   `restore-compiler-cache` action restores that directory from an Actions
+   cache archive before compilation; `Save compiler objects` persists it even
+   if a later compilation or link fails. Previously the directory existed
+   only on the disposable runner, causing essentially cold rebuilds.
 
-### 1. The publish path builds cold
+Object archives are separated by Node major, runner OS/CPU, platform,
+architecture, flavor and toolchain fingerprint. Each run attempt writes an
+immutable key, and subsequent attempts restore the newest matching prefix.
+Sccache still checks each compiler invocation and source contents; an object
+cache hit is not a reason to skip compilation of changed input. The local
+cache is capped at 2 GB per job. Actions storage quotas and eviction can
+reduce reuse, so a cache is an optimization, never a build prerequisite.
+One archive upload per job also avoids the per-object request volume of
+sccache's direct GitHub Actions backend.
 
-Every compiling job (`build-android`, `build-ios`, `smoke-host`) runs
-[`.github/actions/release-check`](../.github/actions/release-check/action.yml)
-before `materialize` and asks whether this run is a release — or a
-`release-dryrun:` rehearsal, which must build the same way to be a rehearsal
-at all. When it is:
+The optional R2 configuration remains supported. If R2 credentials are
+installed, use separate read and write tokens and restrict the write
+Environment to trusted maintenance branches. The local archive fallback
+needs no cloud secrets.
 
-- sccache is never installed, and nothing wraps the compiler: Android's
-  `NODEJS_MOBILE_SCCACHE` opt-in is left empty, iOS never writes its
-  `CC`/`CXX` wrapper scripts, `smoke-host` uses the bare `cc`/`c++`.
-- the R2 credentials are blanked, so a release build has no credential for
-  the shared cache anywhere in its environment.
-- the `libnode` Actions cache is **restored** by no one — that step is
-  skipped, though the job still *saves*, so the first PR after a release
-  finds a warm key. (Today the version bump changes `HEAD:src` and misses
-  that key anyway. Skipping the restore is what makes it a property of the
-  workflow rather than a coincidence.)
+### Releases and provenance
 
-So a poisoned cache object has no path to a shipped artifact. The worst it
-can do is waste CI time or corrupt a dev/test binary. This is why the measure
-is worth its cost: it moves cache poisoning out of the supply chain entirely,
-rather than making it harder.
+As documented in this mirror's `NOTICE.md`, completed mobile libraries may
+be reused on release runs when their exact input key matches. The library
+matrix still uploads the restored files into the current run, and that run
+must pass its boot, addon, curated and full device gates before publication.
 
-The cost is a cold release: **~1.5–3 h** for the Android matrix, ~82 min for
-`smoke-host`, both parallel, a few times a year. See
-[RELEASING.md](./RELEASING.md#a-release-run-builds-cold).
+Release and `release-dryrun:` jobs do not restore compiler-object archives,
+use sccache, or expose R2 credentials. A missing completed-library key
+therefore causes a cold compile. The host verification binary currently has
+no completed-binary cache and is rebuilt on the release path. The first
+release can still take hours even with mobile-library hits; full device
+suites also take time independent of compilation.
 
-`smoke-host` is included even though it ships nothing. It gates `publish`, so
-a subverted host binary is a host binary that can be made to pass the tests
-standing between a release and the tag.
+This policy reuses exact mobile build outputs, not arbitrary compiler
+objects on the publish path. The release notes must accurately identify the
+recipe commit, tests performed and missing physical-device coverage.
 
-### 2. Read and write are split by credential
+### Diagnosing a slow run
 
-Only a push to `recipe` may write. This is enforced by which credential the
-job gets, not by any expression in the workflow file:
-
-| GitHub Environment | R2 token | Protection |
-|---|---|---|
-| `sccache-read` | Object Read only | none — this is the default for PRs and dispatches |
-| `sccache-write` | Object Read & Write | deployment branch rule: `recipe` only |
-
-Both hold the token under the **same secret names** (`R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`), and each compiling job selects one by event:
-
-```yaml
-environment:
-  name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/recipe' && 'sccache-write' || 'sccache-read' }}
-  deployment: false
-```
-
-Same names is the point. No expression in `build.yml` names the write token,
-so no edit to `build.yml` — which a PR can make, and which runs in that PR —
-can hand it to a PR run. Asking for `sccache-write` from any other branch is
-refused by GitHub before the job starts. Poisoning the cache therefore
-requires landing a commit on `recipe`.
-
-`SCCACHE_S3_RW_MODE` (workflow env) is set to `READ_ONLY` off `recipe` as
-well. That one *is* workflow-side and thus editable in a PR, which is exactly
-why it is not the enforcement — it exists so sccache doesn't attempt ~2500
-doomed `PUT`s per job, plus the probe object it writes at server start, when
-the token would refuse them anyway. An sccache too old to know the variable
-ignores it and falls back to failed writes, which `SCCACHE_ERROR_LOG` already
-reports; no regression either way.
-
-`R2_ACCOUNT_ID` (endpoint) and `vars.R2_BUCKET` stay at repository scope —
-neither is a capability.
-
-### Setting it up
-
-On the Cloudflare side, R2 → Manage API tokens, two tokens scoped to the
-bucket: one **Object Read only**, one **Object Read & Write**. On the GitHub
-side, Settings → Environments:
-
-1. `sccache-read` — no protection rules. Secrets: `R2_ACCESS_KEY_ID`,
-   `R2_SECRET_ACCESS_KEY` = the **read-only** token.
-2. `sccache-write` — **add the deployment branch rule for `recipe` before
-   adding the secrets.** Same two secret names = the **read-write** token.
-3. Delete `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` at repository scope, so
-   each token lives in exactly one place. (An environment secret shadows a
-   repository secret of the same name, so leaving them would not break
-   anything — it would just make the write token reachable from a PR again,
-   silently.)
-
-Both environments are auto-created on first reference if they don't exist, so
-a missing branch rule **fails open**: the workflow runs, and the write token
-simply isn't restricted. The rule is the whole mechanism; check it after any
-Settings change.
-
-### The daily credential probe
-
-`.github/workflows/cache-credentials.yml` checks both tokens daily with plain
-SigV4 requests against the bucket: GET of a never-written key (404 proves the
-request authenticated), then PUT and DELETE — expected to succeed for
-`sccache-write` (with a byte-identical read-back) and to be refused with 403
-for `sccache-read`. The two matrix legs run byte-identical code; only the
-expected statuses differ, so a denial cannot be an artifact of code the other
-leg doesn't run. sccache itself is not involved — the tokens are what is under
-test, and every build exercises the sccache integration anyway.
-
-Run it by hand (Actions → Cache credentials → Run workflow) right after
-changing a token or an environment. Dispatching it from a ref other than
-`recipe` also tests the deployment branch rule, and the `sccache-write` leg
-comes out red either way — what matters is the message. Refused by GitHub
-before any step ran (a protection-rules annotation): the rule works. Failed
-by its own ref guard: the leg actually ran, meaning **the rule is missing**
-and the write token is obtainable from arbitrary branches — the fail-open
-case described above, caught rather than reported as a healthy token. A
-scheduled run cannot test this; it always runs on the default branch, where
-the rule passes.
-
-### Gotchas
-
-- The conditionals are all written `cold != 'true' && <cache on> || <cache
-  off>`, never `cold == 'true' && <cache off> || <cache on>`. GitHub's ternary
-  idiom falls through to the `||` branch whenever the `&&` branch is falsey,
-  and `''` is falsey — so the natural-reading form silently enables the cache
-  on exactly the runs that must not have it.
-- Android's opt-in is tested with `os.environ.get()`, which is truthy for
-  `'0'`. Clear it to the empty string, not to `'0'`.
-- `release-check` must run **before** `./.github/actions/materialize`: it
-  reads `mobile-src/src/node_mobile_version.h`, and materialize replaces the
-  workspace with the generated tree.
-- The build jobs call the action directly rather than `needs:`-ing the
-  `release-check` *job*. That job is deliberately skipped off
-  push-to-`recipe`, and a job that needs a skipped job is skipped too — the
-  whole build matrix would vanish on PRs.
+- Check `Restore built libnode` first. A hit should skip `Build`.
+- On a normal build miss, inspect `Restore compiler objects` and
+  `sccache stats`: the cache location, hit count and miss count show whether
+  the persisted backend was actually reused.
+- `Save compiler objects` runs after a failed build too, provided the runner
+  was not cancelled. Cancelled jobs may lose newly compiled objects.
+- Changing source/build inputs, changing the runner toolchain, storage
+  eviction and the first run of a new version all cause legitimate misses.
+- A green compile does not mean a green release. Emulator/simulator tests
+  consume the compiled artifacts and retain their own runtime cost.

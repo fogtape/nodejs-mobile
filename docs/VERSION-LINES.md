@@ -7,7 +7,7 @@ versioned together on that branch.
 | Branch | Upstream base | Purpose | Outputs |
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
-| `recipe-v26` | Node.js 26.1.0 | Independent Node 26 port and CI previews | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.1.0 | Independent Node 26 maintenance and prereleases | Android and iOS, full and lite |
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published
@@ -57,8 +57,10 @@ Node-API addons against the chosen platform and flavor as well.
 
 ## Download and identify a build
 
-For Node 24, use the existing versioned assets on the repository's
+Published Node 24 assets and Node 26 prereleases use separate versioned
+entries on the repository's
 [Releases page](https://github.com/fogtape/nodejs-mobile/releases).
+Each release includes four platform/flavor archives and a SHA256SUMS file.
 
 For Node 26 previews, open a successful **Build** run on `recipe-v26` and
 download its artifacts. Versioned preview packaging requires the build,
@@ -76,9 +78,9 @@ from different runs. Versioned preview packages additionally contain
 `BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
 
 `process.version` reports `v26.1.0`; `process.versions.mobile` identifies
-the mobile build revision. A preview is not a published release. The
-existing automatic release path remains restricted to `recipe`; **Cut
-release** refuses to run on the Node 26 preview line.
+the mobile build revision. A CI preview is not a published release. **Cut release** also supports
+`recipe-v26`; its reviewed PR arms a specific version for publication after
+the complete gate chain succeeds. See [RELEASING.md](RELEASING.md).
 
 ## Upgrade one line
 

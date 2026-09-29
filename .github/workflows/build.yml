@@ -19,30 +19,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Shared compiler cache — security model in docs/BUILDING.md, "The CI
-# compiler cache". Summary: an sccache entry is never re-verified by the
-# reader, so bucket-write access chooses the object files a later build
-# links. Two independent measures:
-#
-#   1. The publish path builds COLD. Every compiling job asks
-#      ./.github/actions/release-check whether this run is a release (or a
-#      `release-dryrun:` rehearsal) and, if so, compiles with no sccache and
-#      no R2 credentials in scope — a poisoned cache object has no path to a
-#      shipped artifact.
-#   2. Read and write are split by credential. `sccache-read` and
-#      `sccache-write` are GitHub Environments holding an R2 token each under
-#      the SAME secret names; a job picks one by event (below), and
-#      `sccache-write`'s deployment branch rule — enforced by GitHub, not by
-#      anything editable in this file — restricts it to `recipe`.
-#
-# READ_ONLY below is not the enforcement (it is workflow-side and editable in
-# a PR — the token is the enforcement); it just stops sccache attempting
-# ~2500 doomed PUTs per job when the token would refuse them anyway.
+# Completed mobile-library caches use exact build-input keys, including on
+# releases (this mirror's NOTICE.md policy). Compiler-object archives only
+# accelerate non-release builds; release and dry-run compiles bypass sccache.
+# With no R2 credentials, persist the local backend using Actions cache.
+# Optional R2 credentials remain separated through the two Environments.
 env:
-  # No SCCACHE_GHA_ENABLED here on purpose: the backend is Cloudflare R2, set
-  # per Build step (see build-android). sccache picks a backend by precedence
-  # and ghac outranks s3, so leaving the GHA flag set would silently keep
-  # writing into the rate-limited Actions cache and look like it worked.
+  # Persist the local sccache directory as one archive per job. Do not enable
+  # the direct GHA backend: its per-object requests can hit service limits.
   SCCACHE_IDLE_TIMEOUT: "0" # keep the sccache server alive through long builds
   # Must be set before the sccache server starts, like the log vars below, so
   # it belongs at workflow scope. An sccache too old to know this variable
@@ -182,11 +166,7 @@ jobs:
                } | git hash-object --stdin )
           echo "key=libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
 
-      # Restore and save are split (rather than one actions/cache) so a
-      # release run can skip the RESTORE — making "the shipped binary was
-      # compiled in this run" a property of the workflow, not of the version
-      # bump happening to miss the key — while still performing the SAVE, so
-      # the first PR after a release finds a warm key.
+      # Restore exact completed libraries independently from compiler objects.
       - name: Restore built libnode
         id: libnode-cache
         # NOTE (this copy): upstream skips this restore on the publish path so
@@ -201,6 +181,13 @@ jobs:
         with:
           path: out_android
           key: ${{ steps.ck.outputs.key }}
+
+      - name: Restore compiler objects
+        id: object-cache
+        if: steps.rel.outputs.cold != 'true' && steps.libnode-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/restore-compiler-cache
+        with:
+          lane: android-${{ env.TARGET_ARCH }}${{ env.FLAVOR_SUFFIX }}-ndk${{ env.ANDROID_NDK_VERSION }}
 
       - name: Build
         if: steps.libnode-cache.outputs.cache-hit != 'true'
@@ -282,6 +269,17 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      - name: Flush compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        run: sccache --stop-server || true
+
+      - name: Save compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/nodejs-mobile-sccache
+          key: ${{ steps.object-cache.outputs.key }}
+
       - uses: actions/upload-artifact@v7
         with:
           name: node-android-${{ matrix.config.target_arch }}-${{ matrix.flavor }}
@@ -339,8 +337,7 @@ jobs:
                } | git hash-object --stdin )
           echo "key=libnode-ios-${TARGET_ARCH}${FLAVOR_SUFFIX}-v1-${H}" >> "$GITHUB_OUTPUT"
 
-      # Restore/save split, and why a release skips the restore: see
-      # build-android.
+      # Exact completed-library policy: see build-android and NOTICE.md.
       - name: Restore built libnode
         id: libnode-cache
         # NOTE (this copy): restore on the publish path too — see
@@ -364,6 +361,13 @@ jobs:
       # treats the whole value as one executable name and dies with
       # "unable to spawn process 'sccache clang'". A one-line script is a real
       # executable path, so both are satisfied.
+      - name: Restore compiler objects
+        id: object-cache
+        if: steps.rel.outputs.cold != 'true' && steps.libnode-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/restore-compiler-cache
+        with:
+          lane: ios-${{ env.TARGET_ARCH }}${{ env.FLAVOR_SUFFIX }}
+
       - name: Build
         if: steps.libnode-cache.outputs.cache-hit != 'true'
         env:
@@ -417,6 +421,17 @@ jobs:
             echo '--- sccache server log (unique messages) ---'
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
+
+      - name: Flush compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        run: sccache --stop-server || true
+
+      - name: Save compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/nodejs-mobile-sccache
+          key: ${{ steps.object-cache.outputs.key }}
 
       - uses: actions/upload-artifact@v7
         with:
@@ -723,6 +738,13 @@ jobs:
       # On the publish path CC/CXX drop back to the bare compilers — see
       # build-ios's Build step, and the `!= 'true' && x || y` note on
       # build-android's.
+      - name: Restore compiler objects
+        id: object-cache
+        if: steps.rel.outputs.cold != 'true'
+        uses: ./.github/actions/restore-compiler-cache
+        with:
+          lane: host
+
       - name: Configure
         env:
           CC: ${{ steps.rel.outputs.cold != 'true' && 'sccache cc' || 'cc' }}
@@ -763,6 +785,17 @@ jobs:
             echo '--- sccache server log (unique messages) ---'
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
+
+      - name: Flush compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        run: sccache --stop-server || true
+
+      - name: Save compiler objects
+        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/nodejs-mobile-sccache
+          key: ${{ steps.object-cache.outputs.key }}
 
       - name: Smoke test
         run: |
@@ -954,7 +987,7 @@ jobs:
   # non-release event. A deployment branch rule on the `release` Environment
   # restricting it to recipe would stop publish independently of this.
   release-check:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/recipe'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/recipe' || github.ref == 'refs/heads/recipe-v26')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1233,30 +1266,6 @@ jobs:
 
       - uses: ./.github/actions/materialize
 
-      # Note: the materialized tree is a SHALLOW clone of nodejs/node (prepare.sh
-      # uses --depth 1), so this pushes a tag whose history is grafted at the
-      # upstream base, and git sends only the commits above that boundary. The
-      # remote accepts it only because the base and its ancestry are already
-      # there, on the upstream-base branch that the upstream-base job (needs:,
-      # above) has verified.
-      - name: Tag the materialized tree
-        run: |
-          git config user.name "nodejs-mobile-bot"
-          git config user.email "bot@users.noreply.github.com"
-          TAG="v${V}"
-          # Recipe-Commit records which recipe-branch commit generated this
-          # release. The tag object is the durable home for that link: the run
-          # that knows it expires, and the materialized commit itself carries
-          # only the generic overlay message.
-          git tag -a "$TAG" -m "nodejs-mobile ${V}" -m "Recipe-Commit: ${GITHUB_SHA}"
-          git remote add fork "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          if [ "$DRY" = "1" ]; then
-            echo "DRY RUN: would push tag $TAG (materialized tree $(git rev-parse 'HEAD^{tree}'))"
-          else
-            git push fork "refs/tags/$TAG"
-            echo "Pushed tag $TAG"
-          fi
-
       - name: Download + package this run's artifacts
         run: |
           mkdir -p dl out
@@ -1284,20 +1293,55 @@ jobs:
           pack nodejs-mobile-android-lite  nodejs-mobile-android-lite
           pack nodejs-mobile-ios           nodejs-mobile-ios
           pack nodejs-mobile-ios-lite      nodejs-mobile-ios-lite
+          (cd out && sha256sum nodejs-mobile-*.zip > SHA256SUMS)
           ls -la out
+
+      - name: Tag the materialized tree
+        run: |
+          git config user.name "nodejs-mobile-bot"
+          git config user.email "bot@users.noreply.github.com"
+          TAG="v${V}"
+          # Recipe-Commit records which recipe-branch commit generated this
+          # release. The tag object is the durable home for that link: the run
+          # that knows it expires, and the materialized commit itself carries
+          # only the generic overlay message.
+          # This mirror need not hold upstream's entire commit ancestry.
+          # A source snapshot commit preserves the verified tree without
+          # publishing a shallow history whose parents the remote lacks.
+          TREE=$(git rev-parse 'HEAD^{tree}')
+          BASE=$(awk '/^#define NODE_MAJOR_VERSION / {ma=$3} /^#define NODE_MINOR_VERSION / {mi=$3} /^#define NODE_PATCH_VERSION / {pa=$3} END {print "v" ma "." mi "." pa}' src/node_version.h)
+          git remote add fork "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          EXISTING=$(git ls-remote fork "refs/tags/$TAG")
+          if [ -n "$EXISTING" ]; then
+            git fetch fork "refs/tags/$TAG:refs/tags/$TAG"
+            [ "$(git rev-parse "$TAG^{tree}")" = "$TREE" ] &&
+              git cat-file tag "$TAG" | grep -Fxq "Recipe-Commit: ${GITHUB_SHA}" || {
+                echo "::error::Existing $TAG belongs to a different source tree or recipe commit"
+                exit 1
+              }
+          else
+            SOURCE_COMMIT=$(printf '%s\n\n%s\n%s\n' "nodejs-mobile ${V} source snapshot" "Upstream: ${BASE}" "Recipe-Commit: ${GITHUB_SHA}" | git commit-tree "$TREE")
+            git tag -a "$TAG" "$SOURCE_COMMIT" -m "nodejs-mobile ${V}" -m "Recipe-Commit: ${GITHUB_SHA}" -m "Source-Tree: ${TREE}"
+          fi
+          if [ "$DRY" = "1" ]; then
+            echo "DRY RUN: would push tag $TAG (materialized tree $(git rev-parse 'HEAD^{tree}'))"
+          else
+            git push fork "refs/tags/$TAG"
+            echo "Pushed tag $TAG"
+          fi
 
       - name: Create GitHub Release (prerelease)
         run: |
           TAG="v${V}"
           NOTES=$(cat "$RUNNER_TEMP/release-notes.md")
           # Human-visible copy of the tag's Recipe-Commit trailer.
-          PROV="Generated from [\`recipe@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
+          PROV="Generated from [\`${GITHUB_REF_NAME}@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
           if [ "$DRY" = "1" ]; then
             echo "DRY RUN: would publish prerelease $TAG with:"
             ls -la out
             printf '%s\n' "--- notes ---" "$NOTES" "" "$PROV"
           else
-            BODY="$(printf '%s\n\n%s' "${NOTES:-Release ${V}. See https://github.com/${GITHUB_REPOSITORY}/blob/recipe/docs/CHANGELOG.md}" "$PROV")"
+            printf '%s\n\n%s\n' "$NOTES" "$PROV" > "$RUNNER_TEMP/publish-notes.md"
             # Draft first, flip live once the assets are attached: with
             # immutable releases enabled a release rejects asset uploads the
             # moment it is published, and `gh release create` publishes
@@ -1309,12 +1353,13 @@ jobs:
               gh release delete "$TAG" --yes --repo "$GITHUB_REPOSITORY"
               echo "Deleted leftover draft for $TAG"
             fi
-            gh release create "$TAG" out/*.zip \
+            gh release create "$TAG" out/*.zip out/SHA256SUMS \
               --repo "$GITHUB_REPOSITORY" \
               --title "nodejs-mobile ${V}" \
               --draft \
               --prerelease \
-              --notes "$BODY"
+              --latest=false \
+              --notes-file "$RUNNER_TEMP/publish-notes.md"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
             echo "Published prerelease $TAG"
           fi

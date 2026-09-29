@@ -36,6 +36,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  .../parallel/test-http-response-setheaders.js |    6 +
  .../test-http2-respond-file-error-dir.js      |    7 +
  test/parallel/test-net-connect-options-fd.js  |    2 +-
+ test/parallel/test-net-pipe-connect-errors.js |    6 +-
  test/parallel/test-os.js                      |   25 +-
  test/parallel/test-parse-args.mjs             |    2 +
  .../test-process-constants-noatime.js         |    2 +-
@@ -50,7 +51,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 34 files changed, 1836 insertions(+), 46 deletions(-)
+ 35 files changed, 1841 insertions(+), 47 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
 index 5c7fe47927..93ae8d01eb 100644
@@ -1958,6 +1959,23 @@ index bd761cf072..c913299ef7 100644
    const serverPath = `${prefix}-server`;
    let counter = 0;
    let socketCounter = 0;
+diff --git a/test/parallel/test-net-pipe-connect-errors.js b/test/parallel/test-net-pipe-connect-errors.js
+index fec4259b34..262936fd87 100644
+--- a/test/parallel/test-net-pipe-connect-errors.js
++++ b/test/parallel/test-net-pipe-connect-errors.js
+@@ -56,7 +56,11 @@ if (common.isWindows) {
+   fs.writeFileSync(emptyTxt, '');
+ }
+ 
+-const notSocketClient = net.createConnection(emptyTxt, function() {
++// nodejs-mobile patch: the iOS app container's absolute path exceeds sun_path.
++// Keep the intended non-socket error check by connecting with a short path.
++const connectPath = common.isIOS || common.isAndroid ?
++  require('path').relative(process.cwd(), emptyTxt) : emptyTxt;
++const notSocketClient = net.createConnection(connectPath, function() {
+   assert.fail('connection callback should not run');
+ });
+ 
 diff --git a/test/parallel/test-os.js b/test/parallel/test-os.js
 index f15499d692..3c3c09b835 100644
 --- a/test/parallel/test-os.js

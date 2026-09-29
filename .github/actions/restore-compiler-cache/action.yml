@@ -1,0 +1,36 @@
+name: Restore compiler objects
+description: Persist the local sccache backend between hosted runners.
+inputs:
+  lane:
+    description: Platform, architecture, flavor, and toolchain family.
+    required: true
+outputs:
+  key:
+    description: Unique immutable cache key for this run attempt.
+    value: ${{ steps.key.outputs.key }}
+runs:
+  using: composite
+  steps:
+    - id: key
+      shell: bash
+      env:
+        LANE: ${{ inputs.lane }}
+      run: |
+        set -euo pipefail
+        MAJOR=$(awk '/^#define NODE_MAJOR_VERSION / {print $3}' src/node_version.h)
+        TOOLCHAIN=$({
+          if [ "$RUNNER_OS" = macOS ]; then xcodebuild -version; fi
+          cc --version
+          c++ --version
+          if command -v clang-19 >/dev/null; then clang-19 --version; fi
+        } | git hash-object --stdin)
+        PREFIX="compiler-v1-node${MAJOR}-${RUNNER_OS}-${RUNNER_ARCH}-${LANE}-${TOOLCHAIN}-"
+        echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
+        echo "key=${PREFIX}${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+        echo "SCCACHE_DIR=$RUNNER_TEMP/nodejs-mobile-sccache" >> "$GITHUB_ENV"
+        echo "SCCACHE_CACHE_SIZE=2G" >> "$GITHUB_ENV"
+    - uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/nodejs-mobile-sccache
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
