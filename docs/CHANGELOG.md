@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.1.0-0">26.1.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
 <a href="#24.19.0-2">24.19.0-2</a><br/>
@@ -39,8 +40,17 @@
 </tr>
 </table>
 
+<a id="26.1.0-0"></a>
+## 2026-09-29, Version 26.1.0-0 (Current)
+
+- Add an independent Node 26 recipe line while retaining Node 24 maintenance.
+- Rebase the mobile patches onto official Node.js 26.1.0 and V8 14.6.
+- Use Android NDK r29 and update the iOS static-library composition.
+- Explicitly disable `node:ffi` and Temporal pending mobile integration.
+- Produce versioned CI preview packages; this entry does not mark a public release.
+
 <a id="24.21.0-0"></a>
-## 2026-09-14, Version 24.21.0-0 (Current)
+## 2026-09-14, Version 24.21.0-0
 
 ### Notable Changes
 

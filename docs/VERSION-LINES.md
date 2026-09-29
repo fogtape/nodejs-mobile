@@ -1,0 +1,86 @@
+# Maintained version lines
+
+Each Node.js major has its own recipe branch. The upstream tag, mobile
+patches, additional sources, source-tree checksum and build toolchain are
+versioned together on that branch.
+
+| Branch | Upstream base | Purpose | Outputs |
+| --- | --- | --- | --- |
+| `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.1.0 | Independent Node 26 port and CI previews | Android and iOS, full and lite |
+
+The authoritative base is always `upstream-base.txt` on the selected branch.
+Updating Node 26 does not change the Node 24 recipe or replace its published
+release assets. Shared fixes can be cherry-picked between the branches after
+testing against each branch's upstream base. Do not merge an entire Node 26
+upgrade into the Node 24 branch.
+
+## Build a selected line
+
+```sh
+git clone --branch recipe-v26 https://github.com/fogtape/nodejs-mobile.git
+cd nodejs-mobile
+scripts/prepare.sh
+cd out
+./tools/android_build.sh "$ANDROID_NDK_HOME" 24 arm64
+```
+
+Use `--branch recipe` for Node 24. Build Android on Linux and iOS on
+macOS/Xcode; see [BUILDING.md](BUILDING.md). Use a separate checkout for
+each line because the materialized source and compiler outputs belong to
+one upstream base.
+
+In GitHub Actions, select **Build**, then choose the desired branch in
+**Run workflow**. Pushes to either maintained branch also run its build.
+The **Verify recipe branch** workflow checks the selected branch's patch
+partition and expected source-tree checksum.
+
+## Node 26 configuration
+
+The Node 26 line uses Android NDK r29 (`29.0.14206865`) and Clang 19 for
+Linux host tools. Node 24 keeps its existing NDK r27d configuration.
+
+The initial Node 26 port explicitly disables the experimental `node:ffi`
+module and V8 Temporal support. Upstream's bundled libffi integration does
+not support the Android/iOS targets, and Temporal requires an additional
+Rust cross-compilation and linking setup. These omissions apply to both
+full and lite builds; they must not be described as full desktop feature
+parity. The existing lite feature reductions still apply.
+
+iOS keeps its jitless V8 configuration and WebAssembly polyfill. Native
+addons using V8 or the Node C++ API must be rebuilt for Node 26. Test
+Node-API addons against the chosen platform and flavor as well.
+
+## Download and identify a build
+
+For Node 24, use the existing versioned assets on the repository's
+[Releases page](https://github.com/fogtape/nodejs-mobile/releases).
+
+For Node 26 previews, open a successful **Build** run on `recipe-v26` and
+download its artifacts. The combined artifacts are:
+
+- `nodejs-mobile-android`
+- `nodejs-mobile-android-lite`
+- `nodejs-mobile-ios`
+- `nodejs-mobile-ios-lite`
+
+Artifact names are scoped to a workflow run. Keep the branch, commit and
+run URL with the downloaded files; do not mix platform slices or flavors
+from different runs. Versioned preview packages additionally contain
+`BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
+
+`process.version` reports `v26.1.0`; `process.versions.mobile` identifies
+the mobile build revision. A preview is not a published release. The
+existing automatic release path remains restricted to `recipe`; **Cut
+release** refuses to run on the Node 26 preview line.
+
+## Upgrade one line
+
+Start from the corresponding recipe branch, update its upstream base,
+resolve patches in a materialized tree, regenerate the recipe, update
+`expected-tree.txt`, and run that line's builds and device tests. See
+[UPGRADING.md](UPGRADING.md). Open maintenance PRs against the same line.
+
+Keep release tags and filenames versioned (`vX.Y.Z-R` and
+`nodejs-mobile-<platform>[-lite]-X.Y.Z-R.zip`). Never reuse a Node 24 tag or
+asset name for Node 26.

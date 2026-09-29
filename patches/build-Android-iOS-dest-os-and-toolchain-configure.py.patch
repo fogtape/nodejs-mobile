@@ -23,12 +23,12 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 ---
- android_configure.py | 72 +++++++++++++++++++++++++++++++++++---------
+ android_configure.py | 73 +++++++++++++++++++++++++++++++++++---------
  configure.py         |  8 +++++
- 2 files changed, 65 insertions(+), 15 deletions(-)
+ 2 files changed, 66 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..dfec53e67e 100644
+index 5cea0393f4..323f1e9481 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,14 @@
@@ -68,13 +68,13 @@ index 5cea0393f4..dfec53e67e 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,66 @@ elif platform.system() == "Linux":
+@@ -65,13 +54,67 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
 +# nodejs-mobile patch: add host CC and CXX
-+os.environ['CC_host'] = os.popen('command -v clang').read().strip()
-+os.environ['CXX_host'] = os.popen('command -v clang++').read().strip()
++os.environ.setdefault('CC_host', shutil.which('clang-19') or shutil.which('clang') or 'clang')
++os.environ.setdefault('CXX_host', shutil.which('clang++-19') or shutil.which('clang++') or 'clang++')
 +
 +# nodejs-mobile patch: route every compile through sccache, but only when the
 +# caller opts in (CI sets NODEJS_MOBILE_SCCACHE=1 next to the
@@ -112,10 +112,11 @@ index 5cea0393f4..dfec53e67e 100644
 +print("\033[92mInfo: \033[0m" + "Build flavor: " + flavor)
 +
 +intl = "small-icu"
-+extra_flags = ""
++# Node 26 mobile: libffi targets and Rust/Temporal cross-build are not ported.
++extra_flags = " --without-ffi --v8-disable-temporal-support"
 +if flavor == "lite":
 +    intl = "none"
-+    extra_flags = " --without-amaro --without-inspector --without-sqlite"
++    extra_flags += " --without-amaro --without-inspector --without-sqlite"
 +    # Pointer compression: 32-bit compressed pointers inside a 4GB cage — the
 +    # size lever on the JS heap rather than on the binary. lite only, because it
 +    # changes the V8 ABI for addons that include V8's headers directly (N-API
@@ -137,10 +138,10 @@ index 5cea0393f4..dfec53e67e 100644
 -    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --cross-compiling")
 +    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --with-intl=" + intl + extra_flags + " --cross-compiling --shared")
 diff --git a/configure.py b/configure.py
-index 3c3b5a3492..aef22790bc 100755
+index 7b82e0c5e8..97bb74cf6a 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1146,6 +1146,11 @@ parser.add_argument('-C',
+@@ -1230,6 +1230,11 @@ parser.add_argument('-C',
      default=None,
      help=argparse.SUPPRESS)
  
@@ -152,7 +153,7 @@ index 3c3b5a3492..aef22790bc 100755
  parser.add_argument('--clang-cl',
      action='store',
      dest='clang_cl',
-@@ -1655,6 +1660,9 @@ def configure_node_cctest_sources(o):
+@@ -1809,6 +1814,9 @@ def configure_node_cctest_sources(o):
      SearchFiles('test/cctest', 'h')
  
  def configure_node(o):

@@ -25,14 +25,14 @@ on:
   workflow_dispatch:
 
 env:
-  ANDROID_NDK_VERSION: r27d
+  ANDROID_NDK_VERSION: r29
   ANDROID_TARGET_SDK_VERSION: 24
   # x86_64 runs natively on the runner CPU under KVM, so the emulator is fast.
   TARGET_ARCH: x86_64
   EMULATOR_API_LEVEL: 30
   # testnode app/build.gradle pins this NDK for the CMake step that links the
   # prebuilt libnode.so; install it explicitly (see "Install testnode app NDK").
-  TESTNODE_NDK_VERSION: 27.3.13750724
+  TESTNODE_NDK_VERSION: 29.0.14206865
   # Only build the ABI the emulator runs; CMake imports a libnode.so per ABI.
   ORG_GRADLE_PROJECT_testnodeAbis: x86_64
 

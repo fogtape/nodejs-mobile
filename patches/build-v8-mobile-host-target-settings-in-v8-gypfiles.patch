@@ -21,10 +21,10 @@ Co-authored-by: DiamondYuan <541832074@qq.com>
  2 files changed, 102 insertions(+), 19 deletions(-)
 
 diff --git a/tools/v8_gypfiles/toolchain.gypi b/tools/v8_gypfiles/toolchain.gypi
-index e614c39a6b..711428f898 100644
+index 5aa9d020a9..64ea114ca5 100644
 --- a/tools/v8_gypfiles/toolchain.gypi
 +++ b/tools/v8_gypfiles/toolchain.gypi
-@@ -598,6 +598,20 @@
+@@ -612,6 +612,20 @@
            }],
          ],
        }],
@@ -46,10 +46,10 @@ index e614c39a6b..711428f898 100644
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index f90a29d102..b814fee544 100644
+index 945aa0aa50..f5209e9140 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
-@@ -868,6 +868,15 @@
+@@ -856,6 +856,15 @@
        'direct_dependent_settings': {
          'sources': ['<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources = ")'],
          'conditions': [
@@ -65,7 +65,7 @@ index f90a29d102..b814fee544 100644
            ['v8_target_arch=="ia32"', {
              'sources': [
                '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources =.*?v8_current_cpu == \\"x86\\".*?v8_compiler_sources \\+= ")',
-@@ -930,6 +939,11 @@
+@@ -918,6 +927,11 @@
        'target_name': 'v8_compiler_for_mksnapshot_source_set',
        'type': 'static_library',
        'toolsets': ['host', 'target'],
@@ -77,7 +77,7 @@ index f90a29d102..b814fee544 100644
        'dependencies': [
          'generate_bytecode_builtins_list',
          'run_torque',
-@@ -939,13 +953,9 @@
+@@ -927,13 +941,9 @@
          'v8_libbase',
          'v8_shared_internal_headers',
          'v8_pch',
@@ -94,7 +94,7 @@ index f90a29d102..b814fee544 100644
        ],
      },  # v8_compiler_for_mksnapshot_source_set
      {
-@@ -965,11 +975,12 @@
+@@ -952,11 +962,12 @@
          'abseil.gyp:abseil',
        ],
        'conditions': [
@@ -112,7 +112,7 @@ index f90a29d102..b814fee544 100644
          ['v8_enable_turbofan==1', {
            'dependencies': ['v8_compiler_sources'],
          }, {
-@@ -1184,7 +1195,7 @@
+@@ -1191,7 +1202,7 @@
            'conditions': [
              ['v8_enable_webassembly==1', {
                'conditions': [
@@ -121,7 +121,7 @@ index f90a29d102..b814fee544 100644
                    'sources': [
                      '<(V8_ROOT)/src/trap-handler/handler-inside-posix.cc',
                      '<(V8_ROOT)/src/trap-handler/handler-outside-posix.cc',
-@@ -1327,7 +1338,8 @@
+@@ -1334,7 +1345,8 @@
          # Platforms that don't have Compare-And-Swap (CAS) support need to link atomic library
          # to implement atomic memory access.
          # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
@@ -131,7 +131,7 @@ index f90a29d102..b814fee544 100644
            'link_settings': {
              'libraries': ['-latomic', ],
            },
-@@ -1477,6 +1489,8 @@
+@@ -1484,6 +1496,8 @@
              '<(V8_ROOT)/src/base/platform/platform-posix.h',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.cc',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.h',
@@ -140,7 +140,7 @@ index f90a29d102..b814fee544 100644
            ],
            'link_settings': {
              'target_conditions': [
-@@ -1489,9 +1503,18 @@
+@@ -1496,9 +1510,18 @@
            },
            'target_conditions': [
              ['_toolset=="host"', {
@@ -162,7 +162,7 @@ index f90a29d102..b814fee544 100644
                ],
              }, {
                'sources': [
-@@ -2073,12 +2096,14 @@
+@@ -2078,12 +2101,14 @@
              ],
            }, { # 'OS!="win"'
              'conditions': [
@@ -179,7 +179,7 @@ index f90a29d102..b814fee544 100644
                  'sources': [
                    '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                  ],
-@@ -2294,6 +2319,46 @@
+@@ -2301,6 +2326,46 @@
        },
      },  # postmortem-metadata
  
@@ -226,7 +226,7 @@ index f90a29d102..b814fee544 100644
      {
        'target_name': 'v8_zlib',
        'type': 'static_library',
-@@ -2308,6 +2373,10 @@
+@@ -2315,6 +2380,10 @@
              }]
            ]
          }],

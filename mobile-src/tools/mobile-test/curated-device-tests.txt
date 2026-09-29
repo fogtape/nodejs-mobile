@@ -13,7 +13,6 @@
 parallel/test-abort-controller-any-timeout
 parallel/test-assert
 parallel/test-assert-checktag
-parallel/test-assert-fail-deprecation
 parallel/test-async-hooks-async-await
 parallel/test-async-hooks-destroy-on-gc
 parallel/test-async-hooks-enable-disable-enable
@@ -26,7 +25,6 @@ parallel/test-buffer-includes
 parallel/test-compression-decompression-stream
 parallel/test-crypto
 parallel/test-crypto-argon2-unsupported
-parallel/test-crypto-boringssl-evp-list
 parallel/test-crypto-default-shake-lengths
 parallel/test-crypto-dh-constructor
 parallel/test-crypto-dh-group-setters

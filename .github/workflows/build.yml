@@ -7,9 +7,9 @@ on:
   # `pull_request`, never `pull_request_target`: fork PRs must not get the
   # BrowserStack secrets or contents:write.
   push:
-    branches: [recipe]
+    branches: [recipe, recipe-v26]
   pull_request:
-    branches: [recipe]
+    branches: [recipe, recipe-v26]
   workflow_dispatch:
 
 # One run per PR/branch. cancel-in-progress ONLY for pull_request: a push to
@@ -54,7 +54,7 @@ env:
   # it), so they belong at workflow scope rather than on a step.
   SCCACHE_LOG: warn
   SCCACHE_ERROR_LOG: /tmp/sccache-errors.log
-  ANDROID_NDK_VERSION: r27d
+  ANDROID_NDK_VERSION: r29
   ANDROID_TARGET_SDK_VERSION: 24
   # Flavor is a per-job matrix dimension ([full, lite]) so every Build
   # produces both binaries and the curated device gate covers both (see
@@ -70,6 +70,28 @@ permissions:
   contents: read
 
 jobs:
+  package-preview:
+    if: github.ref == 'refs/heads/recipe-v26'
+    needs: [ci-required, curated-tests-android, curated-tests-ios]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: nodejs-mobile-*
+          path: preview-input
+      - name: Package versioned previews
+        run: python3 scripts/package-preview.py preview-input preview-packages
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nodejs-mobile-26.1.0-0-preview
+          path: preview-packages
+          retention-days: 90
+          if-no-files-found: error
+
   # Flavor matrices are inline expressions, not a helper job (a full VM boot
   # to echo two constants earns nothing). Android always runs both flavors
   # (ubuntu+KVM is 1x-billed and plentiful); iOS drops to full-only on
@@ -132,7 +154,9 @@ jobs:
       - name: Install build utils
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
+          sudo apt-get install -y gcc-multilib g++-multilib clang-19
+          echo "CC_host=clang-19" >> "$GITHUB_ENV"
+          echo "CXX_host=clang++-19" >> "$GITHUB_ENV"
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
@@ -374,7 +398,7 @@ jobs:
 
           python3.12 -m venv .
           source bin/activate
-          python3.12 -m pip install setuptools
+          python3.12 -m pip install setuptools packaging
           ./tools/ios_framework_prepare.sh $TARGET_ARCH
 
       # See build-android's Save step.
@@ -509,14 +533,14 @@ jobs:
         run: |
           python3.12 -m venv .
           source bin/activate
-          python3.12 -m pip install setuptools
-          ./configure
+          python3.12 -m pip install setuptools packaging
+          ./configure --without-ffi --v8-disable-temporal-support
 
       - name: Combine
         run: |
           python3.12 -m venv .
           source bin/activate
-          python3.12 -m pip install setuptools
+          python3.12 -m pip install setuptools packaging
           ./tools/ios_framework_prepare.sh combine_frameworks
           mkdir -p artifacts/include
           cp -R out_ios/NodeMobile.xcframework artifacts/
@@ -713,8 +737,8 @@ jobs:
         run: |
           python3.12 -m venv .
           source bin/activate
-          python3.12 -m pip install setuptools
-          ./configure
+          python3.12 -m pip install setuptools packaging
+          ./configure --without-ffi --v8-disable-temporal-support
 
       - name: Build node target
         env:

@@ -21,10 +21,10 @@ Co-authored-by: Julia Samól <j.samol@papers.ch>
  2 files changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 988838e858..66fea75c62 100644
+index b129c3db8d..8a7647275e 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -68,6 +68,11 @@
+@@ -69,6 +69,11 @@
        'deps/acorn/acorn/dist/acorn.js',
        'deps/acorn/acorn-walk/dist/walk.js',
        'deps/minimatch/index.js',
@@ -36,7 +36,7 @@ index 988838e858..66fea75c62 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -925,7 +930,8 @@
+@@ -1086,7 +1091,8 @@
              '<@(node_quic_sources)',
            ],
          }],
@@ -46,7 +46,7 @@ index 988838e858..66fea75c62 100644
            'target_arch=="x64" and '
            'node_target_type=="executable"', {
            'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
-@@ -1407,8 +1413,9 @@
+@@ -1431,8 +1437,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -58,7 +58,7 @@ index 988838e858..66fea75c62 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1629,7 +1636,8 @@
+@@ -1657,7 +1664,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -69,10 +69,10 @@ index 988838e858..66fea75c62 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 6587270c9e..ffce5184cd 100644
+index 3636633c62..49559662d7 100644
 --- a/node.gypi
 +++ b/node.gypi
-@@ -264,6 +264,11 @@
+@@ -271,6 +271,11 @@
          'NODE_PLATFORM="darwin"',
        ],
      }],
@@ -84,7 +84,7 @@ index 6587270c9e..ffce5184cd 100644
      [ 'OS=="freebsd"', {
        'libraries': [
          '-lutil',
-@@ -342,7 +347,7 @@
+@@ -349,7 +354,7 @@
          ],
        },
      }],
@@ -93,7 +93,7 @@ index 6587270c9e..ffce5184cd 100644
        'cflags!': [ '-O3' ],
        'ldflags': [ '--coverage',
                     '-g',
-@@ -390,11 +395,15 @@
+@@ -397,11 +402,15 @@
            'defines': [ 'OPENSSL_API_COMPAT=0x10100000L', ],
            'dependencies': [
              './deps/openssl/openssl.gyp:openssl',
@@ -112,7 +112,7 @@ index 6587270c9e..ffce5184cd 100644
              # -force_load or --whole-archive are not applicable for
              # the static library
              [ 'force_load=="true"', {
-@@ -461,5 +470,10 @@
+@@ -478,5 +487,10 @@
      }, {
        'defines': [ 'HAVE_QUIC=0' ]
      }],

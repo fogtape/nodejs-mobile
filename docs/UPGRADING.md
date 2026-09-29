@@ -1,5 +1,9 @@
 # Updating nodejs-mobile to a newer upstream Node.js
 
+Choose the maintained major branch first: `recipe` for Node 24 or
+`recipe-v26` for Node 26. Upgrade and submit PRs within that line; never
+replace the Node 24 base with Node 26. See [VERSION-LINES.md](VERSION-LINES.md).
+
 Bumping to a newer upstream Node.js release means re-basing the patch
 series onto the new tag. There is no branch rebasing and no force-pushing —
 the patches are files, and the upgrade is an ordinary reviewable PR.

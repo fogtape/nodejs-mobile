@@ -6,9 +6,9 @@ name: Verify recipe branch
 # Fast (no compilation): clone + git am + overlay + tree hash.
 on:
   push:
-    branches: [recipe]
+    branches: [recipe, recipe-v26]
   pull_request:
-    branches: [recipe]
+    branches: [recipe, recipe-v26]
   workflow_dispatch:
 
 # One run per PR/branch; a new PR commit supersedes the previous run. Pushes to
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      ANDROID_NDK_VERSION: r27d
+      ANDROID_NDK_VERSION: r29
       ANDROID_TARGET_SDK_VERSION: '24'
     steps:
       - uses: actions/checkout@v7
@@ -239,7 +239,7 @@ jobs:
       - name: Install Python build deps
         run: |
           python3.13 -m pip install --upgrade pip
-          python3.13 -m pip install setuptools
+          python3.13 -m pip install setuptools packaging
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0

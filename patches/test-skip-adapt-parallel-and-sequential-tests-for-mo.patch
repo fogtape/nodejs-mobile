@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1498 +++++++++++++++++
+ test/parallel/parallel.status                 | 1532 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -30,7 +30,6 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-readdir-ucs2.js         |    2 +-
  test/parallel/test-fs-realpath-native.js      |    7 +
  test/parallel/test-fs-realpath.js             |    8 +-
- test/parallel/test-fs-rmdir-recursive.js      |    6 +
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
  test/parallel/test-fs-watchfile.js            |    4 +-
@@ -51,17 +50,34 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1808 insertions(+), 46 deletions(-)
+ 34 files changed, 1836 insertions(+), 46 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..f52cc544b2 100644
+index 5c7fe47927..93ae8d01eb 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1504 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -156,6 +156,1538 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
 +[$system==android]
++# Node 26 additions: inferred skips, to be confirmed by device tests.
++# These tests spawn a child Node process (including snapshot.spawnAndAssert).
++test-ffi-missing-build: SKIP
++test-node-output-v8-warning: SKIP
++test-permission-net-fetch: SKIP
++test-permission-net-http: SKIP
++test-permission-net-https: SKIP
++test-permission-net-tcp: SKIP
++test-repl-user-error-handler: SKIP
++# Permission flags deny the harness write of its sandbox verdict.
++test-permission-net-allowed: SKIP
++test-permission-net-dns: SKIP
++test-permission-net-udp: SKIP
++test-permission-net-uds: SKIP
++test-permission-net-warning: SKIP
++test-permission-net-websocket: SKIP
++
 +#
 +# Added by the v24.21.0 rebase: new upstream tests that cannot run on a mobile
 +# embedder. The child-process spawners use process.execPath, which is
@@ -723,6 +739,23 @@ index d13efc8ac1..f52cc544b2 100644
 +#
 +test-worker-cleanup-handles: PASS, FLAKY
 +[$system==ios]
++# Node 26 additions: inferred skips, to be confirmed by device tests.
++# These tests spawn a child Node process (including snapshot.spawnAndAssert).
++test-ffi-missing-build: SKIP
++test-node-output-v8-warning: SKIP
++test-permission-net-fetch: SKIP
++test-permission-net-http: SKIP
++test-permission-net-https: SKIP
++test-permission-net-tcp: SKIP
++test-repl-user-error-handler: SKIP
++# Permission flags deny the harness write of its sandbox verdict.
++test-permission-net-allowed: SKIP
++test-permission-net-dns: SKIP
++test-permission-net-udp: SKIP
++test-permission-net-uds: SKIP
++test-permission-net-warning: SKIP
++test-permission-net-websocket: SKIP
++
 +#
 +# Added by the v24.21.0 rebase: new upstream tests that cannot run on a mobile
 +# embedder. The child-process spawners use process.execPath, which is
@@ -1576,7 +1609,7 @@ index daf7f8064b..76c2ce82dd 100644
          assert.strictEqual(recvBufferSize, expectedBufferSize);
          assert.strictEqual(sendBufferSize, expectedBufferSize);
 diff --git a/test/parallel/test-dgram-membership.js b/test/parallel/test-dgram-membership.js
-index 052deb92d6..19e9b0e81e 100644
+index ebfdaa9cb6..8414b251c8 100644
 --- a/test/parallel/test-dgram-membership.js
 +++ b/test/parallel/test-dgram-membership.js
 @@ -108,7 +108,10 @@ const setup = dgram.createSocket.bind(dgram, { type: 'udp4', reuseAddr: true });
@@ -1676,7 +1709,7 @@ index 55478247f6..cdfaaa0b88 100644
    tmpdir.refresh();
    const file = tmpdir.resolve('a.js');
 diff --git a/test/parallel/test-fs-promises.js b/test/parallel/test-fs-promises.js
-index 5866c685f5..d27a5fe1be 100644
+index 07f01187e8..84fc6097fe 100644
 --- a/test/parallel/test-fs-promises.js
 +++ b/test/parallel/test-fs-promises.js
 @@ -321,7 +321,8 @@ async function executeOnHandle(dest, func) {
@@ -1787,23 +1820,6 @@ index 6ad074397e..c27aee2759 100644
    try { fs.unlinkSync(link); } catch {
      // Continue regardless of error.
    }
-diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
-index 77c205794b..4c52904b43 100644
---- a/test/parallel/test-fs-rmdir-recursive.js
-+++ b/test/parallel/test-fs-rmdir-recursive.js
-@@ -7,6 +7,12 @@ const fs = require('fs');
- const path = require('path');
- const { validateRmdirOptions } = require('internal/fs/utils');
- 
-+if (common.isIOS || common.isAndroid) {
-+  // Change the working dir for what would be expected of the test framework
-+  // running in a Desktop environment.
-+  process.chdir(path.join(__dirname, '..', '..'));
-+}
-+
- common.expectWarning(
-   'DeprecationWarning',
-   'In future versions of Node.js, fs.rmdir(path, { recursive: true }) ' +
 diff --git a/test/parallel/test-fs-stat.js b/test/parallel/test-fs-stat.js
 index 93bf6573a1..b323f665a8 100644
 --- a/test/parallel/test-fs-stat.js
@@ -2067,7 +2083,7 @@ index a2df7d580d..eeb6c1de91 100644
 +
 +assert.deepStrictEqual(process.getActiveResourcesInfo(), expected);
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index b670ff37ac..68724daf7f 100644
+index 14ac88d76c..cdfe2e266b 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
 @@ -2,8 +2,15 @@
@@ -2098,7 +2114,7 @@ index b670ff37ac..68724daf7f 100644
  
  const hasUndici = process.config.variables.node_builtin_shareable_builtins.includes('deps/undici/undici.js');
  const hasAmaro = process.config.variables.node_builtin_shareable_builtins.includes('deps/amaro/dist/index.js');
-@@ -111,11 +121,17 @@ for (let i = 0; i < expected_keys.length; i++) {
+@@ -128,11 +138,17 @@ for (let i = 0; i < expected_keys.length; i++) {
  assert.strictEqual(process.config.variables.napi_build_version,
                     process.versions.napi);
  
@@ -2208,10 +2224,10 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 01a021130c..059f682010 100644
+index 627e61911d..7a4e74ce4a 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -39,6 +39,135 @@ test-perf-hooks: SKIP
+@@ -43,6 +43,135 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  

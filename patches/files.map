@@ -46,7 +46,6 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-readdir-ucs2.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath-native.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-realpath.js
-test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-rmdir-recursive.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-stat.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watch.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watchfile.js
@@ -101,11 +100,10 @@ ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/post-releas
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/remark-lint-problem-matcher.json
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/scorecard.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stale.yml
-ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/stress-test.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-internet.yml
-ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-linux-quic.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-linux.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-macos.yml
+ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/test-shared.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/timezone-update.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/tools.yml
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/update-openssl.yml

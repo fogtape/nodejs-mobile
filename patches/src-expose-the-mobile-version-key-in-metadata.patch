@@ -15,12 +15,12 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  2 files changed, 14 insertions(+)
 
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 1458bf48d6..8da97400ae 100644
+index b91b1b4881..e7ffe0457e 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -48,6 +48,10 @@
- #include <unicode/uversion.h>
- #endif  // NODE_HAVE_I18N_SUPPORT
+@@ -55,6 +55,10 @@
+ #include "LIEF/version.h"
+ #endif
  
 +#ifdef NODE_MOBILE
 +#include "node_mobile_version.h"
@@ -29,7 +29,7 @@ index 1458bf48d6..8da97400ae 100644
  namespace node {
  
  namespace per_process {
-@@ -116,6 +120,9 @@ Metadata::Versions::Versions() {
+@@ -130,6 +134,9 @@ Metadata::Versions::Versions() {
        NODE_STRINGIFY(LLHTTP_VERSION_MINOR)
        "."
        NODE_STRINGIFY(LLHTTP_VERSION_PATCH);
@@ -40,7 +40,7 @@ index 1458bf48d6..8da97400ae 100644
    brotli =
      std::to_string(BrotliEncoderVersion() >> 24) +
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 8703e4315a..6f85755b8f 100644
+index 57043a0356..e1ad03281c 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -82,6 +82,12 @@ namespace node {
@@ -56,11 +56,11 @@ index 8703e4315a..6f85755b8f 100644
  #if HAVE_SQLITE
  #define NODE_VERSIONS_KEY_SQLITE(V) V(sqlite)
  #else
-@@ -92,6 +98,7 @@ namespace node {
+@@ -104,6 +110,7 @@ namespace node {
    NODE_VERSIONS_KEYS_BASE(V)                                                   \
    NODE_VERSIONS_KEY_CRYPTO(V)                                                  \
    NODE_VERSIONS_KEY_INTL(V)                                                    \
 +  NODE_VERSIONS_KEY_MOBILE(V)                                                  \
-   NODE_VERSIONS_KEY_SQLITE(V)
- 
- #define V(key) +1
+   NODE_VERSIONS_KEY_SQLITE(V)                                                  \
+   NODE_VERSIONS_KEY_LIBFFI(V)                                                  \
+   NODE_VERSIONS_KEY_LIEF(V)

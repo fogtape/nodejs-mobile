@@ -42,7 +42,8 @@ V8_LITE_MODE="--v8-lite-mode"
 # TurboFan, so it must go too (it defaults on for arm64).
 V8_NO_TURBOFAN_GYP_DEFINES="v8_enable_turbofan=0"
 V8_DISABLE_MAGLEV="--v8-disable-maglev"
-LITE_FLAGS=""
+# Node 26 mobile features awaiting platform integration.
+LITE_FLAGS="--without-ffi --v8-disable-temporal-support"
 if [ "$FLAVOR" = "lite" ]; then
   INTL="none"
   # lite additionally drops features size-constrained consumers don't need.
@@ -53,7 +54,7 @@ if [ "$FLAVOR" = "lite" ]; then
   # most 7.375GB of address space, so that reservation can never succeed and V8
   # aborts the process during Isolate init. See "Pointer compression" in
   # docs/BUILDING.md on the recipe branch.
-  LITE_FLAGS="--without-amaro --without-inspector --without-sqlite"
+  LITE_FLAGS="$LITE_FLAGS --without-amaro --without-inspector --without-sqlite"
 fi
 
 declare -a outputs_common=(
@@ -66,14 +67,8 @@ declare -a outputs_common=(
   "libmerve.a"
   "libnbytes.a"
   "libncrypto.a"
-  # v24.20.0 split EnginePointer out of ncrypto into its own target; libnode_base
-  # references it, so the framework link needs the archive too.
-  "libncrypto_engine.a"
   "libnghttp2.a"
   "libnode.a"
-  # node's own objects; upstream v24.19.0 split them out of libnode into the
-  # node_base target, leaving libnode holding only the snapshot stub.
-  "libnode_base.a"
   "libopenssl.a"
   "libsimdjson.a"
   "libsimdutf.a"

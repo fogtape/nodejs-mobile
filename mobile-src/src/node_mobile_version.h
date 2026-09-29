@@ -3,8 +3,8 @@
 
 #include "node_version.h"
 
-#define NODE_MOBILE_MAJOR_VERSION 24
-#define NODE_MOBILE_MINOR_VERSION 21
+#define NODE_MOBILE_MAJOR_VERSION 26
+#define NODE_MOBILE_MINOR_VERSION 1
 #define NODE_MOBILE_PATCH_VERSION 0
 
 // Mobile rebuild revision of the same upstream Node version: the -R in the

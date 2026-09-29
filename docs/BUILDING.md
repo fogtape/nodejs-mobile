@@ -1,5 +1,10 @@
 # Build Instructions
 
+These instructions describe the Node 26 line (`recipe-v26`). For Node 24,
+use the `recipe` branch and its toolchain instructions. See
+[VERSION-LINES.md](VERSION-LINES.md) for the maintenance policy and the
+Node 26 FFI/Temporal omissions.
+
 nodejs-mobile builds one native library per target, and **each target builds on
 one host OS only:**
 
@@ -30,7 +35,7 @@ does the same:
 ```sh
 python3.13 -m venv .venv
 . .venv/bin/activate
-pip install setuptools
+pip install setuptools packaging
 ```
 
 ---
@@ -40,14 +45,15 @@ pip install setuptools
 ### Prerequisites
 
 ```sh
-sudo apt-get install -y build-essential git gcc-multilib g++-multilib
+sudo apt-get install -y build-essential git gcc-multilib g++-multilib clang-19
+export CC_host=clang-19 CXX_host=clang++-19
 ```
 
-Install Android NDK **r27d** (`27.3.13750724`) via the SDK Manager (the
-`ubuntu-24.04` GitHub runner already ships an NDK 27 at `$ANDROID_NDK_LATEST_HOME`):
+Install Android NDK **r29** (`29.0.14206865`) via the SDK Manager (the
+CI installs this exact NDK version):
 
 ```sh
-sdkmanager "ndk;27.3.13750724"
+sdkmanager "ndk;29.0.14206865"
 ```
 
 ### 1) Get a source tree
@@ -55,7 +61,7 @@ sdkmanager "ndk;27.3.13750724"
 This repository holds the recipe, not the source. Generate a tree from it:
 
 ```sh
-git clone -b recipe https://github.com/nodejs-mobile/nodejs-mobile
+git clone -b recipe-v26 https://github.com/fogtape/nodejs-mobile
 cd nodejs-mobile && scripts/prepare.sh && cd out
 ```
 
@@ -68,12 +74,12 @@ All the build commands below run from that `out/` directory. A release tag
 ./tools/android_build.sh <ndk-path> <sdk-version> [arch]
 ```
 
-- `<ndk-path>` — the installed NDK, e.g. `~/Android/Sdk/ndk/27.3.13750724`
+- `<ndk-path>` — the installed NDK, e.g. `~/Android/Sdk/ndk/29.0.14206865`
 - `<sdk-version>` — minimum Android SDK version as a number, e.g. `24`
 - `[arch]` — `arm`, `arm64`, or `x86_64`; omit to build all three.
 
 ```sh
-./tools/android_build.sh ~/Android/Sdk/ndk/27.3.13750724 24
+./tools/android_build.sh ~/Android/Sdk/ndk/29.0.14206865 24
 ```
 
 Output: `out_android/<abi>/libnode.so` for each ABI (`armeabi-v7a`, `arm64-v8a`,

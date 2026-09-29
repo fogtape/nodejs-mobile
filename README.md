@@ -9,11 +9,19 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 24** (`v24.18.0`). `process.version` reports the
+Current line: **Node.js 26** (`v26.1.0`, CI preview).
+The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
+See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
+build instructions and download locations. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (e.g. `"24.18.0-0"`).
+mobile build is identified by `process.versions.mobile` (e.g. `"26.1.0-0"`).
 
 ## Get it
+
+Node 26 preview packages are available from successful **Build** runs on
+`recipe-v26`. Published Node 24 assets remain on the Releases page.
+The Node 26 port currently disables `node:ffi` and Temporal in both flavors;
+see [version-specific configuration](docs/VERSION-LINES.md#node-26-configuration).
 
 Download the zips from [Releases](../../releases) — four per release:
 
@@ -42,7 +50,7 @@ for building one — about 1.5 MB instead of a 1 GB fork:
 
 | | |
 |---|---|
-| `upstream-base.txt` | the pinned upstream release tag (`v24.18.0`) |
+| `upstream-base.txt` | the pinned upstream release tag (`v26.1.0`) |
 | `patches/` | per-concern patches to upstream files, plus `series` (apply order) and `files.map` (which patch owns which file) |
 | `mobile-src/` | files that have no upstream counterpart — build scripts, the iOS framework project, test apps and harness |
 | `expected-tree.txt` | the git tree hash the reconstruction must produce |

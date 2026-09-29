@@ -35,6 +35,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Require the stable release line
+        run: |
+          [ "$GITHUB_REF_NAME" = recipe ] || { echo "::error::The Node 26 line currently produces CI preview packages; use the Build workflow on recipe-v26."; exit 1; }
+
       - name: Compute next version
         id: v
         run: |
