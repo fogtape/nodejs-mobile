@@ -222,6 +222,14 @@ header itself, its merge becomes the release directly — both work.)
 
 ## Cross-major upgrades (e.g. v24 → v26)
 
+This fork maintains Node 24 on `recipe` and Node 26 on `recipe-v26`.
+Start maintenance work from the matching branch and open PRs against that
+same branch. Keep major upgrades isolated; do not merge `recipe-v26` into
+`recipe`. Shared fixes should be cherry-picked and tested separately.
+The [version-line guide](https://github.com/fogtape/nodejs-mobile/blob/recipe-v26/docs/VERSION-LINES.md)
+records each line's toolchain and artifact policy.
+
+
 Same procedure, larger blast radius: bump the base to the new major's LTS
 tag and expect several patches to need rework or deletion (upstream may
 have absorbed or obsoleted them — each patch body records *why* it exists
