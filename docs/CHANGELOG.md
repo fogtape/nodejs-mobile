@@ -43,13 +43,34 @@
 <a id="26.1.0-0"></a>
 ## 2026-09-29, Version 26.1.0-0 (Current)
 
-- Add an independent Node 26 recipe line while retaining Node 24 maintenance.
-- Rebase the mobile patches onto official Node.js 26.1.0 and V8 14.6.
-- Use Android NDK r29 and update the iOS static-library composition.
-- Fix iOS compilation of Wasm-only V8 debug metadata and framework linking
-  of the Node snapshot stub in both full and lite builds.
-- Explicitly disable `node:ffi` and Temporal pending mobile integration.
-- Produce versioned CI preview packages; this entry does not mark a public release.
+First prerelease of the independent Node 26 line, built from official
+Node.js **26.1.0** and V8 **14.6**. Node 24.21.0 continues on `recipe` with
+its existing releases; this prerelease does not replace that line.
+
+- **Android:** build with NDK r29 for arm64-v8a, armeabi-v7a and x86_64,
+  retaining the 16 KB page-size link settings.
+- **iOS:** provide arm64 device and simulator framework slices. Fix
+  Wasm-only V8 metadata generation and snapshot-stub linking for full and
+  lite frameworks.
+- **Tests:** use a short relative socket path in the mobile pipe-error test,
+  preserving its original error assertions within long iOS app-container
+  paths.
+- **Build reuse:** retain exact completed-library caches and persist local
+  sccache objects between non-release runs, including failed compilations.
+- **Downloads:** four Android/iOS full/lite archives and `SHA256SUMS`.
+  `process.version` is `v26.1.0`; `process.versions.mobile` is `26.1.0-0`.
+
+**Compatibility:** `node:ffi` and Temporal are disabled in both flavors.
+iOS uses jitless V8 and the bundled WebAssembly polyfill. The lite flavor
+also omits ICU, the inspector, SQLite and TypeScript type-stripping; see
+`docs/BUILDING.md` on the recipe branch. Rebuild native addons that depend
+on V8 or the Node C++ API, and validate Node-API addons with the chosen
+platform and flavor.
+
+Publication is gated by the platform build matrix, host verification, boot
+and native-addon smokes, curated tests and full Android-emulator/iOS-simulator
+test suites. This mirror has no physical-device test coverage.
+
 
 <a id="24.21.0-0"></a>
 ## 2026-09-14, Version 24.21.0-0
