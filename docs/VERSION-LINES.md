@@ -49,7 +49,9 @@ Rust cross-compilation and linking setup. These omissions apply to both
 full and lite builds; they must not be described as full desktop feature
 parity. The existing lite feature reductions still apply.
 
-iOS keeps its jitless V8 configuration and WebAssembly polyfill. Native
+iOS keeps its jitless V8 configuration and WebAssembly polyfill. The Node 26
+patches also guard a Wasm-only V8 postmortem metadata offset so the generated
+debug support compiles with native WebAssembly disabled. Native
 addons using V8 or the Node C++ API must be rebuilt for Node 26. Test
 Node-API addons against the chosen platform and flavor as well.
 

@@ -24,6 +24,7 @@ deps-v8-disable-trap-handler-mobile-platform-tweaks.patch	deps/v8/src/base/platf
 deps-v8-disable-trap-handler-mobile-platform-tweaks.patch	deps/v8/src/heap/base/asm/x64/push_registers_asm.cc
 deps-v8-disable-trap-handler-mobile-platform-tweaks.patch	deps/v8/src/trap-handler/handler-outside.cc
 deps-v8-disable-trap-handler-mobile-platform-tweaks.patch	deps/v8/src/trap-handler/trap-handler.h
+deps-v8-guard-Wasm-only-postmortem-metadata.patch	deps/v8/tools/gen-postmortem-metadata.py
 deps-cares-guard-sys-random.h-on-iOS.patch	deps/cares/config/darwin/ares_config.h
 deps-mobile-gyp-tweaks-zlib-openssl.patch	deps/openssl/openssl_no_asm.gypi
 deps-mobile-gyp-tweaks-zlib-openssl.patch	deps/zlib/zlib.gyp

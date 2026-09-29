@@ -10,6 +10,7 @@ src-expose-the-mobile-version-key-in-metadata.patch
 src-crypto-mobile-adjustment-in-crypto_context.cc.patch
 deps-uv-mobile-libuv-patches.patch
 deps-v8-disable-trap-handler-mobile-platform-tweaks.patch
+deps-v8-guard-Wasm-only-postmortem-metadata.patch
 deps-cares-guard-sys-random.h-on-iOS.patch
 deps-mobile-gyp-tweaks-zlib-openssl.patch
 test-mobile-test-harness.patch

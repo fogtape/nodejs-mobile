@@ -91,6 +91,7 @@ device legs.
 | crypto trust | `TARGET_OS_OSX` fences around macOS-only trust-settings API; iOS evaluates candidates via `SecTrustEvaluateWithError` | an iOS build doesn't link the macOS API. Gate: `test-mobile-system-ca` |
 | libuv | Android `copy_file_range` guard, iOS cpu-frequency guard, uv.gyp host sources | desktop assumptions in libuv that break on mobile kernels/SDKs |
 | v8 trap handler | `V8_TRAP_HANDLER_SUPPORTED false`; deletes upstream's `android-patches/` file | V8's own comment: enabling under Android signal handling needs security review; useless under jitless iOS. Upstream's configure-time `patch -f` mechanism mutates the tree mid-build and never ran for iOS — baked in instead |
+| v8 postmortem metadata | guard the generated `Map::kImmediateSupertypeOffset` reference with `V8_ENABLE_WEBASSEMBLY` | Node 26.1's accessor scanner otherwise emits this Wasm-only offset unconditionally, breaking compilation when iOS disables native Wasm |
 | c-ares | darwin config: `HAVE_SYS_RANDOM_H` guarded to macOS | the iOS SDK has no `<sys/random.h>`; c-ares falls back to `arc4random_buf` |
 | deps gyp | zlib / openssl-no-asm conditionals | deps gypfiles that don't know the mobile OSes |
 | test harness | `common.isAndroid/isIOS`, test.py arch→system mapping, device `.status` sections | lets upstream's own runner drive a phone and skip whole unsupported categories |
@@ -103,7 +104,8 @@ device legs.
 
 | Branch | Role |
 |---|---|
-| `recipe` | the project: the recipe, the tooling, the docs, and all CI |
+| `recipe` | stable Node 24 recipe, tooling, documentation, and CI |
+| `recipe-v26` | independent Node 26 recipe and CI previews; see [VERSION-LINES.md](./VERSION-LINES.md) |
 | `mobile/v24` | frozen — a fully-materialized Node 24 tree, superseded by this branch |
 | `main` | frozen — the legacy Node 18 line |
 
