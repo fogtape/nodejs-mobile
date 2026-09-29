@@ -11,8 +11,10 @@ versioned together on that branch.
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published
-release assets. Shared fixes can be cherry-picked between the branches after
-testing against each branch's upstream base. Do not merge an entire Node 26
+release assets. The release ancestry refs are also independent:
+`upstream-base` for Node 24 and `upstream-base-v26` for Node 26 (only needed
+when preparing that line for publication). Shared fixes can be cherry-picked
+between the branches after testing against each branch's upstream base. Do not merge an entire Node 26
 upgrade into the Node 24 branch.
 
 ## Build a selected line
@@ -57,7 +59,9 @@ For Node 24, use the existing versioned assets on the repository's
 [Releases page](https://github.com/fogtape/nodejs-mobile/releases).
 
 For Node 26 previews, open a successful **Build** run on `recipe-v26` and
-download its artifacts. The combined artifacts are:
+download its artifacts. Versioned preview packaging requires the build,
+boot smokes, curated tests and full device suites to succeed. The combined
+artifacts are:
 
 - `nodejs-mobile-android`
 - `nodejs-mobile-android-lite`

@@ -920,6 +920,12 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          # Every Node 26 preview is a port validation, including manually
+          # dispatched builds; run the full device suite before packaging.
+          if [ "$GITHUB_REF" = refs/heads/recipe-v26 ]; then
+            echo "upgrade=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ github.event_name }}" != pull_request ]; then
             echo "not a pull request; upgrade=false"
             echo "upgrade=false" >> "$GITHUB_OUTPUT"
@@ -1122,16 +1128,21 @@ jobs:
           BASE=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]' || true)
           [ -n "$BASE" ] || { echo "::error::no base in upstream-base.txt"; exit 1; }
 
+          # Each major keeps an independent upstream ancestry ref.
+          MAJOR=${BASE#v}; MAJOR=${MAJOR%%.*}
+          BASE_REF=upstream-base
+          if [ "$MAJOR" != 24 ]; then BASE_REF="upstream-base-v${MAJOR}"; fi
+
           UPSTREAM=https://github.com/nodejs/node.git
           # ^{} peels the annotated tag to the commit it points at; upstream
           # release tags are annotated, so the unpeeled line is the tag object.
           WANT=$(git ls-remote "$UPSTREAM" "refs/tags/${BASE}^{}" | cut -f1)
           [ -n "$WANT" ] || { echo "::error::${BASE} is not a tag on nodejs/node"; exit 1; }
           HAVE=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" \
-            refs/heads/upstream-base | cut -f1)
+            refs/heads/${BASE_REF} | cut -f1)
 
           if [ "$WANT" = "$HAVE" ]; then
-            echo "upstream-base is at ${BASE} (${WANT})"
+            echo "${BASE_REF} is at ${BASE} (${WANT})"
             exit 0
           fi
 
@@ -1144,15 +1155,15 @@ jobs:
           # that exists but points somewhere else is still an error, since
           # that is real drift.
           if [ -z "$HAVE" ]; then
-            echo "::warning::upstream-base branch is not present in this repository; skipping the ancestry check for ${BASE}"
-            echo "  (to create it: git fetch https://github.com/nodejs/node.git refs/tags/${BASE} && git push --force --no-follow-tags <remote> ${WANT}:refs/heads/upstream-base)"
+            echo "::warning::${BASE_REF} branch is not present in this repository; skipping the ancestry check for ${BASE}"
+            echo "  (to create it: git fetch https://github.com/nodejs/node.git refs/tags/${BASE} && git push --force --no-follow-tags <remote> ${WANT}:refs/heads/${BASE_REF})"
             exit 0
           fi
 
-          echo "::error::upstream-base is at ${HAVE}, but ${BASE} is ${WANT}"
+          echo "::error::${BASE_REF} is at ${HAVE}, but ${BASE} is ${WANT}"
           cat >&2 <<EOF
 
-          upstream-base is at: ${HAVE:-(no such branch)}
+          ${BASE_REF} is at: ${HAVE:-(no such branch)}
           it must be at:       ${WANT}  (${BASE})
 
           Moving it is a manual step -- the push rewrites upstream's own
@@ -1161,7 +1172,7 @@ jobs:
           fork, with a remote you can push to:
 
             git fetch https://github.com/nodejs/node.git refs/tags/${BASE}
-            git push --force --no-follow-tags <remote> ${WANT}:refs/heads/upstream-base
+            git push --force --no-follow-tags <remote> ${WANT}:refs/heads/${BASE_REF}
 
           then re-run this job.
 

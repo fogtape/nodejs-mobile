@@ -31,7 +31,7 @@ nodejs-mobile-android-lite-X.Y.Z-R.zip   nodejs-mobile-ios-lite-X.Y.Z-R.zip
 ```
 
 **`full`** is the general-purpose binary — pick it unless size is critical.
-**`lite`** is ~30% smaller on iOS but drops ICU, the inspector,
+**`lite`** reduces size by dropping ICU, the inspector,
 `node:sqlite`, and TypeScript type-stripping (see
 [BUILDING.md](docs/BUILDING.md#the-lite-variant) for the
 full list and the caveats — the `Intl` one needs checking against your

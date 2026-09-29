@@ -156,7 +156,8 @@ patch-stack surface):
 Dead-code stripping (`--gc-sections`) applies to **both** Android flavors: the
 linker only discards unreferenced sections, so it costs no functionality.
 
-Measured shipping sizes (arm64, after symbol strip):
+Historical Node 24 shipping sizes (arm64, after symbol strip; these are
+not measurements of the Node 26 port):
 
 - **iOS:** the dead-code removal above cut the lite device slice
   **54.5 → 33.8 MB** (−38%); full shrinks by the same ~20 MB since every cut
