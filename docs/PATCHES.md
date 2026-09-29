@@ -81,7 +81,7 @@ device legs.
 |---|---|---|
 | configure wrappers | `android_configure.py`, `configure.py`: dest-os plumbing, host CC/CXX, opt-in sccache wrap, full/lite flavor switch | gyp must be told about ios/android; host tools need a native compiler in a cross-build; wrapper-level so `configure.py` stays nearly upstream-clean |
 | common.gypi | Apple xcode_settings per toolset, deployment targets; Android build-id + lite-only section GC | base platform settings gyp lacks for mobile; Mach-O gets an LC_UUID automatically so only ELF/Android needs `--build-id` |
-| node.gyp/node.gypi | Android shared / iOS static library targets, `NODE_MOBILE` define, no cctest/executable on mobile | the shape of the shipped artifacts (`libnode.so`, `NodeMobile.xcframework`) |
+| node.gyp/node.gypi | `NODE_MOBILE` define, Android cctest exclusion, iOS no-snapshot stub in `libnode` with dependent copies removed | the framework links the static archive directly; Node 26 otherwise supplies `GetEmbeddedSnapshotData()` only in executables for static builds |
 | v8 gypfiles | host/target toolset settings, arch selection (PR-57748 guards) | mksnapshot/torque must build for the host while V8 builds for the phone |
 | gyp generators | make/ninja treat `ios` like `mac` (xcode_emulation), simulator/device SDK switch | gyp has no built-in notion of an iOS make build |
 | node.cc guards | `TARGET_OS_IPHONE`/`__ANDROID__` guards; POSIX credentials enabled on Android API ≥ 21 | mobile OSes forbid or lack the guarded facilities |

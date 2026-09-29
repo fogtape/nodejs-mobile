@@ -8,20 +8,23 @@ Content-Transfer-Encoding: 8bit
 
 The shape of the shipped artifacts: Android builds libnode as a shared
 library, iOS as a static library wrapped into a framework, and the
-NODE_MOBILE define marks both. cctest and the node executable don't
-exist on mobile targets; the snapshot stub partition keeps the iOS
-static archive self-contained without duplicate symbols.
+NODE_MOBILE define marks both. Skip cctest on Android shared builds.
+Node 26 normally puts the no-snapshot stub in executables, leaving its
+static libnode archive with an unresolved GetEmbeddedSnapshotData().
+For iOS without Node snapshots, put the upstream stub in libnode so the
+framework can link it directly, and remove separate stub copies from
+dependent executables to avoid duplicate symbols when force-loading.
 
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 ---
- node.gyp  | 16 ++++++++++++----
+ node.gyp  | 26 ++++++++++++++++++++++----
  node.gypi | 22 ++++++++++++++++++----
- 2 files changed, 30 insertions(+), 8 deletions(-)
+ 2 files changed, 40 insertions(+), 8 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index b129c3db8d..8a7647275e 100644
+index b129c3db8d..a1bce0bd1f 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -69,6 +69,11 @@
@@ -36,7 +39,24 @@ index b129c3db8d..8a7647275e 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -1086,7 +1091,8 @@
+@@ -979,6 +984,16 @@
+             'src/node_snapshot_stub.cc',
+           ]
+         }],
++        [ 'OS=="ios" and node_shared=="false" and node_use_node_snapshot=="false"', {
++          # The framework links libnode directly, without the node executable
++          # that normally supplies GetEmbeddedSnapshotData() in Node 26.
++          'sources': [ 'src/node_snapshot_stub.cc' ],
++          # Executables linking this archive must use its copy of the stub,
++          # including force-loaded consumers such as node and cctest.
++          'direct_dependent_settings': {
++            'sources!': [ 'src/node_snapshot_stub.cc' ],
++          },
++        }],
+         [ 'node_use_bundled_v8!="false"', {
+           'dependencies': [ 'tools/v8_gypfiles/abseil.gyp:abseil' ],
+         }],
+@@ -1086,7 +1101,8 @@
              '<@(node_quic_sources)',
            ],
          }],
@@ -46,7 +66,7 @@ index b129c3db8d..8a7647275e 100644
            'target_arch=="x64" and '
            'node_target_type=="executable"', {
            'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
-@@ -1431,8 +1437,9 @@
+@@ -1431,8 +1447,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -58,7 +78,7 @@ index b129c3db8d..8a7647275e 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1657,7 +1664,8 @@
+@@ -1657,7 +1674,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],

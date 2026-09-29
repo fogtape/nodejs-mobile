@@ -126,6 +126,12 @@ snapshot-generator (`libv8_initializers`) and gtest libraries — dead weight th
 development. (x86_64 / Intel-simulator support was dropped for v24: Intel Macs
 are EOL and Apple Silicon runs the arm64 simulator natively.)
 
+Node 26's static `libnode` normally leaves `GetEmbeddedSnapshotData()` for
+the executable to provide. The iOS recipe includes upstream's no-snapshot
+stub in the archive because the framework links that archive directly.
+Dependent executables exclude their own copy to avoid duplicate symbols.
+This applies to both flavors with `--without-node-snapshot`.
+
 Output: **`out_ios/NodeMobile.xcframework`** (device + simulator arm64 slices).
 
 ---
