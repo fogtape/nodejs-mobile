@@ -43,13 +43,7 @@
 <a id="26.1.0-0"></a>
 ## 2026-09-29, Version 26.1.0-0 (Current)
 
-- Add an independent Node 26 recipe line while retaining Node 24 maintenance.
-- Rebase the mobile patches onto official Node.js 26.1.0 and V8 14.6.
-- Use Android NDK r29 and update the iOS static-library composition.
-- Fix iOS compilation of Wasm-only V8 debug metadata and framework linking
-  of the Node snapshot stub in both full and lite builds.
-- Explicitly disable `node:ffi` and Temporal pending mobile integration.
-- Produce versioned CI preview packages; this entry does not mark a public release.
+- _TODO: summarize changes before merging._
 
 <a id="24.21.0-0"></a>
 ## 2026-09-14, Version 24.21.0-0
