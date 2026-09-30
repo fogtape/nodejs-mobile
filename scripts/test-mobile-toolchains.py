@@ -4,6 +4,7 @@
 import importlib.util
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -94,33 +95,41 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
             folder = self.root / 'deps' / name
             folder.mkdir(parents=True)
             (folder / (name + '.gyp')).write_text((SOURCE / 'deps' / name / (name + '.gyp')).read_text())
+        ffi_folder = self.root / 'deps/libffi'
+        shutil.copy2(SOURCE / 'deps/libffi/generate-headers.py', ffi_folder)
+        for name in ('include', 'src'):
+            (ffi_folder / name).symlink_to(SOURCE / 'deps/libffi' / name, target_is_directory=True)
         project = self.root / 'check.gyp'
-        project.write_text(repr({'targets': [{
-            'target_name': 'check', 'type': 'executable', 'toolsets': ['host', 'target'],
-            'sources': ['check.c'], 'dependencies': [
-                str(self.root / 'deps/crates/crates.gyp') + ':node_crates',
-                str(self.root / 'deps/libffi/libffi.gyp') + ':libffi',
-            ],
-        }]}))
         (self.root / 'check.c').write_text('int main(void) { return 0; }\n')
-        for os_name, host_os in [('android', 'linux'), ('ios', 'mac')]:
-            with self.subTest(os=os_name):
-                generated = self.root / os_name
+        for os_name, host_os, host_arch in [('android', 'linux', 'x64'),
+                                              ('ios', 'mac', 'x64'),
+                                              ('ios', 'mac', 'arm64'),
+                                              ('linux', 'linux', 'arm64')]:
+            with self.subTest(os=os_name, host_arch=host_arch):
+                dependencies = [str(self.root / 'deps/libffi/libffi.gyp') + ':libffi']
+                if os_name in ('android', 'ios'):
+                    dependencies.append(str(self.root / 'deps/crates/crates.gyp') + ':node_crates')
+                project.write_text(repr({'targets': [{
+                    'target_name': 'check', 'type': 'executable', 'toolsets': ['host', 'target'],
+                    'sources': ['check.c'], 'dependencies': dependencies,
+                }]}))
+                generated = self.root / (os_name + '-' + host_arch)
                 subprocess.run([sys.executable, str(SOURCE / 'tools/gyp/gyp_main.py'),
                     str(project), '-f', 'make', '--depth=' + str(self.root),
                     '--generator-output=' + str(generated),
                     '-DOS=' + os_name, '-Dhost_os=' + host_os,
-                    '-Dtarget_arch=arm64', '-Dhost_arch=x64', '-Dbuild_type=Release',
+                    '-Dtarget_arch=arm64', '-Dhost_arch=' + host_arch, '-Dbuild_type=Release',
                     '-Dpython=' + sys.executable, '-Dandroid_ndk_path=' + str(self.ndk),
                     '-Dandroid_api_level=24', '-Diossim=true'],
                     env=dict(self.env, GYP_CROSSCOMPILE='1'), check=True,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 host = (generated / 'check.host.mk').read_text()
                 target = (generated / 'check.target.mk').read_text()
-                self.assertIn('mobile-rust/host/libnode_crates.a', host)
-                self.assertNotIn('mobile-rust/target/libnode_crates.a', host)
-                self.assertIn('mobile-rust/target/libnode_crates.a', target)
-                self.assertNotIn('mobile-rust/host/libnode_crates.a', target)
+                if os_name in ('android', 'ios'):
+                    self.assertIn('mobile-rust/host/libnode_crates.a', host)
+                    self.assertNotIn('mobile-rust/target/libnode_crates.a', host)
+                    self.assertIn('mobile-rust/target/libnode_crates.a', target)
+                    self.assertNotIn('mobile-rust/host/libnode_crates.a', target)
                 self.assertNotIn('-llog', host)
                 if os_name == 'android':
                     self.assertIn('-llog', target)
@@ -128,8 +137,23 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
                 mk_root = generated / 'deps/libffi'
                 host_ffi = (mk_root / 'libffi.host.mk').read_text()
                 target_ffi = (mk_root / 'libffi.target.mk').read_text()
-                self.assertIn('src/x86/ffi64.o', host_ffi)
-                self.assertNotIn('src/aarch64/ffi.o', host_ffi)
+                if host_arch == 'x64':
+                    self.assertIn('src/x86/ffi64.o', host_ffi)
+                    self.assertNotIn('src/aarch64/ffi.o', host_ffi)
+                else:
+                    self.assertIn('src/aarch64/ffi.o', host_ffi)
+                    self.assertNotIn('src/x86/ffi64.o', host_ffi)
+                # Execute the generated action, including same-arch/OS builds:
+                # GYP can remove a repeated value from an action argument list.
+                for toolset, makefile in [('host', host_ffi), ('target', target_ffi)]:
+                    action = next(line.split(' = ', 1)[1] for line in makefile.splitlines()
+                                  if line.startswith('cmd_') and 'generate-headers.py' in line)
+                    action = action.replace('$(srcdir)', str(self.root))
+                    action = action.replace('$(obj)', str(generated / 'obj'))
+                    action = action.replace('$(builddir)', str(generated))
+                    subprocess.run(action, shell=True, check=True, env=self.env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    self.assertTrue((generated / 'obj/gen/libffi' / toolset / 'ffi.h').exists())
                 self.assertIn('src/aarch64/ffi.o', target_ffi)
                 self.assertNotIn('src/x86/ffi64.o', target_ffi)
 
