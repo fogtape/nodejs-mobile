@@ -52,7 +52,9 @@ static const char* kExitVerdictHookJS = R"JS('use strict';
 // entries to process.moduleLoadList -- which test-bootstrap-modules asserts on.
 try {
   const f = process.env.NODEJS_MOBILE_TEST_VERDICT_FILE;
-  if (f) {
+  // NODE_OPTIONS and the verdict path are inherited by spawned child processes.
+  // Only the launch owner may write, even when the child has its own main thread.
+  if (f && process.env.NODEJS_MOBILE_TEST_VERDICT_PID === String(process.pid)) {
     process.on('exit', (code) => {
       try {
         if (!require('node:worker_threads').isMainThread) return;
@@ -137,6 +139,9 @@ Java_nodejsmobile_test_testnode_MainActivity_startNodeWithArguments(
             char node_options[1100];
             snprintf(node_options, sizeof(node_options), "--require=%s", hook_path);
             setenv("NODEJS_MOBILE_TEST_VERDICT_FILE", g_result_file, 1);
+            char verdict_pid[32];
+            snprintf(verdict_pid, sizeof(verdict_pid), "%ld", (long)getpid());
+            setenv("NODEJS_MOBILE_TEST_VERDICT_PID", verdict_pid, 1);
             setenv("NODE_OPTIONS", node_options, 1);
         } else {
             __android_log_write(ANDROID_LOG_ERROR, TAG,

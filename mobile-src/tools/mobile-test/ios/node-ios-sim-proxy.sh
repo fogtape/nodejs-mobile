@@ -71,7 +71,12 @@ for attempt in $(seq 1 "$LAUNCH_ATTEMPTS"); do
   for _ in $(seq 1 $((TIMEOUT * 10))); do
     if [ -f "$RESULT_FILE" ]; then
       verdict=$(tr -d '\r\n' < "$RESULT_FILE")
-      [ -n "$verdict" ] && break
+      # The exit hook runs before later JS exit listeners and native teardown.
+      # Wait for process termination so a provisional verdict cannot mask a
+      # later failure and stdout/stderr are complete before we read/remove them.
+      if [ -n "$verdict" ] && { [ -z "$APP_PID" ] || ! kill -0 "$APP_PID" 2>/dev/null; }; then
+        break
+      fi
     fi
     # Re-read once after the process died: it may have written the verdict and
     # exited between the two probes. Without a pid, fall back to the timeout.
@@ -79,6 +84,11 @@ for attempt in $(seq 1 "$LAUNCH_ATTEMPTS"); do
     if [ -n "$APP_PID" ] && ! kill -0 "$APP_PID" 2>/dev/null; then gone=1; continue; fi
     sleep 0.1
   done
+
+  if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
+    verdict=""
+    echo "::warning::node-ios-sim-proxy: app still running after ${TIMEOUT}s for: $*" >&2
+  fi
 
   # A real PASS/FAIL verdict is authoritative -> stop (never retry a genuine
   # FAIL). Retry only when there is no verdict AND simctl reported a launch

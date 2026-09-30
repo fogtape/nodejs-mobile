@@ -61,7 +61,8 @@ Assisted-by: Codex
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 42 files changed, 1975 insertions(+), 56 deletions(-)
+ ...test-vm-timeout-escape-promise-module-2.js |    6 +-
+ 43 files changed, 1980 insertions(+), 57 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
 index d8fba447e9..d52a0ea801 100644
@@ -2728,3 +2729,27 @@ index 8db27a79e3..11608776ab 100644
                         common.isAIX;
  
  const testDir = tmpdir.path;
+diff --git a/test/sequential/test-vm-timeout-escape-promise-module-2.js b/test/sequential/test-vm-timeout-escape-promise-module-2.js
+index 503395bec7..80aef88f64 100644
+--- a/test/sequential/test-vm-timeout-escape-promise-module-2.js
++++ b/test/sequential/test-vm-timeout-escape-promise-module-2.js
+@@ -10,6 +10,10 @@ const assert = require('assert');
+ const vm = require('vm');
+ 
+ const NS_PER_MS = 1000000n;
++// nodejs-mobile patch: leave the 10ms VM deadline unchanged, but allow the
++// watchdog thread to be scheduled on a busy iOS simulator before the test's
++// escape guard fires. Other VM timeout tests already use a 2-second guard.
++const escapeGuardMs = common.isIOS ? 2000n : 100n;
+ 
+ const hrtime = process.hrtime.bigint;
+ 
+@@ -18,7 +22,7 @@ function loop() {
+   while (1) {
+     const current = hrtime();
+     const span = (current - start) / NS_PER_MS;
+-    if (span >= 100n) {
++    if (span >= escapeGuardMs) {
+       throw new Error(
+         `escaped timeout at ${span} milliseconds!`);
+     }

@@ -75,6 +75,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-wa
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/sequential.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-async-wrap-getasyncid.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-fs-watch.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-vm-timeout-escape-promise-module-2.js
 doc-build-mobile-notes-and-ignores.patch	.gitignore
 doc-build-mobile-notes-and-ignores.patch	README.md
 ci-remove-upstream-only-workflows-and-config.patch	.github/ISSUE_TEMPLATE/config.yml

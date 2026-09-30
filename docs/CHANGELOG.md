@@ -68,6 +68,12 @@
   needs absent polywasm shared/resizable memory conversion APIs. Retain the
   remaining WebIDL buffer conversion assertions.
 
+- Bind mobile exit-verdict hooks to the launch owner's PID as well as its main
+  thread, preventing child processes from changing their parent's verdict.
+  Wait for iOS simulator process termination before consuming verdict/output.
+- Keep the VM timeout regression's 10ms deadline; align only its iOS escape
+  safety guard with the 2-second guard used by other VM timeout tests.
+
 This source upgrade does not arm publication. Run Cut release and review its
 release PR after the complete build and device-suite gates pass.
 

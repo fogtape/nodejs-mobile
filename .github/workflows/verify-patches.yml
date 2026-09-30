@@ -89,6 +89,9 @@ jobs:
           python3 -m pip install setuptools packaging
           python3 scripts/test-mobile-toolchains.py out
 
+      - name: Check mobile verdict isolation and final output
+        run: python3 scripts/test-mobile-verdicts.py out
+
       # The curated device-test list is the functional gate; validate it against
       # the materialized tree so an upstream bump can't silently shrink it.
       # tools/test.py ignores a path that matches nothing, so a deleted or
