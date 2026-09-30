@@ -96,6 +96,7 @@ declare -a outputs_common=(
 #   libcrdtp                 -- --without-inspector
 #   libsqlite                -- --without-sqlite
 #   libicu*                  -- --with-intl=none (no ICU)
+# Full ICU embeds its data in libicudata; libicustubdata is small-ICU only.
 # NB: libv8_snapshot stays in outputs_common — it is the runtime isolate-setup
 # lib (setup-isolate-deserialize) linked by BOTH flavors. libv8_init
 # (setup-isolate-full) is only a dependency of the host mksnapshot tool and is
@@ -112,7 +113,6 @@ declare -a outputs_full_only=(
   "libsqlite.a"
   "libicudata.a"
   "libicui18n.a"
-  "libicustubdata.a"
   "libicuucx.a"
 )
 declare -a outputs_x64_only=()

@@ -58,6 +58,11 @@
   Temporal calendar/timezone behavior. Extend the mobile test exclusions for
   new upstream subprocess and permission-verdict limitations.
 
+- Remove small-ICU-only stub archive references from the full-ICU iOS framework.
+- Adapt full-suite tests to app sandbox paths and device permissions, retaining
+  in-process Intl, VFS, file-writing and SQLite backup assertions. Exclude only
+  independent child-Node snapshot/startup checks on embedded runtimes.
+
 This source upgrade does not arm publication. Run Cut release and review its
 release PR after the complete build and device-suite gates pass.
 

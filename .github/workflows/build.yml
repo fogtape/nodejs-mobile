@@ -350,7 +350,7 @@ jobs:
       - name: Compute libnode cache key
         id: ck
         run: |
-          H=$( { git rev-parse "HEAD:src" "HEAD:deps" "HEAD:lib" "HEAD:tools/v8_gypfiles" "HEAD:tools/gyp" "HEAD:tools/icu"; \
+          H=$( { git rev-parse "HEAD:src" "HEAD:deps" "HEAD:lib" "HEAD:tools/v8_gypfiles" "HEAD:tools/gyp" "HEAD:tools/icu" "HEAD:tools/ios-framework"; \
                  git hash-object node.gyp node.gypi common.gypi configure configure.py tools/ios_framework_prepare.sh tools/copy_libnode_headers.sh; \
                  xcodebuild -version; \
                } | git hash-object --stdin )

@@ -15,8 +15,11 @@ series itself.
 
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
+
+Signed-off-by: fogtape <lilixu3210@gmail.com>
+Assisted-by: Codex
 ---
- test/parallel/parallel.status                 | 1618 +++++++++++++++++
+ test/parallel/parallel.status                 | 1627 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -33,8 +36,10 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
  test/parallel/test-fs-watchfile.js            |    4 +-
+ .../test-fs-writefile-one-roundtrip.js        |   14 +-
  .../parallel/test-http-response-setheaders.js |    6 +
  .../test-http2-respond-file-error-dir.js      |    7 +
+ test/parallel/test-intl.js                    |    6 +-
  test/parallel/test-net-connect-options-fd.js  |    2 +-
  test/parallel/test-net-pipe-connect-errors.js |    6 +-
  test/parallel/test-os.js                      |   25 +-
@@ -47,21 +52,30 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-repl-options.js            |    6 +-
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
+ test/parallel/test-sqlite-backup.mjs          |    7 +-
+ test/parallel/test-vfs-fs-readFileSync.js     |    3 +-
+ test/parallel/test-vfs-fs-writeFileSync.js    |    3 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
  test/sequential/sequential.status             |  129 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1927 insertions(+), 47 deletions(-)
+ 40 files changed, 1963 insertions(+), 53 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d8fba447e9..3f27850d3a 100644
+index d8fba447e9..d52a0ea801 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -145,6 +145,1624 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -145,6 +145,1633 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
 +[$system==android]
++# Snapshot creation needs child Node executables. The Android full suite
++# confirms that process.execPath launches an app host instead.
++test-crypto-provider-cache-snapshot: SKIP
++test-snapshot-reproducible: SKIP
++# OpenSSL startup variants also require independent child Node processes.
++test-crypto-no-algorithm: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
 +# These tests launch child Node processes or external command-line tools.
 +test-bench-auto-run: SKIP
@@ -783,6 +797,10 @@ index d8fba447e9..3f27850d3a 100644
 +#
 +test-worker-cleanup-handles: PASS, FLAKY
 +[$system==ios]
++# Snapshot creation needs child Node executables. The Android full suite
++# confirms that process.execPath launches an app host instead.
++test-crypto-provider-cache-snapshot: SKIP
++test-snapshot-reproducible: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
 +# These tests launch child Node processes or external command-line tools.
 +test-bench-auto-run: SKIP
@@ -1562,7 +1580,6 @@ index d8fba447e9..3f27850d3a 100644
 +test-http-server-drop-connections-in-cluster: SKIP
 +test-http2-respond-file-with-pipe: SKIP
 +test-http2-respond-with-file-connection-abort: SKIP
-+test-intl: SKIP
 +test-is-internal-thread: SKIP
 +test-macos-app-sandbox: SKIP
 +test-module-loading-error: SKIP
@@ -1977,6 +1994,38 @@ index e1fd3f4c34..30045c9d41 100644
    const dir = tmpdir.resolve('watch');
    function doWatch() {
      const handle = fs.watch(dir, common.mustCall(function(eventType, filename) {
+diff --git a/test/parallel/test-fs-writefile-one-roundtrip.js b/test/parallel/test-fs-writefile-one-roundtrip.js
+index bab6940eec..5851da6957 100644
+--- a/test/parallel/test-fs-writefile-one-roundtrip.js
++++ b/test/parallel/test-fs-writefile-one-roundtrip.js
+@@ -16,6 +16,18 @@ tmpdir.refresh();
+ let counter = 0;
+ const next = () => tmpdir.resolve(`file-${counter++}`);
+ 
++// nodejs-mobile patch: /dev/full can exist but deny opens in an app sandbox.
++// Probe only open permission; keep the actual failing-write assertions below.
++function canOpenDevFull() {
++  try {
++    fs.closeSync(fs.openSync('/dev/full', 'w'));
++    return true;
++  } catch (err) {
++    if (['ENOENT', 'EACCES', 'EPERM'].includes(err.code)) return false;
++    throw err;
++  }
++}
++
+ async function check(write) {
+   {
+     const file = next();
+@@ -48,7 +60,7 @@ async function check(write) {
+     assert.deepStrictEqual(fs.readFileSync(file),
+                            Buffer.concat([Buffer.from(units.buffer), Buffer.from('?')]));
+   }
+-  if (fs.existsSync('/dev/full')) {
++  if (canOpenDevFull()) {
+     // open() succeeds, write() fails.
+     await assert.rejects(write('/dev/full', 'x'), { code: 'ENOSPC', syscall: 'write' });
+   }
 diff --git a/test/parallel/test-http-response-setheaders.js b/test/parallel/test-http-response-setheaders.js
 index e05d3e2dc3..6317a022fc 100644
 --- a/test/parallel/test-http-response-setheaders.js
@@ -2032,6 +2081,30 @@ index e5d0cfe880..ff428d3db2 100644
  
  const server = http2.createServer();
  server.on('stream', (stream) => {
+diff --git a/test/parallel/test-intl.js b/test/parallel/test-intl.js
+index 7d1742f2c7..5581e333b7 100644
+--- a/test/parallel/test-intl.js
++++ b/test/parallel/test-intl.js
+@@ -140,7 +140,8 @@ if (!common.hasIntl) {
+   // `ffi` ligature (contraction)
+   assert.strictEqual(coll.compare('\ufb03', 'ffi'), 0);
+ 
+-  {
++  // nodejs-mobile patch: execPath is an app host, not a child Node executable.
++  if (!common.isAndroid && !common.isIOS) {
+     // Regression test for https://github.com/nodejs/node/issues/27379
+     const env = { ...process.env, LC_ALL: 'ja' };
+     execFile(
+@@ -150,7 +151,8 @@ if (!common.hasIntl) {
+     );
+   }
+ 
+-  {
++  // nodejs-mobile patch: execPath is an app host, not a child Node executable.
++  if (!common.isAndroid && !common.isIOS) {
+     // Regression test for https://github.com/nodejs/node/issues/27418
+     const env = { ...process.env, LC_ALL: 'fr@EURO' };
+     execFile(
 diff --git a/test/parallel/test-net-connect-options-fd.js b/test/parallel/test-net-connect-options-fd.js
 index bd761cf072..c913299ef7 100644
 --- a/test/parallel/test-net-connect-options-fd.js
@@ -2307,6 +2380,73 @@ index b84d2063a2..4411854e0b 100644
 +    process.kill(process.pid, SIGUSRToTest);
    }
  }, 1);
+ 
+diff --git a/test/parallel/test-sqlite-backup.mjs b/test/parallel/test-sqlite-backup.mjs
+index ee5f54fd90..64e8371ac2 100644
+--- a/test/parallel/test-sqlite-backup.mjs
++++ b/test/parallel/test-sqlite-backup.mjs
+@@ -1,6 +1,8 @@
+ // Flags: --expose-gc
+ import {
+   isWindows,
++  isAndroid,
++  isIOS,
+   skipIfSQLiteMissing,
+   spawnPromisified,
+ } from '../common/index.mjs';
+@@ -380,7 +382,10 @@ test('source database is kept alive while a backup is in flight', async (t) => {
+   t.assert.strictEqual(rows.n, 500);
+ });
+ 
+-test('backup promise settles when the backup is the last active request', async (t) => {
++// nodejs-mobile patch: only this subprocess lifecycle check needs a Node executable.
++test('backup promise settles when the backup is the last active request', {
++  skip: isAndroid || isIOS ? 'embedded runtimes cannot launch a child Node executable' : false,
++}, async (t) => {
+   const { code, signal, stderr } = await spawnPromisified(process.execPath, [
+     fixtures.path('sqlite', 'backup-last-request.mjs'),
+     nextDb(),
+diff --git a/test/parallel/test-vfs-fs-readFileSync.js b/test/parallel/test-vfs-fs-readFileSync.js
+index 297a885510..41ae8c0d10 100644
+--- a/test/parallel/test-vfs-fs-readFileSync.js
++++ b/test/parallel/test-vfs-fs-readFileSync.js
+@@ -4,6 +4,7 @@
+ // fs.readFileSync dispatches to VFS for both string paths and VFS-owned fds.
+ 
+ require('../common');
++const tmpdir = require('../common/tmpdir');
+ const assert = require('assert');
+ const fs = require('fs');
+ const path = require('path');
+@@ -46,7 +47,7 @@ myVfs.unmount();
+ // readFileSync via a RealFSProvider fd remains usable after the backing path
+ // is renamed.
+ {
+-  const root = path.join('/tmp', 'vfs-real-readFileSync-' + process.pid);
++  const root = tmpdir.resolve('vfs-real-readFileSync-' + process.pid);
+   fs.rmSync(root, { recursive: true, force: true });
+   fs.mkdirSync(root, { recursive: true });
+ 
+diff --git a/test/parallel/test-vfs-fs-writeFileSync.js b/test/parallel/test-vfs-fs-writeFileSync.js
+index 7bde5f6c7b..2001bd55dd 100644
+--- a/test/parallel/test-vfs-fs-writeFileSync.js
++++ b/test/parallel/test-vfs-fs-writeFileSync.js
+@@ -4,6 +4,7 @@
+ // fs.writeFileSync and fs.appendFileSync dispatch to VFS.
+ 
+ require('../common');
++const tmpdir = require('../common/tmpdir');
+ const assert = require('assert');
+ const fs = require('fs');
+ const path = require('path');
+@@ -56,7 +57,7 @@ myVfs.unmount();
+ // writeFileSync via a RealFSProvider fd remains tied to the open descriptor
+ // after the backing path is renamed.
+ {
+-  const root = path.join('/tmp', 'vfs-real-writeFileSync-' + process.pid);
++  const root = tmpdir.resolve('vfs-real-writeFileSync-' + process.pid);
+   fs.rmSync(root, { recursive: true, force: true });
+   fs.mkdirSync(root, { recursive: true });
  
 diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
 index e1595350cd..f5d84f7480 100644

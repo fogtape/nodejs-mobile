@@ -50,8 +50,10 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-stat.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watch.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-watchfile.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-writefile-one-roundtrip.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http-response-setheaders.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http2-respond-file-error-dir.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-intl.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-connect-options-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-pipe-connect-errors.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-os.js
@@ -64,6 +66,9 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-pr
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-repl-options.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-runner-concurrency.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-signal-handler.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-sqlite-backup.mjs
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-vfs-fs-readFileSync.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-vfs-fs-writeFileSync.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-watch-mode-files_watcher.mjs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/sequential.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/sequential/test-async-wrap-getasyncid.js
