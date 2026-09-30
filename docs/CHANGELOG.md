@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.10.0-0">26.10.0-0 (unreleased)</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
@@ -40,7 +41,7 @@
 </tr>
 </table>
 
-<a id="26.1.0-0"></a>
+<a id="26.10.0-0"></a>
 ## Unreleased, Version 26.10.0-0 (Current)
 
 - Upgrade the independent Node 26 line to official Node.js 26.10.0.
@@ -58,6 +59,7 @@
 This source upgrade does not arm publication. Run Cut release and review its
 release PR after the complete build and device-suite gates pass.
 
+<a id="26.1.0-0"></a>
 ## 2026-09-29, Version 26.1.0-0 (Current)
 
 First prerelease of the independent Node 26 line, built from official

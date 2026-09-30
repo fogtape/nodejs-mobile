@@ -21,14 +21,17 @@ replace Node 24's branch, tags or assets.
    the still-unreleased version.
 4. The publish job runs in the `release` Environment, materializes the exact
    verified source tree, packages the current run's artifacts and publishes
-   `vX.Y.Z-R` as a GitHub **prerelease**, with `latest=false`.
+   `vX.Y.Z-R` as a GitHub **prerelease**, with `latest=false`. Release titles
+   identify the Node major line and include the complete mobile version;
+   existing tags retain their names so published download URLs remain valid.
 
 The four archives are
 `nodejs-mobile-{android,ios}{,-lite}-X.Y.Z-R.zip`, accompanied by
 `SHA256SUMS`. Android includes arm64-v8a, armeabi-v7a and x86_64. iOS includes
 arm64 device and simulator slices. Verify the checksum after downloading.
 
-The initial Node 26 port disables `node:ffi` and Temporal in both flavors;
+Node 26.10 full builds enable Temporal and `node:ffi`; lite enables `node:ffi`
+and omits Temporal with ICU. The older 26.1 release disables both features.
 iOS uses jitless V8 and the bundled WebAssembly polyfill. See
 [VERSION-LINES.md](VERSION-LINES.md) for compatibility limits.
 

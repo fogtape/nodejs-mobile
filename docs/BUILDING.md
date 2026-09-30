@@ -48,7 +48,7 @@ native host toolchain plus the standard libraries for your target:
 ```sh
 # Linux Android build host
 rustup toolchain install 1.86.0 --profile minimal \
-  --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
+  --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-unknown-linux-gnu
 # macOS iOS build host
 rustup toolchain install 1.86.0 --profile minimal \
   --target aarch64-apple-ios,aarch64-apple-ios-sim
@@ -56,8 +56,9 @@ export RUSTUP_TOOLCHAIN=1.86.0
 ```
 
 Cargo consumes the checked-in lockfile and vendor directory with `--frozen`.
-The build action selects a native host triple for snapshot tools and a separate
-mobile triple for the library. Android target archives use the supplied NDK
+The build action selects the host triple for snapshot tools and a separate
+mobile triple for the library. Android ARM snapshots use i686 on x64 Linux
+hosts, matching V8’s 32-bit host tools. Android target archives use the supplied NDK
 and SDK level; iOS target archives use the device/simulator SDK and iOS 14
 minimum deployment target. Lite builds omit Temporal with ICU and need no Rust.
 Both flavors include `node:ffi`.
