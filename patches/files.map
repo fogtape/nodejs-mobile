@@ -34,6 +34,7 @@ test-mobile-test-harness.patch	test/message/message.status
 test-mobile-test-harness.patch	test/message/testcfg.py
 test-mobile-test-harness.patch	tools/test.py
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/parallel.status
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-common-wpt-inspect.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-bind-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
@@ -53,6 +54,7 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-writefile-one-roundtrip.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http-response-setheaders.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-http2-respond-file-error-dir.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-internal-webidl-buffer-source.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-intl.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-connect-options-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-net-pipe-connect-errors.js

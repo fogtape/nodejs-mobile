@@ -43,6 +43,10 @@ on:
         description: Run feature smoke only using the existing framework
         type: boolean
         default: false
+      tests:
+        description: Space-separated JS test selectors (empty = curated suite)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -120,8 +124,25 @@ jobs:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: ./tools/mobile-test/ios/prepare-ios-sim-tests.sh
 
+      - name: Run selected JS tests on simulator
+        if: ${{ !inputs.smoke_only && inputs.tests }}
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+          SELECTED_TESTS: ${{ inputs.tests }}
+        run: |
+          set -euo pipefail
+          read -r -a TESTS <<< "$SELECTED_TESTS"
+          [ "${#TESTS[@]}" -gt 0 ] || { echo "::error::No test selectors supplied"; exit 1; }
+          for selector in "${TESTS[@]}"; do
+            [[ "$selector" =~ ^(parallel|sequential)/test-[a-zA-Z0-9_-]+$ ]] \
+              && { [ -f "test/$selector.js" ] || [ -f "test/$selector.mjs" ]; } \
+              || { echo "::error::Invalid test selector: $selector"; exit 1; }
+          done
+          ./tools/test.py -j 1 --flaky-tests=skip --timeout=300 \
+            --arch ios --shell="./tools/mobile-test/ios/node-ios-sim-proxy.sh" "${TESTS[@]}"
+
       - name: Run curated JS subset on simulator
-        if: inputs.smoke_only != true
+        if: ${{ !inputs.smoke_only && !inputs.tests }}
         env:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: |
@@ -147,7 +168,7 @@ jobs:
       # in the testnode app. Proves a real addon dlopens + runs (the "B-1"
       # concern the symbol-grep smoke only approximates). Runs for both flavors.
       - name: Build + run NAPI addon on simulator
-        if: inputs.smoke_only != true
+        if: ${{ !inputs.smoke_only && !inputs.tests }}
         run: |
           ./tools/mobile-test/addon/build-ios-addon.sh \
             out_ios/NodeMobile.xcframework ios-arm64-simulator nm-ios/include/node \

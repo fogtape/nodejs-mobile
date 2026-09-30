@@ -63,6 +63,11 @@
   in-process Intl, VFS, file-writing and SQLite backup assertions. Exclude only
   independent child-Node snapshot/startup checks on embedded runtimes.
 
+- Keep the iOS WPT inspector lifecycle test using a compression fixture without
+  unsupported shared WebAssembly memory, and skip only the WebIDL subtest that
+  needs absent polywasm shared/resizable memory conversion APIs. Retain the
+  remaining WebIDL buffer conversion assertions.
+
 This source upgrade does not arm publication. Run Cut release and review its
 release PR after the complete build and device-suite gates pass.
 

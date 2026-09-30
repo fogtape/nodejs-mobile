@@ -78,6 +78,18 @@ whole gate chain — smokes, device suites, real devices, and publish —
 connected by `needs:`; there is no cross-run lookup, label contract, or
 manual step.
 
+### Focused iOS regression checks
+
+The `iOS Simulator Tests` manual dispatch can reuse a prior Build artifact:
+set `build_run_id`, keep `flavors` to a flavor produced by that run, and supply
+space-separated selectors in `tests`, such as
+`parallel/test-common-wpt-inspect parallel/test-internal-webidl-buffer-source`.
+With `tests` empty it runs the usual curated suite and addon gate. With
+`smoke_only` set it runs the feature smoke instead. Selected-test dispatches
+are diagnostics; they do not replace the complete Build gate. Reusing a
+framework is appropriate only when its compiled build inputs match the source
+being tested (for example, a patch limited to test files).
+
 ### Flavors, and what's required to merge
 
 Every job that consumes a binary tests **both flavors** (`full` and `lite`),
