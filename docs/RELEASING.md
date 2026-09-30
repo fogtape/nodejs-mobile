@@ -1,5 +1,11 @@
 # Release Instructions
 
+Release titles identify the Node major line and full mobile build version,
+for example `Node.js 24 LTS · nodejs-mobile v24.21.0-0（预发布）`. Node 26
+releases use the independent `recipe-v26` line. In `X.Y.Z-R`, `X.Y.Z` is the
+upstream Node version and `R` is the mobile build revision. Existing tags
+retain the `vX.Y.Z-R` format so published download URLs remain valid.
+
 Releasing is a button, a review, and (optionally) an approval:
 
 1. **Actions → "Cut release" → Run workflow** (no inputs). It computes the

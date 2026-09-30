@@ -1254,6 +1254,7 @@ jobs:
       - name: Create GitHub Release (prerelease)
         run: |
           TAG="v${V}"
+          RELEASE_TITLE="Node.js 24 LTS · nodejs-mobile v${V}（预发布）"
           NOTES=$(cat "$RUNNER_TEMP/release-notes.md")
           # Human-visible copy of the tag's Recipe-Commit trailer.
           PROV="Generated from [\`recipe@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
@@ -1276,9 +1277,10 @@ jobs:
             fi
             gh release create "$TAG" out/*.zip \
               --repo "$GITHUB_REPOSITORY" \
-              --title "nodejs-mobile ${V}" \
+              --title "$RELEASE_TITLE" \
               --draft \
               --prerelease \
+              --latest=false \
               --notes "$BODY"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
             echo "Published prerelease $TAG"
