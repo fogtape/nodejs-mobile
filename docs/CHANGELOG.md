@@ -46,7 +46,9 @@
 
 - Upgrade the independent Node 26 line to official Node.js 26.10.0.
 - Enable Temporal in Android/iOS full builds using Rust 1.86.0, with separate
-  native host and mobile target archives. Lite retains its no-ICU configuration
+  native host and mobile target archives. Full builds bundle complete ICU data
+  for named time zones; small-ICU cannot load Temporal timezone information.
+  Lite retains its no-ICU configuration
   and omits Temporal.
 - Enable `node:ffi` in both flavors. Use iOS libffi's precompiled callback
   trampoline table and the correct Apple arm64 long-double ABI.

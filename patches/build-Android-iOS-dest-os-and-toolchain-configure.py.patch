@@ -22,13 +22,16 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
+
+Signed-off-by: fogtape <lilixu3210@gmail.com>
+Assisted-by: Codex
 ---
- android_configure.py | 75 +++++++++++++++++++++++++++++++++++---------
+ android_configure.py | 76 +++++++++++++++++++++++++++++++++++---------
  configure.py         |  8 +++++
- 2 files changed, 68 insertions(+), 15 deletions(-)
+ 2 files changed, 69 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..dec7b41ccf 100644
+index 5cea0393f4..71daaf7250 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,14 @@
@@ -68,7 +71,7 @@ index 5cea0393f4..dec7b41ccf 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,69 @@ elif platform.system() == "Linux":
+@@ -65,13 +54,70 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -99,7 +102,7 @@ index 5cea0393f4..dec7b41ccf 100644
 +GYP_DEFINES += " android_api_level=" + android_sdk_version
 +GYP_DEFINES += " android_ndk_sysroot=" + toolchain_path + "/sysroot"
 +# Flavor switch (mobile-only, wrapper-level so configure.py stays upstream-clean):
-+#   full (default) — the shared build all consumers get; flags unchanged.
++#   full (default) — complete ICU data for Temporal time zones.
 +#   lite           — size-reduced subtractions (see "The lite variant" in
 +#                    docs/BUILDING.md on the recipe branch).
 +# Set via env NODEJS_MOBILE_FLAVOR=lite. Android lite keeps the JIT and V8's
@@ -112,7 +115,8 @@ index 5cea0393f4..dec7b41ccf 100644
 +    sys.exit(1)
 +print("\033[92mInfo: \033[0m" + "Build flavor: " + flavor)
 +
-+intl = "small-icu"
++# Temporal named time zones require the complete ICU data bundle.
++intl = "full-icu"
 +# Full builds require Temporal explicitly so a missing Rust toolchain fails
 +# instead of silently shipping a different feature set. FFI is enabled in both.
 +extra_flags = " --v8-enable-temporal-support"

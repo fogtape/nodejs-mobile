@@ -61,7 +61,10 @@ mobile triple for the library. Android ARM snapshots use i686 on x64 Linux
 hosts, matching V8’s 32-bit host tools. Android target archives use the supplied NDK
 and SDK level; iOS target archives use the device/simulator SDK and iOS 14
 minimum deployment target. Lite builds omit Temporal with ICU and need no Rust.
-Both flavors include `node:ffi`.
+Both flavors include `node:ffi`. Full builds use `--with-intl=full-icu` so
+Temporal can load named time zones; small-ICU currently fails that path.
+This increases the full library’s bundled ICU data size. Lite retains
+`--with-intl=none`.
 
 ## Android — build on Linux
 
@@ -327,6 +330,13 @@ The optional R2 configuration remains supported. If R2 credentials are
 installed, use separate read and write tokens and restrict the write
 Environment to trusted maintenance branches. The local archive fallback
 needs no cloud secrets.
+
+When a large build is still running, the `preserve-build-cache` PR label
+queues its replacement instead of cancelling it. This lets the earlier run
+save its completed libraries and compiler objects before the next run restores
+them. Remove the label after the rebuild to restore ordinary PR cancellation.
+Compiler-object saves also run on cancellation; release paths keep their
+existing no-shared-compiler-cache policy.
 
 ### Releases and provenance
 

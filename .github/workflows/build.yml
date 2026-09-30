@@ -17,7 +17,9 @@ on:
 # mid-flight.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Apply preserve-build-cache while an earlier build is still compiling:
+  # queue its replacement so the earlier run can save reusable objects.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'preserve-build-cache') }}
 
 # Completed mobile-library caches use exact build-input keys, including on
 # releases (this mirror's NOTICE.md policy). Compiler-object archives only
@@ -278,12 +280,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache
@@ -438,12 +441,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache
@@ -573,7 +577,7 @@ jobs:
           source bin/activate
           python3.12 -m pip install setuptools packaging
           if [ "$NODEJS_MOBILE_FLAVOR" = "full" ]; then
-            ./configure --with-intl=small-icu --v8-enable-temporal-support
+            ./configure --with-intl=full-icu --v8-enable-temporal-support
           else
             ./configure --with-intl=none --v8-disable-temporal-support
           fi
@@ -819,12 +823,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache

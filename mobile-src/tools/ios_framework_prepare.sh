@@ -26,7 +26,8 @@ if [ "$FLAVOR" != "full" ] && [ "$FLAVOR" != "lite" ]; then
 fi
 echo "iOS build flavor: $FLAVOR"
 
-INTL="small-icu"
+# Temporal named time zones require the complete ICU data bundle.
+INTL="full-icu"
 # --v8-lite-mode drops the compiled JIT and the V8 native WASM engine. Both are
 # dead on iOS for EVERY flavor — iOS runs jitless (no JIT entitlement) and
 # WebAssembly is served by the polywasm polyfill the binary bundles

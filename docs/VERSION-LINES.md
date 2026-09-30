@@ -43,7 +43,9 @@ The Node 26 line uses Android NDK r29 (`29.0.14206865`) and Clang 19 for
 Linux host tools. Node 24 keeps its existing NDK r27d configuration.
 
 Node 26.10 full builds enable V8 Temporal and the experimental `node:ffi`
-module on Android and iOS. The build requires Rust **1.86.0** and its standard
+module on Android and iOS, with complete ICU data (`--with-intl=full-icu`)
+for named time zones. small-ICU cannot load Temporal timezone information
+in this upstream version. The build requires Rust **1.86.0** and its standard
 libraries for the chosen mobile targets. Cargo builds the locked, vendored
 Temporal crates separately for native host tools and the mobile runtime;
 Android archives use the matching NDK compiler driver and position-independent
