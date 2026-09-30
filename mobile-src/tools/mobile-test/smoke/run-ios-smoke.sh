@@ -34,7 +34,7 @@ console.log('${MARKER} ' + process.version + ' ' + process.platform + ' ' + proc
 # Launch once; echo the app output to stderr (for log visibility) and print the
 # verdict (PASS | FAIL | "") to stdout for the caller to capture.
 run_once() {
-  local log token docs result lp verdict="" i
+  local log token docs result stdout_file lp verdict="" i
   log="$(mktemp)"
   token="$(/usr/bin/uuidgen | tr 'A-F' 'a-f' | tr -d '-')"
   xcrun simctl install "$UDID" "$APP" >/dev/null 2>&1
@@ -52,7 +52,8 @@ run_once() {
     return 0
   fi
   result="$docs/Documents/result-${token}.txt"
-  rm -f "$result"
+  stdout_file="$docs/Documents/stdout-${token}.txt"
+  rm -f "$result" "$stdout_file"
 
   xcrun simctl launch --console --terminate-running-process "$UDID" "$BUNDLE_ID" \
     --run-token "$token" -e "$EXPR" >| "$log" 2>&1 &
@@ -70,8 +71,13 @@ run_once() {
 
   echo "----- app output -----" >&2
   cat "$log" >&2
+  # NodeRunner redirects Node stdout/stderr into this durable sandbox file.
+  # Read it before deleting the simulator; simctl --console misses JS errors.
+  if [ -f "$stdout_file" ]; then
+    cat "$stdout_file" >&2
+  fi
   echo "----------------------" >&2
-  rm -f "$result" "$log"
+  rm -f "$result" "$stdout_file" "$log"
   printf '%s' "$verdict"
 }
 

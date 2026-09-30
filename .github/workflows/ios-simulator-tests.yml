@@ -30,6 +30,19 @@ on:
         required: false
         default: '["full","lite"]'
   workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Build run with an already compiled framework
+        type: string
+        required: true
+      flavors:
+        description: JSON array of flavors to test
+        type: string
+        default: '["full"]'
+      smoke_only:
+        description: Run feature smoke only using the existing framework
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -90,12 +103,25 @@ jobs:
         with:
           device_name: nodejs-mobile-test
 
+      - name: Build smoke app from existing framework
+        if: inputs.smoke_only == true
+        run: ./tools/mobile-test/smoke/build-ios-testnode.sh "$PWD/out_testnode"
+
+      - name: Run feature smoke on simulator
+        if: inputs.smoke_only == true
+        run: |
+          ./tools/mobile-test/smoke/run-ios-smoke.sh \
+            "$PWD/out_testnode/Release-iphonesimulator/testnode.app" \
+            "${{ steps.boot-sim.outputs.udid }}"
+
       - name: Prepare tests on simulator
+        if: inputs.smoke_only != true
         env:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: ./tools/mobile-test/ios/prepare-ios-sim-tests.sh
 
       - name: Run curated JS subset on simulator
+        if: inputs.smoke_only != true
         env:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: |
@@ -121,6 +147,7 @@ jobs:
       # in the testnode app. Proves a real addon dlopens + runs (the "B-1"
       # concern the symbol-grep smoke only approximates). Runs for both flavors.
       - name: Build + run NAPI addon on simulator
+        if: inputs.smoke_only != true
         run: |
           ./tools/mobile-test/addon/build-ios-addon.sh \
             out_ios/NodeMobile.xcframework ios-arm64-simulator nm-ios/include/node \
