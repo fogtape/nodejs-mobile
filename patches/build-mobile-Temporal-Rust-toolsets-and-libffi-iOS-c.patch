@@ -11,9 +11,9 @@ Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
  deps/crates/crates.gyp          | 215 +++++++++++++-------------------
- deps/libffi/generate-headers.py |  15 ++-
- deps/libffi/libffi.gyp          |  61 ++++++---
- 3 files changed, 140 insertions(+), 151 deletions(-)
+ deps/libffi/generate-headers.py |  19 ++-
+ deps/libffi/libffi.gyp          |  70 ++++++++---
+ 3 files changed, 153 insertions(+), 151 deletions(-)
 
 diff --git a/deps/crates/crates.gyp b/deps/crates/crates.gyp
 index 0720ee6dcf..9ebf172222 100644
@@ -236,7 +236,7 @@ index 0720ee6dcf..9ebf172222 100644
 +              'dependencies': ['node_crates'],
 +              'direct_dependent_settings': {'include_dirs': ['<(cargo_vendor_dir)/<(temporal_capi_dir)/bindings/cpp']}}]}
 diff --git a/deps/libffi/generate-headers.py b/deps/libffi/generate-headers.py
-index fb58edf17b..e3259e4b65 100644
+index fb58edf17b..5369c1e194 100644
 --- a/deps/libffi/generate-headers.py
 +++ b/deps/libffi/generate-headers.py
 @@ -70,7 +70,7 @@ def has_long_double(os_name, target_arch):
@@ -275,7 +275,7 @@ index fb58edf17b..e3259e4b65 100644
          lines.extend([
              '#if defined(__arm64e__)',
              '#define HAVE_ARM64E_PTRAUTH 1',
-@@ -261,8 +261,15 @@ def main(argv=None):
+@@ -261,8 +261,19 @@ def main(argv=None):
      parser.add_argument('--output-dir', required=True)
      parser.add_argument('--target-arch')
      parser.add_argument('--os')
@@ -285,6 +285,10 @@ index fb58edf17b..e3259e4b65 100644
      args = parser.parse_args(argv)
  
 +    if args.toolset == 'host' and args.os in ('android', 'ios'):
++        # V8's Android ARM snapshots use -m32 on x64 Linux hosts.
++        if (args.os == 'android' and args.target_arch in ('arm', 'ia32')
++                and args.host_arch == 'x64'):
++            args.host_arch = 'ia32'
 +        args.target_arch = args.host_arch
 +        args.os = args.host_os
 +
@@ -292,7 +296,7 @@ index fb58edf17b..e3259e4b65 100644
          generate_headers(args.output_dir,
                           args.target_arch or detect_target_arch(),
 diff --git a/deps/libffi/libffi.gyp b/deps/libffi/libffi.gyp
-index f3122a4e2a..a9a9d32fb9 100644
+index f3122a4e2a..8aeafc329b 100644
 --- a/deps/libffi/libffi.gyp
 +++ b/deps/libffi/libffi.gyp
 @@ -1,5 +1,6 @@
@@ -428,24 +432,33 @@ index f3122a4e2a..a9a9d32fb9 100644
                  '--define',
                  'FFI_STATIC_BUILD',
                  '--assemble',
-@@ -350,10 +357,28 @@
+@@ -350,10 +357,37 @@
            ],
          }],
        ],
 +      # The global architecture selection above belongs to the mobile
 +      # target. Native host tools need their own source backend and headers.
 +      'target_conditions': [
-+        ['_toolset=="host" and OS in "android ios" and host_arch!=target_arch', {
-+          'sources!': ['<@(libffi_arch_sources)'],
++        ['_toolset=="host" and OS in "android ios"', {
++          # Architecture variables from config.gypi are available in early
++          # conditions, but not in the late _toolset expression above.
 +          'conditions': [
-+            ['host_arch=="x64"', {
-+              'sources': [
-+                'src/x86/ffiw64.c', 'src/x86/ffi64.c',
-+                'src/x86/unix64.S', 'src/x86/win64.S',
++            ['host_arch!=target_arch and not (OS=="android" and host_arch=="x64" and target_arch=="ia32")', {
++              'sources!': ['<@(libffi_arch_sources)'],
++              'conditions': [
++                ['host_arch=="ia32" or (OS=="android" and host_arch=="x64" and target_arch=="arm")', {
++                  'sources': ['src/x86/ffi.c', 'src/x86/sysv.S'],
++                }],
++                ['host_arch=="x64" and not (OS=="android" and target_arch=="arm")', {
++                  'sources': [
++                    'src/x86/ffiw64.c', 'src/x86/ffi64.c',
++                    'src/x86/unix64.S', 'src/x86/win64.S',
++                  ],
++                }],
++                ['host_arch=="arm64"', {
++                  'sources': ['src/aarch64/ffi.c', 'src/aarch64/sysv.S'],
++                }],
 +              ],
-+            }],
-+            ['host_arch=="arm64"', {
-+              'sources': ['src/aarch64/ffi.c', 'src/aarch64/sysv.S'],
 +            }],
 +          ],
 +        }],

@@ -137,7 +137,7 @@ jobs:
         if: matrix.flavor == 'full'
         run: |
           rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
-            --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
+            --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-unknown-linux-gnu
           echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
 
       - name: Run sccache-cache

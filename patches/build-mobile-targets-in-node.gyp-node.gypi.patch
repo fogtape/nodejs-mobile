@@ -18,13 +18,16 @@ dependent executables to avoid duplicate symbols when force-loading.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
+
+Signed-off-by: fogtape <lilixu3210@gmail.com>
+Assisted-by: Codex
 ---
- node.gyp  | 13 ++++++++++---
+ node.gyp  | 18 +++++++++++++++---
  node.gypi | 22 ++++++++++++++++++----
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ 2 files changed, 33 insertions(+), 7 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 2cf1e62b56..b6d00820c9 100644
+index 2cf1e62b56..010117fb97 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -77,6 +77,11 @@
@@ -39,7 +42,19 @@ index 2cf1e62b56..b6d00820c9 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -1434,8 +1439,9 @@
+@@ -583,6 +588,11 @@
+       ['OS=="linux" and clang==1', {
+         'libraries': ['-latomic'],
+       }],
++      ['OS=="android" and clang==1', {
++        'target_conditions': [
++          ['_toolset=="host"', {'libraries': ['-latomic']}],
++        ],
++      }],
+     ],
+   },
+ 
+@@ -1434,8 +1444,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -51,7 +66,7 @@ index 2cf1e62b56..b6d00820c9 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1659,7 +1665,8 @@
+@@ -1659,7 +1670,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],

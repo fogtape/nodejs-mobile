@@ -36,6 +36,10 @@ def build(args):
     env = os.environ.copy()
     if args.toolset == 'host':
         target = rust_host()
+        # V8 uses 32-bit Linux snapshot tools for Android ARM/ia32 targets.
+        if (args.os == 'android' and args.arch in ('arm', 'ia32')
+                and target == 'x86_64-unknown-linux-gnu'):
+            target = 'i686-unknown-linux-gnu'
         # A parent iOS cross-build may export its target SDK. Host proc macros
         # and snapshot tools must use the macOS SDK instead.
         env.pop('SDKROOT', None)

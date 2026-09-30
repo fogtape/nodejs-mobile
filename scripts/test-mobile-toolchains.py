@@ -74,7 +74,8 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
                 self.assertTrue(record['env'][f'CARGO_TARGET_{key}_LINKER'].endswith('24-clang'))
                 self.assertIn('relocation-model=pic', record['env'][f'CARGO_TARGET_{key}_RUSTFLAGS'])
                 built, record = self.run_action(arch, 'host')
-                self.assertEqual(built, 'x86_64-unknown-linux-gnu')
+                self.assertEqual(built, 'i686-unknown-linux-gnu' if arch == 'arm'
+                                 else 'x86_64-unknown-linux-gnu')
                 self.assertNotIn('SDKROOT', record['env'])
                 self.assertFalse(any(key.endswith('_LINKER') for key in record['env'] if key.startswith('CARGO_TARGET_')))
 
@@ -101,11 +102,13 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
             (ffi_folder / name).symlink_to(SOURCE / 'deps/libffi' / name, target_is_directory=True)
         project = self.root / 'check.gyp'
         (self.root / 'check.c').write_text('int main(void) { return 0; }\n')
-        for os_name, host_os, host_arch in [('android', 'linux', 'x64'),
-                                              ('ios', 'mac', 'x64'),
-                                              ('ios', 'mac', 'arm64'),
-                                              ('linux', 'linux', 'arm64')]:
-            with self.subTest(os=os_name, host_arch=host_arch):
+        for os_name, host_os, host_arch, target_arch in [
+                ('android', 'linux', 'x64', 'arm64'),
+                ('android', 'linux', 'x64', 'arm'),
+                ('ios', 'mac', 'x64', 'arm64'),
+                ('ios', 'mac', 'arm64', 'arm64'),
+                ('linux', 'linux', 'arm64', 'arm64')]:
+            with self.subTest(os=os_name, host_arch=host_arch, target_arch=target_arch):
                 dependencies = [str(self.root / 'deps/libffi/libffi.gyp') + ':libffi']
                 if os_name in ('android', 'ios'):
                     dependencies.append(str(self.root / 'deps/crates/crates.gyp') + ':node_crates')
@@ -113,16 +116,20 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
                     'target_name': 'check', 'type': 'executable', 'toolsets': ['host', 'target'],
                     'sources': ['check.c'], 'dependencies': dependencies,
                 }]}))
-                generated = self.root / (os_name + '-' + host_arch)
-                subprocess.run([sys.executable, str(SOURCE / 'tools/gyp/gyp_main.py'),
-                    str(project), '-f', 'make', '--depth=' + str(self.root),
+                config = self.root / 'config.gypi'
+                config.write_text(repr({'variables': {'host_arch': host_arch,
+                                                      'target_arch': target_arch}}))
+                generated = self.root / (os_name + '-' + host_arch + '-' + target_arch)
+                gyp = subprocess.run([sys.executable, str(SOURCE / 'tools/gyp/gyp_main.py'),
+                    str(project), '-f', 'make', '-I', str(config), '--depth=' + str(self.root),
                     '--generator-output=' + str(generated),
                     '-DOS=' + os_name, '-Dhost_os=' + host_os,
-                    '-Dtarget_arch=arm64', '-Dhost_arch=' + host_arch, '-Dbuild_type=Release',
+                    '-Dbuild_type=Release',
                     '-Dpython=' + sys.executable, '-Dandroid_ndk_path=' + str(self.ndk),
                     '-Dandroid_api_level=24', '-Diossim=true'],
-                    env=dict(self.env, GYP_CROSSCOMPILE='1'), check=True,
+                    env=dict(self.env, GYP_CROSSCOMPILE='1'),
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.assertEqual(gyp.returncode, 0, gyp.stderr.decode())
                 host = (generated / 'check.host.mk').read_text()
                 target = (generated / 'check.target.mk').read_text()
                 if os_name in ('android', 'ios'):
@@ -137,7 +144,10 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
                 mk_root = generated / 'deps/libffi'
                 host_ffi = (mk_root / 'libffi.host.mk').read_text()
                 target_ffi = (mk_root / 'libffi.target.mk').read_text()
-                if host_arch == 'x64':
+                if os_name == 'android' and target_arch == 'arm':
+                    self.assertIn('src/x86/ffi.o', host_ffi)
+                    self.assertNotIn('src/x86/ffi64.o', host_ffi)
+                elif host_arch == 'x64':
                     self.assertIn('src/x86/ffi64.o', host_ffi)
                     self.assertNotIn('src/aarch64/ffi.o', host_ffi)
                 else:
@@ -154,7 +164,8 @@ Path(os.environ['MOBILE_TEST_RECORD']).write_text(json.dumps({'args': args, 'env
                     subprocess.run(action, shell=True, check=True, env=self.env,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     self.assertTrue((generated / 'obj/gen/libffi' / toolset / 'ffi.h').exists())
-                self.assertIn('src/aarch64/ffi.o', target_ffi)
+                self.assertIn('src/' + ('arm' if target_arch == 'arm' else 'aarch64')
+                              + '/ffi.o', target_ffi)
                 self.assertNotIn('src/x86/ffi64.o', target_ffi)
 
     def test_ios_libffi_uses_precompiled_callbacks_and_apple_long_double_abi(self):
