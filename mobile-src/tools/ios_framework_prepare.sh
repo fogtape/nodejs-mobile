@@ -42,8 +42,9 @@ V8_LITE_MODE="--v8-lite-mode"
 # TurboFan, so it must go too (it defaults on for arm64).
 V8_NO_TURBOFAN_GYP_DEFINES="v8_enable_turbofan=0"
 V8_DISABLE_MAGLEV="--v8-disable-maglev"
-# Node 26 mobile features awaiting platform integration.
-LITE_FLAGS="--without-ffi --v8-disable-temporal-support"
+# Temporal needs bundled ICU and Rust; require it in full builds.
+# FFI is present in both flavors. lite retains its no-ICU size tradeoff.
+LITE_FLAGS="--v8-enable-temporal-support"
 if [ "$FLAVOR" = "lite" ]; then
   INTL="none"
   # lite additionally drops features size-constrained consumers don't need.
@@ -54,7 +55,7 @@ if [ "$FLAVOR" = "lite" ]; then
   # most 7.375GB of address space, so that reservation can never succeed and V8
   # aborts the process during Isolate init. See "Pointer compression" in
   # docs/BUILDING.md on the recipe branch.
-  LITE_FLAGS="$LITE_FLAGS --without-amaro --without-inspector --without-sqlite"
+  LITE_FLAGS="--v8-disable-temporal-support --without-amaro --without-inspector --without-sqlite"
 fi
 
 declare -a outputs_common=(
@@ -67,8 +68,11 @@ declare -a outputs_common=(
   "libmerve.a"
   "libnbytes.a"
   "libncrypto.a"
+  "libncrypto_engine.a"
   "libnghttp2.a"
   "libnode.a"
+  "libnode_base.a"
+  "libffi.a"
   "libopenssl.a"
   "libsimdjson.a"
   "libsimdutf.a"
@@ -102,6 +106,7 @@ declare -a outputs_common=(
 # builtin generators — the framework boots by snapshot deserialize;
 # libgtest/libgtest_main are test-only.
 declare -a outputs_full_only=(
+  "libnode_crates.a"
   "libcrdtp.a"
   "libsqlite.a"
   "libicudata.a"
@@ -145,6 +150,12 @@ build_for_arm64_device() {
   # upstream root one.
   make -C out v8_compiler BUILDTYPE=Release -j$(getconf _NPROCESSORS_ONLN)
 
+  # Cargo actions keep host/target archives separate; only the iOS target
+  # archive belongs in the distributed framework.
+  if [ "$FLAVOR" = "full" ]; then
+    cp "$LIBRARY_PATH/obj/gen/mobile-rust/target/libnode_crates.a" "$LIBRARY_PATH/libnode_crates.a"
+  fi
+
   # Move compilation outputs
   mkdir -p $TARGET_LIBRARY_PATH/arm64-device
   for output_file in "${outputs_arm64[@]}"; do
@@ -173,6 +184,12 @@ build_for_arm64_simulator() {
   make -j$(getconf _NPROCESSORS_ONLN)
   # Same stub-target build as the device path (see comment there).
   make -C out v8_compiler BUILDTYPE=Release -j$(getconf _NPROCESSORS_ONLN)
+
+  # Cargo actions keep host/target archives separate; only the iOS target
+  # archive belongs in the distributed framework.
+  if [ "$FLAVOR" = "full" ]; then
+    cp "$LIBRARY_PATH/obj/gen/mobile-rust/target/libnode_crates.a" "$LIBRARY_PATH/libnode_crates.a"
+  fi
 
   # Move compilation outputs
   mkdir -p $TARGET_LIBRARY_PATH/arm64-simulator

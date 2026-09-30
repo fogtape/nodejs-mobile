@@ -19,15 +19,15 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 ---
- node.gyp  | 26 ++++++++++++++++++++++----
+ node.gyp  | 13 ++++++++++---
  node.gypi | 22 ++++++++++++++++++----
- 2 files changed, 40 insertions(+), 8 deletions(-)
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index b129c3db8d..a1bce0bd1f 100644
+index 2cf1e62b56..b6d00820c9 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -69,6 +69,11 @@
+@@ -77,6 +77,11 @@
        'deps/acorn/acorn/dist/acorn.js',
        'deps/acorn/acorn-walk/dist/walk.js',
        'deps/minimatch/index.js',
@@ -39,34 +39,7 @@ index b129c3db8d..a1bce0bd1f 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -979,6 +984,16 @@
-             'src/node_snapshot_stub.cc',
-           ]
-         }],
-+        [ 'OS=="ios" and node_shared=="false" and node_use_node_snapshot=="false"', {
-+          # The framework links libnode directly, without the node executable
-+          # that normally supplies GetEmbeddedSnapshotData() in Node 26.
-+          'sources': [ 'src/node_snapshot_stub.cc' ],
-+          # Executables linking this archive must use its copy of the stub,
-+          # including force-loaded consumers such as node and cctest.
-+          'direct_dependent_settings': {
-+            'sources!': [ 'src/node_snapshot_stub.cc' ],
-+          },
-+        }],
-         [ 'node_use_bundled_v8!="false"', {
-           'dependencies': [ 'tools/v8_gypfiles/abseil.gyp:abseil' ],
-         }],
-@@ -1086,7 +1101,8 @@
-             '<@(node_quic_sources)',
-           ],
-         }],
--        [ 'OS in "linux freebsd mac solaris openharmony" and '
-+        # nodejs-mobile patch to mention iOS
-+        [ 'OS in "linux freebsd mac ios solaris openharmony" and '
-           'target_arch=="x64" and '
-           'node_target_type=="executable"', {
-           'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
-@@ -1431,8 +1447,9 @@
+@@ -1434,8 +1439,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -78,7 +51,7 @@ index b129c3db8d..a1bce0bd1f 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1657,7 +1674,8 @@
+@@ -1659,7 +1665,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -89,10 +62,10 @@ index b129c3db8d..a1bce0bd1f 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 3636633c62..49559662d7 100644
+index b382784e61..75d619dbeb 100644
 --- a/node.gypi
 +++ b/node.gypi
-@@ -271,6 +271,11 @@
+@@ -280,6 +280,11 @@
          'NODE_PLATFORM="darwin"',
        ],
      }],
@@ -104,7 +77,7 @@ index 3636633c62..49559662d7 100644
      [ 'OS=="freebsd"', {
        'libraries': [
          '-lutil',
-@@ -349,7 +354,7 @@
+@@ -358,7 +363,7 @@
          ],
        },
      }],
@@ -113,7 +86,7 @@ index 3636633c62..49559662d7 100644
        'cflags!': [ '-O3' ],
        'ldflags': [ '--coverage',
                     '-g',
-@@ -397,11 +402,15 @@
+@@ -406,11 +411,15 @@
            'defines': [ 'OPENSSL_API_COMPAT=0x10100000L', ],
            'dependencies': [
              './deps/openssl/openssl.gyp:openssl',
@@ -132,7 +105,7 @@ index 3636633c62..49559662d7 100644
              # -force_load or --whole-archive are not applicable for
              # the static library
              [ 'force_load=="true"', {
-@@ -478,5 +487,10 @@
+@@ -487,5 +496,10 @@
      }, {
        'defines': [ 'HAVE_QUIC=0' ]
      }],

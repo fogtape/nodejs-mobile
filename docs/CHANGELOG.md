@@ -41,6 +41,23 @@
 </table>
 
 <a id="26.1.0-0"></a>
+## Unreleased, Version 26.10.0-0 (Current)
+
+- Upgrade the independent Node 26 line to official Node.js 26.10.0.
+- Enable Temporal in Android/iOS full builds using Rust 1.86.0, with separate
+  native host and mobile target archives. Lite retains its no-ICU configuration
+  and omits Temporal.
+- Enable `node:ffi` in both flavors. Use iOS libffi's precompiled callback
+  trampoline table and the correct Apple arm64 long-double ABI.
+- Update the iOS link list for upstream's split `libnode_base` and
+  `libncrypto_engine` archives, plus libffi and the full flavor's Rust archive.
+- Add boot regressions for native calls, native-to-JavaScript callbacks, and
+  Temporal calendar/timezone behavior. Extend the mobile test exclusions for
+  new upstream subprocess and permission-verdict limitations.
+
+This source upgrade does not arm publication. Run Cut release and review its
+release PR after the complete build and device-suite gates pass.
+
 ## 2026-09-29, Version 26.1.0-0 (Current)
 
 First prerelease of the independent Node 26 line, built from official

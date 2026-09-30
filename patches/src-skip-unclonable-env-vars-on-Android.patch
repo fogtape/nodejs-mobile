@@ -19,10 +19,10 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index e94180cd65..fb4726042b 100644
+index 25e405be86..6c7ac610c5 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
-@@ -237,7 +237,9 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
+@@ -240,7 +240,9 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
      }
      CHECK(key->IsString());
      if (!Get(isolate, key.As<String>()).ToLocal(&value)) {

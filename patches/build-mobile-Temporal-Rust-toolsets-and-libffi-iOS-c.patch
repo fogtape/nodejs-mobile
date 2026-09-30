@@ -1,0 +1,459 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: fogtape <lilixu3210@gmail.com>
+Date: Tue, 29 Sep 2026 12:00:00 +0000
+Subject: [PATCH] build: mobile Temporal Rust toolsets and libffi iOS callbacks
+
+Separate native host tools from Android/iOS Rust archives and use libffi's
+precompiled executable trampoline table for iOS callbacks. Full builds
+retain ICU and enable Temporal; lite keeps its existing no-ICU policy.
+
+Signed-off-by: fogtape <lilixu3210@gmail.com>
+Assisted-by: Codex
+---
+ deps/crates/crates.gyp          | 215 +++++++++++++-------------------
+ deps/libffi/generate-headers.py |  15 ++-
+ deps/libffi/libffi.gyp          |  60 ++++++---
+ 3 files changed, 139 insertions(+), 151 deletions(-)
+
+diff --git a/deps/crates/crates.gyp b/deps/crates/crates.gyp
+index 0720ee6dcf..9ebf172222 100644
+--- a/deps/crates/crates.gyp
++++ b/deps/crates/crates.gyp
+@@ -1,129 +1,86 @@
+-{
+-  'variables': {
+-    'cargo%': 'cargo',
+-    'cargo_vendor_dir': './vendor',
+-    'temporal_capi_dir': 'temporal_capi-v0_2',
+-    'cargo_rust_target%': '',
+-  },
+-  'conditions': [
+-    ['build_type == "Release"', {
+-      'variables': {
+-        'cargo_build_flags': ['--release'],
+-      },
+-      'conditions': [
+-        ['cargo_rust_target!=""', {
+-          'variables': {
+-            'cargo_build_flags': ['--target', '<(cargo_rust_target)'],
+-          }
+-        }],
+-        ['OS=="win"', {
+-          'variables': {
+-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/$(Platform)/release/node_crates.lib',
+-          },
+-        }, {
+-          'variables': {
+-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+-          },
+-        }],
+-      ],
+-    }, {
+-      'variables': {
+-        'cargo_build_flags': [],
+-      },
+-      'conditions': [
+-        ['OS=="win"', {
+-          'variables': {
+-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/$(Platform)/debug/node_crates.lib',
+-          },
+-        }, {
+-          'variables': {
+-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+-          },
+-        }],
+-      ],
+-    }]
+-  ],
+-  'targets': [
+-    {
+-      'target_name': 'node_crates',
+-      'type': 'none',
+-      'toolsets': ['host', 'target'],
+-      'hard_dependency': 1,
+-      'sources': [
+-        'Cargo.toml',
+-        'Cargo.lock',
+-        'src/lib.rs',
+-      ],
+-      'link_settings': {
+-        'libraries': [
+-          '<(node_crates_libpath)',
+-        ],
+-        'conditions': [
+-          ['OS=="win"', {
+-            'libraries': [
+-              '-lntdll',
+-              '-luserenv'
+-            ],
+-          }],
+-        ],
+-      },
+-      'conditions': [
+-        ['OS=="win"', {
+-          'actions': [
+-            {
+-              'action_name': 'cargo_build',
+-              'inputs': [
+-                '<@(_sources)'
+-              ],
+-              'outputs': [
+-                '<(node_crates_libpath)'
+-              ],
+-              'action': [
+-                '<(python)',
+-                'cargo_build.py',
+-                '$(Platform)',
+-                '<(SHARED_INTERMEDIATE_DIR)',
+-                '<@(cargo_build_flags)',
+-                '--frozen',
+-              ],
+-            }
+-          ],
+-        }, {
+-          'actions': [
+-            {
+-              'action_name': 'cargo_build',
+-              'inputs': [
+-                '<@(_sources)'
+-              ],
+-              'outputs': [
+-                '<(node_crates_libpath)'
+-              ],
+-              'action': [
+-                '<(cargo)',
+-                'rustc',
+-                '<@(cargo_build_flags)',
+-                '--frozen',
+-                '--target-dir',
+-                '<(SHARED_INTERMEDIATE_DIR)'
+-              ],
+-            }
+-          ],
+-        }],
+-      ],
+-    },
+-    {
+-      'target_name': 'temporal_capi',
+-      'type': 'none',
+-      'toolsets': ['host', 'target'],
+-      'sources': [],
+-      'dependencies': [
+-        'node_crates',
+-      ],
+-      'direct_dependent_settings': {
+-        'include_dirs': [
+-          '<(cargo_vendor_dir)/<(temporal_capi_dir)/bindings/cpp',
+-        ],
+-      },
+-    },
+-  ]
+-}
++# Mobile Rust actions select their triple per toolset; desktop builds retain
++# upstream Cargo behavior. See mobile-cargo-build.py.
++{'variables': {'cargo%': 'cargo',
++               'cargo_vendor_dir': './vendor',
++               'temporal_capi_dir': 'temporal_capi-v0_2',
++               'cargo_rust_target%': ''},
++ 'conditions': [['build_type == "Release"',
++                 {'variables': {'cargo_build_flags': ['--release']},
++                  'conditions': [['cargo_rust_target!=""',
++                                  {'variables': {'cargo_build_flags': ['--target',
++                                                                       '<(cargo_rust_target)']}}],
++                                 ['OS=="win"',
++                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/$(Platform)/release/node_crates.lib'}},
++                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)'}}]]},
++                 {'variables': {'cargo_build_flags': []},
++                  'conditions': [['OS=="win"',
++                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/$(Platform)/debug/node_crates.lib'}},
++                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)'}}]]}]],
++ 'targets': [{'target_name': 'node_crates',
++              'type': 'none',
++              'toolsets': ['host', 'target'],
++              'hard_dependency': 1,
++              'sources': ['Cargo.toml', 'Cargo.lock', 'src/lib.rs'],
++              'link_settings': {'libraries': ['<(node_crates_libpath)'],
++                                'conditions': [['OS=="win"',
++                                                {'libraries': ['-lntdll', '-luserenv']}]]},
++              'conditions': [['OS in "android ios"',
++                              {'link_settings': {'libraries!': ['<(node_crates_libpath)'],
++                                                 'libraries': ['<(SHARED_INTERMEDIATE_DIR)/mobile-rust/<(_toolset)/libnode_crates.a'],
++                                                 'target_conditions': [['OS=="android" and '
++                                                                        '_toolset=="target"',
++                                                                        {'libraries': ['-ldl',
++                                                                                       '-llog',
++                                                                                       '-lunwind']}]]},
++                               'variables': {'mobile_cargo_flags': []},
++                               'conditions': [['OS=="android"',
++                                               {'variables': {'mobile_cargo_flags': ['--ndk',
++                                                                                     '<(android_ndk_path)',
++                                                                                     '--android-api',
++                                                                                     '<(android_api_level)']}}],
++                                              ['OS=="ios"',
++                                               {'variables': {'mobile_cargo_flags': ['--ios-simulator',
++                                                                                     '<(iossim)']}}]],
++                               'actions': [{'action_name': 'mobile_cargo_build',
++                                            'inputs': ['<@(_sources)',
++                                                       'mobile-cargo-build.py',
++                                                       '.cargo/config.toml'],
++                                            'outputs': ['<(SHARED_INTERMEDIATE_DIR)/mobile-rust/<(_toolset)/libnode_crates.a'],
++                                            'action': ['<(python)',
++                                                       'mobile-cargo-build.py',
++                                                       '--os',
++                                                       '<(OS)',
++                                                       '--arch',
++                                                       '<(target_arch)',
++                                                       '--toolset',
++                                                       '<(_toolset)',
++                                                       '--configuration',
++                                                       '<(build_type)',
++                                                       '--output',
++                                                       '<(SHARED_INTERMEDIATE_DIR)/mobile-rust/<(_toolset)/libnode_crates.a',
++                                                       '<@(mobile_cargo_flags)']}]},
++                              {'conditions': [['OS=="win"',
++                                               {'actions': [{'action_name': 'cargo_build',
++                                                             'inputs': ['<@(_sources)'],
++                                                             'outputs': ['<(node_crates_libpath)'],
++                                                             'action': ['<(python)',
++                                                                        'cargo_build.py',
++                                                                        '$(Platform)',
++                                                                        '<(SHARED_INTERMEDIATE_DIR)',
++                                                                        '<@(cargo_build_flags)',
++                                                                        '--frozen']}]},
++                                               {'actions': [{'action_name': 'cargo_build',
++                                                             'inputs': ['<@(_sources)'],
++                                                             'outputs': ['<(node_crates_libpath)'],
++                                                             'action': ['<(cargo)',
++                                                                        'rustc',
++                                                                        '<@(cargo_build_flags)',
++                                                                        '--frozen',
++                                                                        '--target-dir',
++                                                                        '<(SHARED_INTERMEDIATE_DIR)']}]}]]}]]},
++             {'target_name': 'temporal_capi',
++              'type': 'none',
++              'toolsets': ['host', 'target'],
++              'sources': [],
++              'dependencies': ['node_crates'],
++              'direct_dependent_settings': {'include_dirs': ['<(cargo_vendor_dir)/<(temporal_capi_dir)/bindings/cpp']}}]}
+diff --git a/deps/libffi/generate-headers.py b/deps/libffi/generate-headers.py
+index fb58edf17b..e3259e4b65 100644
+--- a/deps/libffi/generate-headers.py
++++ b/deps/libffi/generate-headers.py
+@@ -70,7 +70,7 @@ def has_long_double(os_name, target_arch):
+     if os_name == 'win':
+         return '0'
+ 
+-    if os_name == 'mac' and target_arch == 'arm64':
++    if os_name in ('ios', 'mac') and target_arch == 'arm64':
+         return '0'
+ 
+     if target_arch == 'arm':
+@@ -81,7 +81,7 @@ def has_long_double(os_name, target_arch):
+ 
+ def uses_exec_trampoline_table(os_name, target_arch):
+     target_arch = normalize_arch(target_arch)
+-    return os_name == 'mac' and target_arch in ('arm', 'arm64')
++    return os_name in ('ios', 'mac') and target_arch in ('arm', 'arm64')
+ 
+ 
+ def render_ffi_header(base_dir, os_name, target_arch, target):
+@@ -131,7 +131,7 @@ def render_fficonfig(os_name, target_arch):
+ 
+     if uses_exec_trampoline_table(os_name, target_arch):
+         lines.append('#define FFI_EXEC_TRAMPOLINE_TABLE 1')
+-    elif os_name in ('freebsd', 'mac', 'openbsd'):
++    elif os_name in ('android', 'freebsd', 'mac', 'openbsd'):
+         lines.append('#define FFI_MMAP_EXEC_WRIT 1')
+ 
+     if os_name != 'win':
+@@ -149,7 +149,7 @@ def render_fficonfig(os_name, target_arch):
+             '#define HAVE_MMAP_DEV_ZERO 1',
+         ])
+ 
+-    if os_name == 'mac' and target_arch == 'arm64':
++    if os_name in ('ios', 'mac') and target_arch == 'arm64':
+         lines.extend([
+             '#if defined(__arm64e__)',
+             '#define HAVE_ARM64E_PTRAUTH 1',
+@@ -261,8 +261,15 @@ def main(argv=None):
+     parser.add_argument('--output-dir', required=True)
+     parser.add_argument('--target-arch')
+     parser.add_argument('--os')
++    parser.add_argument('--toolset', choices=('host', 'target'), default='target')
++    parser.add_argument('--host-arch')
++    parser.add_argument('--host-os')
+     args = parser.parse_args(argv)
+ 
++    if args.toolset == 'host' and args.os in ('android', 'ios'):
++        args.target_arch = args.host_arch
++        args.os = args.host_os
++
+     try:
+         generate_headers(args.output_dir,
+                          args.target_arch or detect_target_arch(),
+diff --git a/deps/libffi/libffi.gyp b/deps/libffi/libffi.gyp
+index f3122a4e2a..75c89c3205 100644
+--- a/deps/libffi/libffi.gyp
++++ b/deps/libffi/libffi.gyp
+@@ -1,5 +1,6 @@
+ {
+   'variables': {
++    'host_os%': '<(OS)',
+     'libffi_sources': [
+       'src/closures.c',
+       'src/debug.c',
+@@ -153,6 +154,8 @@
+   'targets': [
+     {
+       'target_name': 'libffi',
++      # Snapshot tools also link Node's FFI support during mobile cross-builds.
++      'toolsets': ['host', 'target'],
+       'type': 'static_library',
+       'hard_dependency': 1,
+       'cflags': ['-fvisibility=hidden'],
+@@ -166,7 +169,7 @@
+       'include_dirs': [
+         'include',
+         'src',
+-        '<(SHARED_INTERMEDIATE_DIR)/libffi',
++        '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+       ],
+       'sources': [
+         '<@(libffi_sources)',
+@@ -187,19 +190,22 @@
+             'src/x86/ffitarget.h',
+           ],
+           'outputs': [
+-            '<(SHARED_INTERMEDIATE_DIR)/libffi/ffi.h',
+-            '<(SHARED_INTERMEDIATE_DIR)/libffi/fficonfig.h',
+-            '<(SHARED_INTERMEDIATE_DIR)/libffi/ffitarget.h',
++            '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffi.h',
++            '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/fficonfig.h',
++            '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffitarget.h',
+           ],
+           'action': [
+             '<(python)',
+             'generate-headers.py',
+             '--output-dir',
+-            '<(SHARED_INTERMEDIATE_DIR)/libffi',
++            '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+             '--target-arch',
+             '<(target_arch)',
+             '--os',
+             '<(OS)',
++            '--toolset', '<(_toolset)',
++            '--host-arch', '<(host_arch)',
++            '--host-os', '<(host_os)',
+           ],
+         },
+       ],
+@@ -214,8 +220,8 @@
+                 'include/ffi_cfi.h',
+                 'src/x86/asmnames.h',
+                 'src/x86/win64_intel.S',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/ffi.h',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/fficonfig.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffi.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/fficonfig.h',
+               ],
+               'outputs': [
+                 '<(INTERMEDIATE_DIR)/win64_intel.asm',
+@@ -232,7 +238,7 @@
+                 '--include-dir',
+                 'src/x86',
+                 '--include-dir',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+                 '--define',
+                 'FFI_STATIC_BUILD',
+               ],
+@@ -249,8 +255,8 @@
+                 'include/ffi_cfi.h',
+                 'src/x86/asmnames.h',
+                 'src/x86/sysv_intel.S',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/ffi.h',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/fficonfig.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffi.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/fficonfig.h',
+               ],
+               'outputs': [
+                 '<(INTERMEDIATE_DIR)/sysv_intel.asm',
+@@ -267,7 +273,7 @@
+                 '--include-dir',
+                 'src/x86',
+                 '--include-dir',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+                 '--define',
+                 'FFI_STATIC_BUILD',
+               ],
+@@ -283,8 +289,8 @@
+                 'preprocess_asm.py',
+                 'include/ffi_cfi.h',
+                 'src/arm/sysv_msvc_arm32.S',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/ffi.h',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/fficonfig.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffi.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/fficonfig.h',
+               ],
+               'outputs': [
+                 '<(INTERMEDIATE_DIR)/sysv_msvc_arm32.asm',
+@@ -301,7 +307,7 @@
+                 '--include-dir',
+                 'src/arm',
+                 '--include-dir',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+                 '--define',
+                 'FFI_STATIC_BUILD',
+               ],
+@@ -322,8 +328,8 @@
+                 'include/ffi_cfi.h',
+                 'src/aarch64/internal.h',
+                 'src/aarch64/win64_armasm.S',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/ffi.h',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi/fficonfig.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/ffi.h',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)/fficonfig.h',
+               ],
+               'outputs': [
+                 '<(INTERMEDIATE_DIR)/win64_armasm.obj',
+@@ -340,7 +346,7 @@
+                 '--include-dir',
+                 'src/aarch64',
+                 '--include-dir',
+-                '<(SHARED_INTERMEDIATE_DIR)/libffi',
++                '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+                 '--define',
+                 'FFI_STATIC_BUILD',
+                 '--assemble',
+@@ -350,10 +356,28 @@
+           ],
+         }],
+       ],
++      # The global architecture selection above belongs to the mobile
++      # target. Native host tools need their own source backend and headers.
++      'target_conditions': [
++        ['_toolset=="host" and OS in "android ios"', {
++          'sources!': ['<@(libffi_arch_sources)'],
++          'conditions': [
++            ['host_arch=="x64"', {
++              'sources': [
++                'src/x86/ffiw64.c', 'src/x86/ffi64.c',
++                'src/x86/unix64.S', 'src/x86/win64.S',
++              ],
++            }],
++            ['host_arch=="arm64"', {
++              'sources': ['src/aarch64/ffi.c', 'src/aarch64/sysv.S'],
++            }],
++          ],
++        }],
++      ],
+       'direct_dependent_settings': {
+         'include_dirs': [
+           'include',
+-          '<(SHARED_INTERMEDIATE_DIR)/libffi',
++          '<(SHARED_INTERMEDIATE_DIR)/libffi/<(_toolset)',
+         ],
+         'defines': [
+           'FFI_STATIC_BUILD',

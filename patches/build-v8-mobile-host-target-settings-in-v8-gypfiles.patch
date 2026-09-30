@@ -21,7 +21,7 @@ Co-authored-by: DiamondYuan <541832074@qq.com>
  2 files changed, 102 insertions(+), 19 deletions(-)
 
 diff --git a/tools/v8_gypfiles/toolchain.gypi b/tools/v8_gypfiles/toolchain.gypi
-index 5aa9d020a9..64ea114ca5 100644
+index 3676848df8..61af0a4044 100644
 --- a/tools/v8_gypfiles/toolchain.gypi
 +++ b/tools/v8_gypfiles/toolchain.gypi
 @@ -612,6 +612,20 @@
@@ -46,10 +46,10 @@ index 5aa9d020a9..64ea114ca5 100644
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index 945aa0aa50..f5209e9140 100644
+index 093be6e539..664542b0d6 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
-@@ -856,6 +856,15 @@
+@@ -906,6 +906,15 @@
        'direct_dependent_settings': {
          'sources': ['<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources = ")'],
          'conditions': [
@@ -65,7 +65,7 @@ index 945aa0aa50..f5209e9140 100644
            ['v8_target_arch=="ia32"', {
              'sources': [
                '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_compiler_sources =.*?v8_current_cpu == \\"x86\\".*?v8_compiler_sources \\+= ")',
-@@ -918,6 +927,11 @@
+@@ -968,6 +977,11 @@
        'target_name': 'v8_compiler_for_mksnapshot_source_set',
        'type': 'static_library',
        'toolsets': ['host', 'target'],
@@ -77,7 +77,7 @@ index 945aa0aa50..f5209e9140 100644
        'dependencies': [
          'generate_bytecode_builtins_list',
          'run_torque',
-@@ -927,13 +941,9 @@
+@@ -977,13 +991,9 @@
          'v8_libbase',
          'v8_shared_internal_headers',
          'v8_pch',
@@ -94,10 +94,10 @@ index 945aa0aa50..f5209e9140 100644
        ],
      },  # v8_compiler_for_mksnapshot_source_set
      {
-@@ -952,11 +962,12 @@
-         'abseil.gyp:abseil',
-       ],
-       'conditions': [
+@@ -1006,11 +1016,12 @@
+             '<(perfetto_gyp_file):perfetto_sdk',
+           ],
+         }],
 -        ['v8_enable_maglev==0', {
 -          'sources': [
 -            '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?!v8_enable_maglev.*?sources \\+= ")',
@@ -112,7 +112,7 @@ index 945aa0aa50..f5209e9140 100644
          ['v8_enable_turbofan==1', {
            'dependencies': ['v8_compiler_sources'],
          }, {
-@@ -1191,7 +1202,7 @@
+@@ -1263,7 +1274,7 @@
            'conditions': [
              ['v8_enable_webassembly==1', {
                'conditions': [
@@ -121,7 +121,7 @@ index 945aa0aa50..f5209e9140 100644
                    'sources': [
                      '<(V8_ROOT)/src/trap-handler/handler-inside-posix.cc',
                      '<(V8_ROOT)/src/trap-handler/handler-outside-posix.cc',
-@@ -1334,7 +1345,8 @@
+@@ -1406,7 +1417,8 @@
          # Platforms that don't have Compare-And-Swap (CAS) support need to link atomic library
          # to implement atomic memory access.
          # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
@@ -131,7 +131,7 @@ index 945aa0aa50..f5209e9140 100644
            'link_settings': {
              'libraries': ['-latomic', ],
            },
-@@ -1484,6 +1496,8 @@
+@@ -1560,6 +1572,8 @@
              '<(V8_ROOT)/src/base/platform/platform-posix.h',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.cc',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.h',
@@ -140,7 +140,7 @@ index 945aa0aa50..f5209e9140 100644
            ],
            'link_settings': {
              'target_conditions': [
-@@ -1496,9 +1510,18 @@
+@@ -1572,9 +1586,18 @@
            },
            'target_conditions': [
              ['_toolset=="host"', {
@@ -162,7 +162,7 @@ index 945aa0aa50..f5209e9140 100644
                ],
              }, {
                'sources': [
-@@ -2078,12 +2101,14 @@
+@@ -2183,12 +2206,14 @@
              ],
            }, { # 'OS!="win"'
              'conditions': [
@@ -179,7 +179,7 @@ index 945aa0aa50..f5209e9140 100644
                  'sources': [
                    '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                  ],
-@@ -2301,6 +2326,46 @@
+@@ -2406,6 +2431,46 @@
        },
      },  # postmortem-metadata
  
@@ -226,7 +226,7 @@ index 945aa0aa50..f5209e9140 100644
      {
        'target_name': 'v8_zlib',
        'type': 'static_library',
-@@ -2315,6 +2380,10 @@
+@@ -2420,6 +2485,10 @@
              }]
            ]
          }],

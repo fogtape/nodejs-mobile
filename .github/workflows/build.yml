@@ -40,6 +40,8 @@ env:
   SCCACHE_ERROR_LOG: /tmp/sccache-errors.log
   ANDROID_NDK_VERSION: r29
   ANDROID_TARGET_SDK_VERSION: 24
+  # Match the MSRV of the vendored Temporal crates; included in library keys.
+  NODEJS_MOBILE_RUST_TOOLCHAIN: "1.86.0"
   # Flavor is a per-job matrix dimension ([full, lite]) so every Build
   # produces both binaries and the curated device gate covers both (see
   # docs/BUILDING.md "The lite variant"). Each job derives
@@ -71,7 +73,7 @@ jobs:
         run: python3 scripts/package-preview.py preview-input preview-packages
       - uses: actions/upload-artifact@v7
         with:
-          name: nodejs-mobile-26.1.0-0-preview
+          name: nodejs-mobile-26.10.0-0-preview
           path: preview-packages
           retention-days: 90
           if-no-files-found: error
@@ -131,6 +133,13 @@ jobs:
 
       - uses: ./.github/actions/materialize
 
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
+
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
@@ -164,7 +173,7 @@ jobs:
                  git hash-object node.gyp node.gypi common.gypi configure configure.py android-configure android_configure.py tools/android_build.sh tools/copy_libnode_headers.sh; \
                  printf '%s\n' "$ANDROID_LDFLAGS" "$ANDROID_TARGET_SDK_VERSION"; \
                } | git hash-object --stdin )
-          echo "key=libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
+          echo "key=rust${NODEJS_MOBILE_RUST_TOOLCHAIN}-libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
 
       # Restore exact completed libraries independently from compiler objects.
       - name: Restore built libnode
@@ -320,6 +329,13 @@ jobs:
 
       - uses: ./.github/actions/materialize
 
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target aarch64-apple-ios,aarch64-apple-ios-sim
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
+
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
@@ -335,7 +351,7 @@ jobs:
                  git hash-object node.gyp node.gypi common.gypi configure configure.py tools/ios_framework_prepare.sh tools/copy_libnode_headers.sh; \
                  xcodebuild -version; \
                } | git hash-object --stdin )
-          echo "key=libnode-ios-${TARGET_ARCH}${FLAVOR_SUFFIX}-v1-${H}" >> "$GITHUB_OUTPUT"
+          echo "key=rust${NODEJS_MOBILE_RUST_TOOLCHAIN}-libnode-ios-${TARGET_ARCH}${FLAVOR_SUFFIX}-v1-${H}" >> "$GITHUB_OUTPUT"
 
       # Exact completed-library policy: see build-android and NOTICE.md.
       - name: Restore built libnode
@@ -544,12 +560,23 @@ jobs:
 
       # gyp-next needs setuptools at build time and a bare venv doesn't bundle
       # it (distutils was removed from the stdlib); install it explicitly.
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target aarch64-apple-ios,aarch64-apple-ios-sim
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
+
       - name: Generate config.gypi
         run: |
           python3.12 -m venv .
           source bin/activate
           python3.12 -m pip install setuptools packaging
-          ./configure --without-ffi --v8-disable-temporal-support
+          if [ "$NODEJS_MOBILE_FLAVOR" = "full" ]; then
+            ./configure --with-intl=small-icu --v8-enable-temporal-support
+          else
+            ./configure --with-intl=none --v8-disable-temporal-support
+          fi
 
       - name: Combine
         run: |
@@ -719,6 +746,11 @@ jobs:
 
       - uses: ./.github/actions/materialize
 
+      - name: Install Temporal Rust toolchain
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
+
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
@@ -760,7 +792,7 @@ jobs:
           python3.12 -m venv .
           source bin/activate
           python3.12 -m pip install setuptools packaging
-          ./configure --without-ffi --v8-disable-temporal-support
+          ./configure --v8-enable-temporal-support
 
       - name: Build node target
         env:
@@ -776,6 +808,7 @@ jobs:
         run: |
           source bin/activate
           make -j"$(nproc)" node
+          ./out/Release/node tools/mobile-test/smoke/mobile-features.js
 
       - name: sccache stats
         if: always() && steps.rel.outputs.cold != 'true'
@@ -1333,6 +1366,13 @@ jobs:
       - name: Create GitHub Release (prerelease)
         run: |
           TAG="v${V}"
+          MAJOR="${V%%.*}"
+          if [ "$MAJOR" = 24 ]; then
+            LINE="Node.js 24 LTS"
+          else
+            LINE="Node.js ${MAJOR}"
+          fi
+          RELEASE_TITLE="${LINE} · nodejs-mobile v${V}（预发布）"
           NOTES=$(cat "$RUNNER_TEMP/release-notes.md")
           # Human-visible copy of the tag's Recipe-Commit trailer.
           PROV="Generated from [\`${GITHUB_REF_NAME}@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
@@ -1355,7 +1395,7 @@ jobs:
             fi
             gh release create "$TAG" out/*.zip out/SHA256SUMS \
               --repo "$GITHUB_REPOSITORY" \
-              --title "nodejs-mobile ${V}" \
+              --title "$RELEASE_TITLE" \
               --draft \
               --prerelease \
               --latest=false \

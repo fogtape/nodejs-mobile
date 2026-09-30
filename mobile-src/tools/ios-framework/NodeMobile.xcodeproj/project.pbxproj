@@ -43,6 +43,10 @@
 		A3F2E7592E716AB00001C23B /* libsqlite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A3F2E7582E716AA30001C23B /* libsqlite.a */; };
 		D9A7619D1F7C63A8006AFE86 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 331917C21EC4702A00F93D52 /* CoreFoundation.framework */; };
 		D9A762281F7C675E006097B1 /* NodeMobile.h in Headers */ = {isa = PBXBuildFile; fileRef = D9A762261F7C674F006097B1 /* NodeMobile.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FACE26010000000000000000 /* libnode_base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FACE26000000000000000000 /* libnode_base.a */; };
+		FACE26010000000000000001 /* libncrypto_engine.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FACE26000000000000000001 /* libncrypto_engine.a */; };
+		FACE26010000000000000002 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FACE26000000000000000002 /* libffi.a */; };
+		FACE26010000000000000003 /* libnode_crates.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FACE26000000000000000003 /* libnode_crates.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -84,6 +88,10 @@
 		F63BCE7E29756DCD0049F595 /* libv8_zlib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_zlib.a; path = bin/libv8_zlib.a; sourceTree = "<group>"; };
 		F6860EE02ACD491900070ED3 /* libada.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libada.a; path = bin/libada.a; sourceTree = "<group>"; };
 		F6860EE62ACD493C00070ED3 /* libsimdutf.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsimdutf.a; path = bin/libsimdutf.a; sourceTree = "<group>"; };
+		FACE26000000000000000000 /* libnode_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode_base.a; path = bin/libnode_base.a; sourceTree = "<group>"; };
+		FACE26000000000000000001 /* libncrypto_engine.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libncrypto_engine.a; path = bin/libncrypto_engine.a; sourceTree = "<group>"; };
+		FACE26000000000000000002 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libffi.a; path = bin/libffi.a; sourceTree = "<group>"; };
+		FACE26000000000000000003 /* libnode_crates.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libnode_crates.a; path = bin/libnode_crates.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +112,10 @@
 				A36728FF2E53580A004DF2FB /* libv8_libplatform.a in Frameworks */,
 				A36728F12E53580A004DF2FB /* libnbytes.a in Frameworks */,
 				A36728F82E53580A004DF2FB /* libuv.a in Frameworks */,
+				FACE26010000000000000000 /* libnode_base.a in Frameworks */,
+				FACE26010000000000000001 /* libncrypto_engine.a in Frameworks */,
+				FACE26010000000000000002 /* libffi.a in Frameworks */,
+				FACE26010000000000000003 /* libnode_crates.a in Frameworks */,
 				A3F2E7592E716AB00001C23B /* libsqlite.a in Frameworks */,
 				A36728EA2E53580A004DF2FB /* libcares.a in Frameworks */,
 				A36728F72E53580A004DF2FB /* libsimdutf.a in Frameworks */,
@@ -151,6 +163,10 @@
 		3376C9181EC3922E0007AD59 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FACE26000000000000000000 /* libnode_base.a */,
+				FACE26000000000000000001 /* libncrypto_engine.a */,
+				FACE26000000000000000002 /* libffi.a */,
+				FACE26000000000000000003 /* libnode_crates.a */,
 				A3F2E7582E716AA30001C23B /* libsqlite.a */,
 				A36728C62E5355E5004DF2FB /* Security.framework */,
 				A36728BF2E530EF7004DF2FB /* libabseil.a */,
