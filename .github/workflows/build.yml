@@ -28,7 +28,8 @@ on:
 # mid-flight.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Preserve an earlier compiler run when this review opts into cache retention.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'preserve-build-cache') }}
 
 # Shared compiler cache — security model in docs/BUILDING.md, "The CI
 # compiler cache". Summary: an sccache entry is never re-verified by the
