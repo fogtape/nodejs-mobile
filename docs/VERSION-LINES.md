@@ -89,8 +89,9 @@ from different runs. Versioned preview packages additionally contain
 
 `process.version` reports `v26.10.0`; `process.versions.mobile` identifies
 the mobile build revision. A CI preview is not a published release. **Cut release** also supports
-`recipe-v26`; its reviewed PR arms a specific version for publication after
-the complete gate chain succeeds. See [RELEASING.md](RELEASING.md).
+`recipe-v26`; its reviewed PR arms a specific version; after merge, manually run **Build**
+with `operation=prerelease` and that exact mobile version. Push/PR builds do
+not publish. The complete gate chain must succeed. See [RELEASING.md](RELEASING.md).
 
 ## Upgrade one line
 

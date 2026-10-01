@@ -1,4 +1,5 @@
 name: Build
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('{0} · {1} · {2}', inputs.operation, inputs.version || 'version of record', github.ref_name) || format('Build · {0}', github.head_ref || github.ref_name) }}
 
 on:
   # Don't run on pushes to PR branches to avoid double-running (push trigger and
@@ -11,6 +12,16 @@ on:
   pull_request:
     branches: [recipe, recipe-v26]
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Build only, rehearse prerelease, or publish a prerelease
+        type: choice
+        options: [build, prerelease-dryrun, prerelease]
+        default: build
+      version:
+        description: Exact mobile version for prerelease/dryrun (26.10.0-0); empty for build
+        type: string
+        default: ''
 
 # One run per PR/branch. cancel-in-progress ONLY for pull_request: a push to
 # recipe may be carrying the release gate chain and must never be cancelled
@@ -90,6 +101,7 @@ jobs:
   # on the merge run. Pushes and releases run both. See docs/TESTING.md,
   # "Flavors, and what's required to merge".
   build-android:
+    needs: release-check
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +144,8 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -298,6 +312,7 @@ jobs:
           path: out_android
 
   build-ios:
+    needs: release-check
     strategy:
       fail-fast: false
       matrix:
@@ -329,6 +344,8 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -725,6 +742,7 @@ jobs:
   # Builds only the 'node' target, so no cctest/addons. Lives in this
   # workflow (not its own) so it can gate ci-required and publish via needs:.
   smoke-host:
+    needs: release-check
     runs-on: ubuntu-24.04
     # See build-android. This job ships nothing, but it gates publish: a
     # poisoned host binary is a host binary that can be made to pass the tests
@@ -747,6 +765,8 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -948,6 +968,7 @@ jobs:
   ci-required:
     if: always()
     needs:
+      - release-check
       - build-android
       - build-ios
       - combine-android
@@ -1013,19 +1034,9 @@ jobs:
             echo "upgrade=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # Decide whether this push is a release, and publish that decision as job
-  # outputs for the gate chain below. The decision itself — including the
-  # push-to-recipe-only guard — lives in ./.github/actions/release-check,
-  # because the compiling jobs above ask the same question for a different
-  # reason (build cold) and must not depend on this job to get an answer.
-  #
-  # The job's own `if:` duplicates the guard inside the action on purpose:
-  # skipping this job also skips the real-device smokes, the full suites and
-  # publish, which need: it, so the gate chain never runs at all off a
-  # non-release event. A deployment branch rule on the `release` Environment
-  # restricting it to recipe would stop publish independently of this.
+  # Validate manual version/branch/marker/tag requests before starting any
+  # compiler job. PR and push events remain builds, even after a release PR.
   release-check:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/recipe' || github.ref == 'refs/heads/recipe-v26')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1041,6 +1052,21 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
+      - name: Validate publishable notes before compiling
+        if: steps.d.outputs.cold == 'true'
+        env:
+          V: ${{ steps.d.outputs.version }}
+        run: scripts/release-notes.py --version "$V"
+      - name: Show build or prerelease decision
+        env:
+          V: ${{ steps.d.outputs.version }}
+          RELEASE: ${{ steps.d.outputs.release }}
+          DRYRUN: ${{ steps.d.outputs.dryrun }}
+        run: |
+          printf '## Run plan\n\n- Version: `%s`\n- Publish prerelease: **%s**\n- Rehearsal: **%s**\n' \
+            "$V" "$RELEASE" "$DRYRUN" >> "$GITHUB_STEP_SUMMARY"
 
   # NOTE (this copy): the upstream recipe runs two BrowserStack real-device
   # smokes here (physical Android arm64 + iPhone) and publish needs: both.
@@ -1089,10 +1115,8 @@ jobs:
   # binary that cannot print hello on an emulator should not get four
   # device-hours of suite first.
   #
-  # always() because release-check is push-only: on an upgrade PR it is
-  # skipped, and a skipped job in needs: skips its dependents whatever their
-  # `if:` says. always() drops that coupling, so the artifact/smoke gates the
-  # skip used to provide have to be spelled out as result checks.
+  # always() lets the result checks distinguish completed artifact/smoke
+  # gates from failed/skipped jobs. The run plan explicitly gates releases.
   full-suite-android:
     if: >-
       always() &&
@@ -1255,10 +1279,10 @@ jobs:
           EOF
           exit 1
 
-  # Publish: on a release commit, once every gate in this run is green, tag
+  # Publish: on an explicit manual prerelease request, once every gate in this run is green, tag
   # the materialized tree and publish the GitHub prerelease with this run's
   # artifacts. All gating is needs:-based within one run -- no cross-run SHA
-  # lookups. A release-dryrun: commit exercises everything except the two
+  # lookups. A prerelease-dryrun dispatch exercises everything except the two
   # mutating steps (tag push, release create).
   publish:
     if: >-
@@ -1266,6 +1290,8 @@ jobs:
       needs.release-check.outputs.dryrun == 'true'
     needs:
       - release-check
+      - ci-required
+      - release-notes
       - smoke-android
       - smoke-ios
       - smoke-host

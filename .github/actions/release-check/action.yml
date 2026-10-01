@@ -1,29 +1,24 @@
 name: Release check
 description: >
-  Decide whether the checked-out recipe commit should trigger publish: it checks
-  whether the version of record (mobile-src/src/node_mobile_version.h) is
-  already tagged, and whether this run is a rehearsal (`release-dryrun:` commit
-  message).
-
-  This action is used by the build.yml `release-check` job, which gates the
-  publish chain, and by the three compiling jobs (android-build, ios-build, and
-  nodejs-mobile-build) to determine whether they must build cold (no shared
-  cache) or may build warm (shared cache).`
-
-  Must run on the recipe checkout, BEFORE ./.github/actions/materialize
-  replaces the workspace: mobile-src/ only exists on this branch.
-
-  Requires contents:read (tag probe).
+  Validate explicit manual prerelease requests against the maintained branch,
+  upstream pin, version header, reviewed release marker and unused tags.
+  PR/push builds never publish. Run before materializing the recipe checkout.
 inputs:
+  operation:
+    description: build, prerelease-dryrun or prerelease
+    default: build
+  version:
+    description: Exact mobile version required for manual prerelease requests
+    default: ''
   token:
     description: Token with contents:read on this repository, for the tag probe.
     required: true
 outputs:
   release:
-    description: '"true" when this push should tag and publish.'
+    description: '"true" for an explicit validated manual prerelease request.'
     value: ${{ steps.d.outputs.release }}
   dryrun:
-    description: '"true" for a `release-dryrun:` rehearsal push.'
+    description: '"true" for a validated manual prerelease-dryrun request.'
     value: ${{ steps.d.outputs.dryrun }}
   cold:
     description: >
@@ -41,50 +36,6 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
-      run: |
-        f=mobile-src/src/node_mobile_version.h
-        if [ ! -f "$f" ]; then
-          echo "::error::$f not found — the release-check action must run on the recipe checkout, before ./.github/actions/materialize"
-          exit 1
-        fi
-        MA=$(grep -oE 'NODE_MOBILE_MAJOR_VERSION [0-9]+' "$f" | awk '{print $2}')
-        MI=$(grep -oE 'NODE_MOBILE_MINOR_VERSION [0-9]+' "$f" | awk '{print $2}')
-        PA=$(grep -oE 'NODE_MOBILE_PATCH_VERSION [0-9]+' "$f" | awk '{print $2}')
-        RE=$(grep -oE 'NODE_MOBILE_REVISION [0-9]+' "$f" | awk '{print $2}')
-        V="${MA}.${MI}.${PA}-${RE}"
-
-        DR=false
-        REL=false
-        # Release only from a maintained line. The release PR arms Node 26
-        # through release-ready.txt so ordinary port fixes cannot publish.
-        LINE_READY=false
-        case "$GITHUB_REF" in
-          refs/heads/recipe) LINE_READY=true ;;
-          refs/heads/recipe-v26)
-            if [ -f release-ready.txt ] && [ "$(cat release-ready.txt)" = "$V" ]; then LINE_READY=true; fi ;;
-        esac
-        if [ "$GITHUB_EVENT_NAME" = push ] && [ "$LINE_READY" = true ]; then
-          case "$(git log -1 --format=%s)" in release-dryrun:*) DR=true ;; esac
-          REL=true
-          # Both the current tag scheme (vX.Y.Z-R) and the legacy one
-          # (nodejs-mobile-X.Y.Z-R) count as released.
-          for t in "v${V}" "nodejs-mobile-${V}"; do
-            # Only a real 404 means "not tagged". A transient API failure must
-            # not be read as absence — that would start a release run for an
-            # already-released version.
-            if out=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${t}" 2>&1); then
-              echo "tag ${t} exists"
-              REL=false
-            elif ! printf '%s' "$out" | grep -q 'HTTP 404'; then
-              echo "::error::tag probe for ${t} failed (not a 404): $out"
-              exit 1
-            fi
-          done
-          if [ "$DR" = true ]; then REL=false; fi
-        fi
-
-        COLD=false
-        if [ "$REL" = true ] || [ "$DR" = true ]; then COLD=true; fi
-
-        { echo "version=$V"; echo "release=$REL"; echo "dryrun=$DR"; echo "cold=$COLD"; } >> "$GITHUB_OUTPUT"
-        echo "version=$V release=$REL dryrun=$DR cold=$COLD"
+        RELEASE_OPERATION: ${{ inputs.operation }}
+        RELEASE_VERSION: ${{ inputs.version }}
+      run: python3 scripts/release-control.py check

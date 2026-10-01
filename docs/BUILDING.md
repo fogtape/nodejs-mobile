@@ -345,7 +345,7 @@ be reused on release runs when their exact input key matches. The library
 matrix still uploads the restored files into the current run, and that run
 must pass its boot, addon, curated and full device gates before publication.
 
-Release and `release-dryrun:` jobs do not restore compiler-object archives,
+Manual prerelease and `prerelease-dryrun` jobs do not restore compiler-object archives,
 use sccache, or expose R2 credentials. A missing completed-library key
 therefore causes a cold compile. The host verification binary currently has
 no completed-binary cache and is rebuilt on the release path. The first
