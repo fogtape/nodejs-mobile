@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.10.0-0">26.10.0-0 (unreleased)</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
@@ -39,6 +40,42 @@
 </td>
 </tr>
 </table>
+
+<a id="26.10.0-0"></a>
+## Unreleased, Version 26.10.0-0 (Current)
+
+- Upgrade the independent Node 26 line to official Node.js 26.10.0.
+- Enable Temporal in Android/iOS full builds using Rust 1.86.0, with separate
+  native host and mobile target archives. Full builds bundle complete ICU data
+  for named time zones; small-ICU cannot load Temporal timezone information.
+  Lite retains its no-ICU configuration
+  and omits Temporal.
+- Enable `node:ffi` in both flavors. Use iOS libffi's precompiled callback
+  trampoline table and the correct Apple arm64 long-double ABI.
+- Update the iOS link list for upstream's split `libnode_base` and
+  `libncrypto_engine` archives, plus libffi and the full flavor's Rust archive.
+- Add boot regressions for native calls, native-to-JavaScript callbacks, and
+  Temporal calendar/timezone behavior. Extend the mobile test exclusions for
+  new upstream subprocess and permission-verdict limitations.
+
+- Remove small-ICU-only stub archive references from the full-ICU iOS framework.
+- Adapt full-suite tests to app sandbox paths and device permissions, retaining
+  in-process Intl, VFS, file-writing and SQLite backup assertions. Exclude only
+  independent child-Node snapshot/startup checks on embedded runtimes.
+
+- Keep the iOS WPT inspector lifecycle test using a compression fixture without
+  unsupported shared WebAssembly memory, and skip only the WebIDL subtest that
+  needs absent polywasm shared/resizable memory conversion APIs. Retain the
+  remaining WebIDL buffer conversion assertions.
+
+- Bind mobile exit-verdict hooks to the launch owner's PID as well as its main
+  thread, preventing child processes from changing their parent's verdict.
+  Wait for iOS simulator process termination before consuming verdict/output.
+- Keep the VM timeout regression's 10ms deadline; align only its iOS escape
+  safety guard with the 2-second guard used by other VM timeout tests.
+
+This source upgrade does not arm publication. Run Cut release and review its
+release PR after the complete build and device-suite gates pass.
 
 <a id="26.1.0-0"></a>
 ## 2026-09-29, Version 26.1.0-0 (Current)

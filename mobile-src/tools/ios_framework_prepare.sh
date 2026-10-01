@@ -26,7 +26,8 @@ if [ "$FLAVOR" != "full" ] && [ "$FLAVOR" != "lite" ]; then
 fi
 echo "iOS build flavor: $FLAVOR"
 
-INTL="small-icu"
+# Temporal named time zones require the complete ICU data bundle.
+INTL="full-icu"
 # --v8-lite-mode drops the compiled JIT and the V8 native WASM engine. Both are
 # dead on iOS for EVERY flavor — iOS runs jitless (no JIT entitlement) and
 # WebAssembly is served by the polywasm polyfill the binary bundles
@@ -42,8 +43,9 @@ V8_LITE_MODE="--v8-lite-mode"
 # TurboFan, so it must go too (it defaults on for arm64).
 V8_NO_TURBOFAN_GYP_DEFINES="v8_enable_turbofan=0"
 V8_DISABLE_MAGLEV="--v8-disable-maglev"
-# Node 26 mobile features awaiting platform integration.
-LITE_FLAGS="--without-ffi --v8-disable-temporal-support"
+# Temporal needs bundled ICU and Rust; require it in full builds.
+# FFI is present in both flavors. lite retains its no-ICU size tradeoff.
+LITE_FLAGS="--v8-enable-temporal-support"
 if [ "$FLAVOR" = "lite" ]; then
   INTL="none"
   # lite additionally drops features size-constrained consumers don't need.
@@ -54,7 +56,7 @@ if [ "$FLAVOR" = "lite" ]; then
   # most 7.375GB of address space, so that reservation can never succeed and V8
   # aborts the process during Isolate init. See "Pointer compression" in
   # docs/BUILDING.md on the recipe branch.
-  LITE_FLAGS="$LITE_FLAGS --without-amaro --without-inspector --without-sqlite"
+  LITE_FLAGS="--v8-disable-temporal-support --without-amaro --without-inspector --without-sqlite"
 fi
 
 declare -a outputs_common=(
@@ -67,8 +69,11 @@ declare -a outputs_common=(
   "libmerve.a"
   "libnbytes.a"
   "libncrypto.a"
+  "libncrypto_engine.a"
   "libnghttp2.a"
   "libnode.a"
+  "libnode_base.a"
+  "libffi.a"
   "libopenssl.a"
   "libsimdjson.a"
   "libsimdutf.a"
@@ -91,6 +96,7 @@ declare -a outputs_common=(
 #   libcrdtp                 -- --without-inspector
 #   libsqlite                -- --without-sqlite
 #   libicu*                  -- --with-intl=none (no ICU)
+# Full ICU embeds its data in libicudata; libicustubdata is small-ICU only.
 # NB: libv8_snapshot stays in outputs_common — it is the runtime isolate-setup
 # lib (setup-isolate-deserialize) linked by BOTH flavors. libv8_init
 # (setup-isolate-full) is only a dependency of the host mksnapshot tool and is
@@ -102,11 +108,11 @@ declare -a outputs_common=(
 # builtin generators — the framework boots by snapshot deserialize;
 # libgtest/libgtest_main are test-only.
 declare -a outputs_full_only=(
+  "libnode_crates.a"
   "libcrdtp.a"
   "libsqlite.a"
   "libicudata.a"
   "libicui18n.a"
-  "libicustubdata.a"
   "libicuucx.a"
 )
 declare -a outputs_x64_only=()
@@ -145,6 +151,12 @@ build_for_arm64_device() {
   # upstream root one.
   make -C out v8_compiler BUILDTYPE=Release -j$(getconf _NPROCESSORS_ONLN)
 
+  # Cargo actions keep host/target archives separate; only the iOS target
+  # archive belongs in the distributed framework.
+  if [ "$FLAVOR" = "full" ]; then
+    cp "$LIBRARY_PATH/obj/gen/mobile-rust/target/libnode_crates.a" "$LIBRARY_PATH/libnode_crates.a"
+  fi
+
   # Move compilation outputs
   mkdir -p $TARGET_LIBRARY_PATH/arm64-device
   for output_file in "${outputs_arm64[@]}"; do
@@ -173,6 +185,12 @@ build_for_arm64_simulator() {
   make -j$(getconf _NPROCESSORS_ONLN)
   # Same stub-target build as the device path (see comment there).
   make -C out v8_compiler BUILDTYPE=Release -j$(getconf _NPROCESSORS_ONLN)
+
+  # Cargo actions keep host/target archives separate; only the iOS target
+  # archive belongs in the distributed framework.
+  if [ "$FLAVOR" = "full" ]; then
+    cp "$LIBRARY_PATH/obj/gen/mobile-rust/target/libnode_crates.a" "$LIBRARY_PATH/libnode_crates.a"
+  fi
 
   # Move compilation outputs
   mkdir -p $TARGET_LIBRARY_PATH/arm64-simulator

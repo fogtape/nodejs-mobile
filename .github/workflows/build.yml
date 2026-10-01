@@ -1,4 +1,5 @@
 name: Build
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('{0} · {1} · {2}', inputs.operation, inputs.version || 'version of record', github.ref_name) || format('Build · {0}', github.head_ref || github.ref_name) }}
 
 on:
   # Don't run on pushes to PR branches to avoid double-running (push trigger and
@@ -11,13 +12,25 @@ on:
   pull_request:
     branches: [recipe, recipe-v26]
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Build only, rehearse prerelease, or publish a prerelease
+        type: choice
+        options: [build, prerelease-dryrun, prerelease]
+        default: build
+      version:
+        description: Exact mobile version for prerelease/dryrun (26.10.0-0); empty for build
+        type: string
+        default: ''
 
 # One run per PR/branch. cancel-in-progress ONLY for pull_request: a push to
 # recipe may be carrying the release gate chain and must never be cancelled
 # mid-flight.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Apply preserve-build-cache while an earlier build is still compiling:
+  # queue its replacement so the earlier run can save reusable objects.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'preserve-build-cache') }}
 
 # Completed mobile-library caches use exact build-input keys, including on
 # releases (this mirror's NOTICE.md policy). Compiler-object archives only
@@ -40,6 +53,8 @@ env:
   SCCACHE_ERROR_LOG: /tmp/sccache-errors.log
   ANDROID_NDK_VERSION: r29
   ANDROID_TARGET_SDK_VERSION: 24
+  # Match the MSRV of the vendored Temporal crates; included in library keys.
+  NODEJS_MOBILE_RUST_TOOLCHAIN: "1.86.0"
   # Flavor is a per-job matrix dimension ([full, lite]) so every Build
   # produces both binaries and the curated device gate covers both (see
   # docs/BUILDING.md "The lite variant"). Each job derives
@@ -71,7 +86,7 @@ jobs:
         run: python3 scripts/package-preview.py preview-input preview-packages
       - uses: actions/upload-artifact@v7
         with:
-          name: nodejs-mobile-26.1.0-0-preview
+          name: nodejs-mobile-26.10.0-0-preview
           path: preview-packages
           retention-days: 90
           if-no-files-found: error
@@ -86,6 +101,7 @@ jobs:
   # on the merge run. Pushes and releases run both. See docs/TESTING.md,
   # "Flavors, and what's required to merge".
   build-android:
+    needs: release-check
     strategy:
       fail-fast: false
       matrix:
@@ -128,8 +144,17 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
+
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-unknown-linux-gnu
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
 
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
@@ -164,7 +189,7 @@ jobs:
                  git hash-object node.gyp node.gypi common.gypi configure configure.py android-configure android_configure.py tools/android_build.sh tools/copy_libnode_headers.sh; \
                  printf '%s\n' "$ANDROID_LDFLAGS" "$ANDROID_TARGET_SDK_VERSION"; \
                } | git hash-object --stdin )
-          echo "key=libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
+          echo "key=rust${NODEJS_MOBILE_RUST_TOOLCHAIN}-libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
 
       # Restore exact completed libraries independently from compiler objects.
       - name: Restore built libnode
@@ -269,12 +294,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache
@@ -286,6 +312,7 @@ jobs:
           path: out_android
 
   build-ios:
+    needs: release-check
     strategy:
       fail-fast: false
       matrix:
@@ -317,8 +344,17 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
+
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target aarch64-apple-ios,aarch64-apple-ios-sim
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
 
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
@@ -331,11 +367,11 @@ jobs:
       - name: Compute libnode cache key
         id: ck
         run: |
-          H=$( { git rev-parse "HEAD:src" "HEAD:deps" "HEAD:lib" "HEAD:tools/v8_gypfiles" "HEAD:tools/gyp" "HEAD:tools/icu"; \
+          H=$( { git rev-parse "HEAD:src" "HEAD:deps" "HEAD:lib" "HEAD:tools/v8_gypfiles" "HEAD:tools/gyp" "HEAD:tools/icu" "HEAD:tools/ios-framework"; \
                  git hash-object node.gyp node.gypi common.gypi configure configure.py tools/ios_framework_prepare.sh tools/copy_libnode_headers.sh; \
                  xcodebuild -version; \
                } | git hash-object --stdin )
-          echo "key=libnode-ios-${TARGET_ARCH}${FLAVOR_SUFFIX}-v1-${H}" >> "$GITHUB_OUTPUT"
+          echo "key=rust${NODEJS_MOBILE_RUST_TOOLCHAIN}-libnode-ios-${TARGET_ARCH}${FLAVOR_SUFFIX}-v1-${H}" >> "$GITHUB_OUTPUT"
 
       # Exact completed-library policy: see build-android and NOTICE.md.
       - name: Restore built libnode
@@ -422,12 +458,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache
@@ -544,12 +581,23 @@ jobs:
 
       # gyp-next needs setuptools at build time and a bare venv doesn't bundle
       # it (distutils was removed from the stdlib); install it explicitly.
+      - name: Install Temporal Rust targets
+        if: matrix.flavor == 'full'
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal \
+            --target aarch64-apple-ios,aarch64-apple-ios-sim
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
+
       - name: Generate config.gypi
         run: |
           python3.12 -m venv .
           source bin/activate
           python3.12 -m pip install setuptools packaging
-          ./configure --without-ffi --v8-disable-temporal-support
+          if [ "$NODEJS_MOBILE_FLAVOR" = "full" ]; then
+            ./configure --with-intl=full-icu --v8-enable-temporal-support
+          else
+            ./configure --with-intl=none --v8-disable-temporal-support
+          fi
 
       - name: Combine
         run: |
@@ -694,6 +742,7 @@ jobs:
   # Builds only the 'node' target, so no cctest/addons. Lives in this
   # workflow (not its own) so it can gate ci-required and publish via needs:.
   smoke-host:
+    needs: release-check
     runs-on: ubuntu-24.04
     # See build-android. This job ships nothing, but it gates publish: a
     # poisoned host binary is a host binary that can be made to pass the tests
@@ -716,8 +765,15 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
 
       - uses: ./.github/actions/materialize
+
+      - name: Install Temporal Rust toolchain
+        run: |
+          rustup toolchain install "$NODEJS_MOBILE_RUST_TOOLCHAIN" --profile minimal
+          echo "RUSTUP_TOOLCHAIN=$NODEJS_MOBILE_RUST_TOOLCHAIN" >> "$GITHUB_ENV"
 
       - name: Run sccache-cache
         if: steps.rel.outputs.cold != 'true'
@@ -760,7 +816,7 @@ jobs:
           python3.12 -m venv .
           source bin/activate
           python3.12 -m pip install setuptools packaging
-          ./configure --without-ffi --v8-disable-temporal-support
+          ./configure --v8-enable-temporal-support
 
       - name: Build node target
         env:
@@ -776,6 +832,7 @@ jobs:
         run: |
           source bin/activate
           make -j"$(nproc)" node
+          ./out/Release/node tools/mobile-test/smoke/mobile-features.js
 
       - name: sccache stats
         if: always() && steps.rel.outputs.cold != 'true'
@@ -786,12 +843,13 @@ jobs:
             sort /tmp/sccache-errors.log | uniq -c | sort -rn | head -40
           fi
 
+      # Completed sccache entries are atomic; retain them even on cancellation.
       - name: Flush compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         run: sccache --stop-server || true
 
       - name: Save compiler objects
-        if: always() && !cancelled() && steps.object-cache.outcome == 'success'
+        if: always() && steps.object-cache.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/nodejs-mobile-sccache
@@ -910,6 +968,7 @@ jobs:
   ci-required:
     if: always()
     needs:
+      - release-check
       - build-android
       - build-ios
       - combine-android
@@ -975,19 +1034,9 @@ jobs:
             echo "upgrade=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # Decide whether this push is a release, and publish that decision as job
-  # outputs for the gate chain below. The decision itself — including the
-  # push-to-recipe-only guard — lives in ./.github/actions/release-check,
-  # because the compiling jobs above ask the same question for a different
-  # reason (build cold) and must not depend on this job to get an answer.
-  #
-  # The job's own `if:` duplicates the guard inside the action on purpose:
-  # skipping this job also skips the real-device smokes, the full suites and
-  # publish, which need: it, so the gate chain never runs at all off a
-  # non-release event. A deployment branch rule on the `release` Environment
-  # restricting it to recipe would stop publish independently of this.
+  # Validate manual version/branch/marker/tag requests before starting any
+  # compiler job. PR and push events remain builds, even after a release PR.
   release-check:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/recipe' || github.ref == 'refs/heads/recipe-v26')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -1003,6 +1052,21 @@ jobs:
         uses: ./.github/actions/release-check
         with:
           token: ${{ github.token }}
+          operation: ${{ inputs.operation || 'build' }}
+          version: ${{ inputs.version || '' }}
+      - name: Validate publishable notes before compiling
+        if: steps.d.outputs.cold == 'true'
+        env:
+          V: ${{ steps.d.outputs.version }}
+        run: scripts/release-notes.py --version "$V"
+      - name: Show build or prerelease decision
+        env:
+          V: ${{ steps.d.outputs.version }}
+          RELEASE: ${{ steps.d.outputs.release }}
+          DRYRUN: ${{ steps.d.outputs.dryrun }}
+        run: |
+          printf '## Run plan\n\n- Version: `%s`\n- Publish prerelease: **%s**\n- Rehearsal: **%s**\n' \
+            "$V" "$RELEASE" "$DRYRUN" >> "$GITHUB_STEP_SUMMARY"
 
   # NOTE (this copy): the upstream recipe runs two BrowserStack real-device
   # smokes here (physical Android arm64 + iPhone) and publish needs: both.
@@ -1051,10 +1115,8 @@ jobs:
   # binary that cannot print hello on an emulator should not get four
   # device-hours of suite first.
   #
-  # always() because release-check is push-only: on an upgrade PR it is
-  # skipped, and a skipped job in needs: skips its dependents whatever their
-  # `if:` says. always() drops that coupling, so the artifact/smoke gates the
-  # skip used to provide have to be spelled out as result checks.
+  # always() lets the result checks distinguish completed artifact/smoke
+  # gates from failed/skipped jobs. The run plan explicitly gates releases.
   full-suite-android:
     if: >-
       always() &&
@@ -1217,10 +1279,10 @@ jobs:
           EOF
           exit 1
 
-  # Publish: on a release commit, once every gate in this run is green, tag
+  # Publish: on an explicit manual prerelease request, once every gate in this run is green, tag
   # the materialized tree and publish the GitHub prerelease with this run's
   # artifacts. All gating is needs:-based within one run -- no cross-run SHA
-  # lookups. A release-dryrun: commit exercises everything except the two
+  # lookups. A prerelease-dryrun dispatch exercises everything except the two
   # mutating steps (tag push, release create).
   publish:
     if: >-
@@ -1228,6 +1290,8 @@ jobs:
       needs.release-check.outputs.dryrun == 'true'
     needs:
       - release-check
+      - ci-required
+      - release-notes
       - smoke-android
       - smoke-ios
       - smoke-host
@@ -1333,6 +1397,13 @@ jobs:
       - name: Create GitHub Release (prerelease)
         run: |
           TAG="v${V}"
+          MAJOR="${V%%.*}"
+          if [ "$MAJOR" = 24 ]; then
+            LINE="Node.js 24 LTS"
+          else
+            LINE="Node.js ${MAJOR}"
+          fi
+          RELEASE_TITLE="${LINE} · nodejs-mobile v${V}（预发布）"
           NOTES=$(cat "$RUNNER_TEMP/release-notes.md")
           # Human-visible copy of the tag's Recipe-Commit trailer.
           PROV="Generated from [\`${GITHUB_REF_NAME}@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
@@ -1355,7 +1426,7 @@ jobs:
             fi
             gh release create "$TAG" out/*.zip out/SHA256SUMS \
               --repo "$GITHUB_REPOSITORY" \
-              --title "nodejs-mobile ${V}" \
+              --title "$RELEASE_TITLE" \
               --draft \
               --prerelease \
               --latest=false \

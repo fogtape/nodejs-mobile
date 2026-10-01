@@ -7,7 +7,7 @@ versioned together on that branch.
 | Branch | Upstream base | Purpose | Outputs |
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
-| `recipe-v26` | Node.js 26.1.0 | Independent Node 26 maintenance and prereleases | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.10.0 | Independent Node 26 maintenance and prereleases | Android and iOS, full and lite |
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published
@@ -42,12 +42,22 @@ partition and expected source-tree checksum.
 The Node 26 line uses Android NDK r29 (`29.0.14206865`) and Clang 19 for
 Linux host tools. Node 24 keeps its existing NDK r27d configuration.
 
-The initial Node 26 port explicitly disables the experimental `node:ffi`
-module and V8 Temporal support. Upstream's bundled libffi integration does
-not support the Android/iOS targets, and Temporal requires an additional
-Rust cross-compilation and linking setup. These omissions apply to both
-full and lite builds; they must not be described as full desktop feature
-parity. The existing lite feature reductions still apply.
+Node 26.10 full builds enable V8 Temporal and the experimental `node:ffi`
+module on Android and iOS, with complete ICU data (`--with-intl=full-icu`)
+for named time zones. small-ICU cannot load Temporal timezone information
+in this upstream version. The build requires Rust **1.86.0** and its standard
+libraries for the chosen mobile targets. Cargo builds the locked, vendored
+Temporal crates separately for native host tools and the mobile runtime;
+Android archives use the matching NDK compiler driver and position-independent
+code. iOS frameworks link only the target Rust archive, alongside `libffi`,
+`libnode_base`, and `libncrypto_engine`.
+
+Lite builds enable `node:ffi` but retain `--with-intl=none` and explicitly
+disable Temporal, which currently requires bundled ICU. They do not need Rust.
+iOS libffi uses its precompiled executable trampoline table for native-to-JS
+callbacks rather than generating executable callback code at runtime. Boot
+smokes exercise C calls, native callbacks, and Temporal date/timezone behavior;
+physical-device validation is still a separate consumer responsibility.
 
 iOS keeps its jitless V8 configuration and WebAssembly polyfill. The Node 26
 patches also guard a Wasm-only V8 postmortem metadata offset so the generated
@@ -77,10 +87,11 @@ run URL with the downloaded files; do not mix platform slices or flavors
 from different runs. Versioned preview packages additionally contain
 `BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
 
-`process.version` reports `v26.1.0`; `process.versions.mobile` identifies
+`process.version` reports `v26.10.0`; `process.versions.mobile` identifies
 the mobile build revision. A CI preview is not a published release. **Cut release** also supports
-`recipe-v26`; its reviewed PR arms a specific version for publication after
-the complete gate chain succeeds. See [RELEASING.md](RELEASING.md).
+`recipe-v26`; its reviewed PR arms a specific version; after merge, manually run **Build**
+with `operation=prerelease` and that exact mobile version. Push/PR builds do
+not publish. The complete gate chain must succeed. See [RELEASING.md](RELEASING.md).
 
 ## Upgrade one line
 

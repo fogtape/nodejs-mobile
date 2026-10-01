@@ -18,9 +18,10 @@
 // token (set by main.m from --run-token via NODE_MOBILE_RUN_TOKEN); an empty
 // token (e.g. a spawned child that never got --run-token) writes nothing.
 static char g_result_file[1024] = {0};
+static pid_t g_launch_pid = 0;
 static bool g_result_written = false;
 static void write_result(const char* verdict) {
-    if (g_result_file[0] == '\0') return;
+    if (g_result_file[0] == '\0' || getpid() != g_launch_pid) return;
     FILE* f = fopen(g_result_file, "w");
     if (f) { fputs(verdict, f); fclose(f); g_result_written = true; }
 }
@@ -36,7 +37,9 @@ static const char* kExitVerdictHookJS = R"JS('use strict';
 // entries to process.moduleLoadList -- which test-bootstrap-modules asserts on.
 try {
   const f = process.env.NODEJS_MOBILE_TEST_VERDICT_FILE;
-  if (f) {
+  // NODE_OPTIONS and the verdict path are inherited by spawned child processes.
+  // Only the launch owner may write, even when the child has its own main thread.
+  if (f && process.env.NODEJS_MOBILE_TEST_VERDICT_PID === String(process.pid)) {
     process.on('exit', (code) => {
       try {
         if (!require('node:worker_threads').isMainThread) return;
@@ -132,6 +135,7 @@ static void NodeRunnerAtExitHook(void) {
     char tok[128] = {0};
     if (tok_env) strncpy(tok, tok_env, sizeof(tok) - 1);
     if (tok[0]) {
+        g_launch_pid = getpid();
         NSString* docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
         NSString* rf = [docs stringByAppendingPathComponent:[NSString stringWithFormat:@"result-%s.txt", tok]];
         strncpy(g_result_file, [rf UTF8String], sizeof(g_result_file) - 1);
@@ -183,6 +187,9 @@ static void NodeRunnerAtExitHook(void) {
                 char node_options[1100];
                 snprintf(node_options, sizeof(node_options), "--require=%s", hook_path);
                 setenv("NODEJS_MOBILE_TEST_VERDICT_FILE", g_result_file, 1);
+                char verdict_pid[32];
+                snprintf(verdict_pid, sizeof(verdict_pid), "%ld", (long)getpid());
+                setenv("NODEJS_MOBILE_TEST_VERDICT_PID", verdict_pid, 1);
                 setenv("NODE_OPTIONS", node_options, 1);
             } else {
                 NSLog(@"could not write exit-verdict-hook.js; process.exit() tests will mis-score");

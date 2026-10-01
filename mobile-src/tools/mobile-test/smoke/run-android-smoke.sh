@@ -18,6 +18,7 @@ adbx push "$LIBNODE" "$DEST/" >/dev/null
 adbx push "$LIBCXX" "$DEST/" >/dev/null
 adbx push "$EMBEDDER" "$DEST/node_smoke" >/dev/null
 adbx push "$SCRIPT_DIR/smoke.js" "$DEST/" >/dev/null
+adbx push "$SCRIPT_DIR/mobile-features.js" "$DEST/" >/dev/null
 adbx shell "chmod 755 $DEST/node_smoke"
 
 OUT=$(adbx shell "cd $DEST && LD_LIBRARY_PATH=$DEST TMPDIR=$DEST ./node_smoke smoke.js; echo SMOKE_EXIT:\$?")

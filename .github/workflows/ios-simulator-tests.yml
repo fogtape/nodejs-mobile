@@ -30,6 +30,23 @@ on:
         required: false
         default: '["full","lite"]'
   workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Build run with an already compiled framework
+        type: string
+        required: true
+      flavors:
+        description: JSON array of flavors to test
+        type: string
+        default: '["full"]'
+      smoke_only:
+        description: Run feature smoke only using the existing framework
+        type: boolean
+        default: false
+      tests:
+        description: Space-separated JS test selectors (empty = curated suite)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -90,12 +107,42 @@ jobs:
         with:
           device_name: nodejs-mobile-test
 
+      - name: Build smoke app from existing framework
+        if: inputs.smoke_only == true
+        run: ./tools/mobile-test/smoke/build-ios-testnode.sh "$PWD/out_testnode"
+
+      - name: Run feature smoke on simulator
+        if: inputs.smoke_only == true
+        run: |
+          ./tools/mobile-test/smoke/run-ios-smoke.sh \
+            "$PWD/out_testnode/Release-iphonesimulator/testnode.app" \
+            "${{ steps.boot-sim.outputs.udid }}"
+
       - name: Prepare tests on simulator
+        if: inputs.smoke_only != true
         env:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: ./tools/mobile-test/ios/prepare-ios-sim-tests.sh
 
+      - name: Run selected JS tests on simulator
+        if: ${{ !inputs.smoke_only && inputs.tests }}
+        env:
+          DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
+          SELECTED_TESTS: ${{ inputs.tests }}
+        run: |
+          set -euo pipefail
+          read -r -a TESTS <<< "$SELECTED_TESTS"
+          [ "${#TESTS[@]}" -gt 0 ] || { echo "::error::No test selectors supplied"; exit 1; }
+          for selector in "${TESTS[@]}"; do
+            [[ "$selector" =~ ^(parallel|sequential)/test-[a-zA-Z0-9_-]+$ ]] \
+              && { [ -f "test/$selector.js" ] || [ -f "test/$selector.mjs" ]; } \
+              || { echo "::error::Invalid test selector: $selector"; exit 1; }
+          done
+          ./tools/test.py -j 1 --flaky-tests=skip --timeout=300 \
+            --arch ios --shell="./tools/mobile-test/ios/node-ios-sim-proxy.sh" "${TESTS[@]}"
+
       - name: Run curated JS subset on simulator
+        if: ${{ !inputs.smoke_only && !inputs.tests }}
         env:
           DEVICE_ID: ${{ steps.boot-sim.outputs.udid }}
         run: |
@@ -121,6 +168,7 @@ jobs:
       # in the testnode app. Proves a real addon dlopens + runs (the "B-1"
       # concern the symbol-grep smoke only approximates). Runs for both flavors.
       - name: Build + run NAPI addon on simulator
+        if: ${{ !inputs.smoke_only && !inputs.tests }}
         run: |
           ./tools/mobile-test/addon/build-ios-addon.sh \
             out_ios/NodeMobile.xcframework ios-arm64-simulator nm-ios/include/node \

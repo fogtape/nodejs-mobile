@@ -1,24 +1,30 @@
 name: Cut release
+run-name: Plan prerelease ${{ inputs.version }} · ${{ inputs.release_line }} · ${{ inputs.operation }}
 
-# The release button (Actions -> Cut release -> Run workflow). Computes
-# everything a human used to hand-edit and opens a release PR:
-#
-#   - X.Y.Z comes from upstream-base.txt;
-#   - the -R revision is the next free one, derived from existing tags
-#     (vX.Y.Z-R and legacy nodejs-mobile-X.Y.Z-R both count) -- nobody
-#     types a revision by hand;
-#   - mobile-src/src/node_mobile_version.h is synced to that version;
-#   - a dated CHANGELOG section (TOC entry + anchor) is stubbed for editing;
-#   - expected-tree.txt is re-anchored by actually running prepare.sh.
-#
-# Reviewing and merging the PR is the human sign-off; the merge push then
-# runs the full gate chain and publishes (see build.yml release-check --
-# the version being untagged is what makes the merged push a release).
-# NOTE: the PR branch is pushed with GITHUB_TOKEN, which does not trigger
-# PR checks -- by design nothing publishes unverified, because every gate
-# re-runs on the merge push and the publish job needs: all of them.
+# This workflow prepares a reviewed release PR; it never tags or publishes.
+# The explicit target line is independent of the workflow-definition branch.
 on:
   workflow_dispatch:
+    inputs:
+      release_line:
+        description: Target Node version line (26 = recipe-v26, 24 = recipe)
+        type: choice
+        options: [recipe-v26, recipe]
+        default: recipe-v26
+      version:
+        description: auto, upstream X.Y.Z, or exact mobile X.Y.Z-R (26.10.0-0)
+        type: string
+        default: auto
+        required: true
+      operation:
+        description: Preview the plan, or open a release review PR
+        type: choice
+        options: [plan, prepare-pr]
+        default: plan
+
+concurrency:
+  group: cut-release-${{ inputs.release_line }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -31,120 +37,96 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      # Keep the workflow's controller separate from the selected recipe line.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 1
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_line }}
+          path: release-source
+          fetch-depth: 1
 
-      - name: Require a maintained release line
-        run: |
-          case "$GITHUB_REF_NAME" in
-            recipe|recipe-v26) ;;
-            *) echo "::error::Select recipe or recipe-v26"; exit 1 ;;
-          esac
-
-      - name: Compute next version
+      - name: Validate line and reserve the requested version
         id: v
-        run: |
-          XYZ=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]' | sed 's/^v//')
-          # Only a real 404 counts as "revision free". A transient API failure
-          # must abort — reading it as absence reuses a taken -R, and the
-          # release PR then merges into a silent no-op (release-check sees the
-          # existing tag and never publishes).
-          tag_exists() {
-            local out
-            if out=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/$1" 2>&1); then
-              return 0
-            fi
-            printf '%s' "$out" | grep -q 'HTTP 404' && return 1
-            echo "::error::tag probe for $1 failed (not a 404): $out"
-            exit 1
-          }
-          R=0
-          while tag_exists "v${XYZ}-${R}" || tag_exists "nodejs-mobile-${XYZ}-${R}"; do
-            R=$((R + 1))
-          done
-          V="${XYZ}-${R}"
-          echo "xyz=$XYZ" >> "$GITHUB_OUTPUT"
-          echo "r=$R"     >> "$GITHUB_OUTPUT"
-          echo "v=$V"     >> "$GITHUB_OUTPUT"
-          echo "Next release: $V"
-
-      - name: Bump version of record + CHANGELOG stub
         env:
-          XYZ: ${{ steps.v.outputs.xyz }}
-          R: ${{ steps.v.outputs.r }}
-          V: ${{ steps.v.outputs.v }}
+          RELEASE_LINE: ${{ inputs.release_line }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          MAJOR=${XYZ%%.*}; REST=${XYZ#*.}; MINOR=${REST%%.*}; PATCH=${REST##*.}
-          f=mobile-src/src/node_mobile_version.h
-          sed -i -E "s/(#define NODE_MOBILE_MAJOR_VERSION )[0-9]+/\1${MAJOR}/" "$f"
-          sed -i -E "s/(#define NODE_MOBILE_MINOR_VERSION )[0-9]+/\1${MINOR}/" "$f"
-          sed -i -E "s/(#define NODE_MOBILE_PATCH_VERSION )[0-9]+/\1${PATCH}/" "$f"
-          sed -i -E "s/(#define NODE_MOBILE_REVISION )[0-9]+/\1${R}/" "$f"
-          grep -E 'NODE_MOBILE_(MAJOR|MINOR|PATCH)_VERSION|NODE_MOBILE_REVISION' "$f"
-          python3 - <<'EOF'
-          import datetime, os, re
-          v = os.environ['V']
-          p = 'docs/CHANGELOG.md'
-          s = open(p).read()
-          date = datetime.date.today().isoformat()
-          # A new major's preview already has its version section. Replace it
-          # with the release-review stub instead of creating duplicate anchors.
-          s = re.sub(r'^<a id="' + re.escape(v) + r'"></a>\n.*?(?=^<a id="|\Z)',
-                     '', s, flags=re.M | re.S)
-          s = re.sub(r'^<a href="#' + re.escape(v) + r'">[^<]*</a><br/>\n',
-                     '', s, flags=re.M)
-          section = (f'<a id="{v}"></a>\n## {date}, Version {v} (Current)\n\n'
-                     '- _TODO: summarize changes before merging._\n\n')
-          # Insert the section before the first existing anchor, drop the old
-          # "(Current)" marker, and add a TOC entry above the first one.
-          m = re.search(r'^<a id="', s, re.M)
-          assert m, 'no existing anchor found'
-          s = s[:m.start()] + section + s[m.start():]
-          s = re.sub(r'^(## .+, Version (?!'+re.escape(v)+r').+) \(Current\)$', r'\1', s, flags=re.M)
-          mt = re.search(r'^<a href="#', s, re.M)
-          assert mt, 'no TOC entry found'
-          s = s[:mt.start()] + f'<a href="#{v}">{v}</a><br/>\n' + s[mt.start():]
-          open(p, 'w').write(s)
-          print(f'CHANGELOG stubbed for {v}')
-          EOF
+          python3 scripts/release-control.py plan --root release-source \
+            --line "$RELEASE_LINE" --version "$REQUESTED_VERSION" \
+            --out "$RUNNER_TEMP/release-plan.json"
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          p = Path(os.environ['RUNNER_TEMP']) / 'release-plan.json'
+          data = json.loads(p.read_text())
+          data['source_commit'] = subprocess.check_output(
+              ['git', '-C', 'release-source', 'rev-parse', 'HEAD'], text=True).strip()
+          p.write_text(json.dumps(data, indent=2) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"## Prerelease plan\n\n"
+                            f"- Line: `{data['line']}`\n"
+                            f"- Source: `{data['source_commit']}`\n"
+                            f"- Upstream: `{data['upstream']}`\n"
+                            f"- Tag: `{data['tag']}`\n"
+                            "- GitHub prerelease: **yes**, latest: **no**\n\n"
+                            "Plan only: no tag, release or source mutation. "
+                            "Select `prepare-pr` to create the review PR.\n")
+          PY
 
-      - name: Re-anchor expected-tree.txt (runs prepare.sh)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: prerelease-plan-${{ steps.v.outputs.version }}
+          path: ${{ runner.temp }}/release-plan.json
+          if-no-files-found: error
+
+      - name: Prepare header, preserve release notes, and arm manual publication
+        if: inputs.operation == 'prepare-pr'
+        run: |
+          python3 scripts/release-control.py prepare --root release-source \
+            --plan "$RUNNER_TEMP/release-plan.json"
+
+      - name: Reconstruct the planned source checksum
+        if: inputs.operation == 'prepare-pr'
+        working-directory: release-source
         run: |
           SKIP_VERIFY=1 scripts/prepare.sh "$RUNNER_TEMP/matsrc"
           GOT=$(git -C "$RUNNER_TEMP/matsrc" rev-parse 'HEAD^{tree}')
           sed -i -E "s/^[0-9a-f]{40}$/${GOT}/" expected-tree.txt
           grep -E '^[0-9a-f]{40}$' expected-tree.txt
 
-      - name: Arm this version for publication
+      - name: Open release review PR
+        if: inputs.operation == 'prepare-pr'
+        working-directory: release-source
         env:
-          V: ${{ steps.v.outputs.v }}
-        run: printf '%s\n' "$V" > release-ready.txt
-
-      - name: Open release PR
-        env:
-          V: ${{ steps.v.outputs.v }}
+          RELEASE_LINE: ${{ steps.v.outputs.line }}
+          RELEASE_BRANCH: ${{ steps.v.outputs.release_branch }}
+          V: ${{ steps.v.outputs.version }}
         run: |
-          BR="release/v${V}"
+          set -euo pipefail
           git config user.name "nodejs-mobile-bot"
           git config user.email "bot@users.noreply.github.com"
-          git checkout -b "$BR"
+          git checkout -b "$RELEASE_BRANCH"
           git add mobile-src/src/node_mobile_version.h docs/CHANGELOG.md expected-tree.txt release-ready.txt
-          git commit -m "release: nodejs-mobile ${V}"
-          git push origin "$BR"
+          git commit -m "release: prepare nodejs-mobile ${V} prerelease"
+          # No force push; existing release branches are reserved in plan.
+          git push origin "$RELEASE_BRANCH"
           cat > "$RUNNER_TEMP/release-pr.md" <<EOF
-          Automated release PR for **nodejs-mobile ${V}** (see docs/RELEASING.md).
+          Prepare **nodejs-mobile ${V}** on **${RELEASE_LINE}** for manual prerelease publication.
 
-          - [x] Version and revision computed from upstream and existing tags.
+          - [x] The chosen version matches this line's upstream source.
+          - [x] The tag/revision and release branch are unused.
           - [x] Source checksum reconstructed with prepare.sh.
-          - [ ] English CHANGELOG entry completed and reviewed.
-          - [ ] Release diff reviewed before merge.
+          - [ ] English CHANGELOG entry and release diff reviewed.
 
-          Merging arms this version for publication. The merge push runs all
-          builds, host checks, boot and addon smokes, curated tests, and full
-          emulator/simulator suites before publishing a prerelease. This mirror
-          does not claim physical-device validation.
+          Existing notes for this version are preserved; fill any TODO before publication.
+          Merge this PR, then run **Build** on **${RELEASE_LINE}**, choose
+          **prerelease** (or **prerelease-dryrun**) and version **${V}**.
+          A merge alone does not publish. Every build and device gate must pass;
+          the release is a GitHub prerelease with latest=false. This mirror does
+          not claim physical-device validation. See docs/RELEASING.md.
           EOF
-          gh pr create --base "$GITHUB_REF_NAME" --head "$BR" \
-            --title "release: nodejs-mobile ${V}" \
+          gh pr create --base "$RELEASE_LINE" --head "$RELEASE_BRANCH" \
+            --title "release: prepare nodejs-mobile ${V} prerelease" \
             --body-file "$RUNNER_TEMP/release-pr.md"

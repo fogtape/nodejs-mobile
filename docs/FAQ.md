@@ -72,6 +72,11 @@ Worth knowing:
 - **The supported subset is the wasm MVP plus some post-MVP proposals.** No
   SIMD, threads/atomics, exception handling, or GC. A module using those
   throws when the offending function is first called.
+- **Shared/resizable wasm memory is not implemented.** The polyfill's `Memory`
+  ignores the `shared` descriptor and exposes an ordinary `ArrayBuffer`; it
+  has neither `toResizableBuffer()` nor `toFixedLengthBuffer()`. It must not
+  be used as a substitute for `SharedArrayBuffer` in code requiring shared
+  memory semantics.
 - **The namespace itself is not quite complete.** polywasm provides `Module`,
   `Instance`, `Memory`, `Table`, `Global`, `CompileError` and the
   `compile`/`instantiate`/`validate` functions. `LinkError` and `RuntimeError`

@@ -25,8 +25,11 @@ libc `exit()` runs first — so the native write never happens. The app therefor
 also drops a small `exit-verdict-hook.js` into its sandbox at launch and
 preloads it via `NODE_OPTIONS=--require` (which stays out of
 `process.execArgv`), registering a `process.on('exit')` handler that writes the
-real code. The handler is confined to the main thread, so a worker calling
-`process.exit()` cannot overwrite the parent's verdict, and it `require()`s
+real code. The handler requires both the launch owner's PID and the main
+thread, so a spawned child or worker calling `process.exit()` cannot overwrite
+the parent's verdict. The owner PID is set natively at launch and inherited
+unchanged by children. The iOS simulator proxy waits for the owner process to
+terminate before reading the final verdict and complete output. The hook `require()`s
 nothing until the process is already exiting, so it adds no entries to
 `process.moduleLoadList` (which `test-bootstrap-modules` asserts on exactly).
 The `atexit` `FAIL` fallback remains for the cases that reach neither path — a
@@ -73,10 +76,27 @@ it through `tools/test.py`.
 Every job first **materializes** the source tree from the recipe branch
 (`.github/actions/materialize` runs `scripts/prepare.sh` and verifies the
 tree hash), then proceeds exactly as it would on a full checkout. On a release
-(or a `release-dryrun:` rehearsal commit), one `build.yml` run carries the
+(or a manual `prerelease-dryrun` rehearsal), one `build.yml` run carries the
 whole gate chain — smokes, device suites, real devices, and publish —
 connected by `needs:`; there is no cross-run lookup, label contract, or
 manual step.
+
+The host regression check `python3 scripts/test-mobile-verdicts.py out` executes
+both embedded exit hooks with real child processes and workers. It also checks
+that the iOS proxy waits for final process termination instead of accepting a
+provisional verdict. This check runs in the recipe integrity workflow.
+
+### Focused iOS regression checks
+
+The `iOS Simulator Tests` manual dispatch can reuse a prior Build artifact:
+set `build_run_id`, keep `flavors` to a flavor produced by that run, and supply
+space-separated selectors in `tests`, such as
+`parallel/test-common-wpt-inspect parallel/test-internal-webidl-buffer-source`.
+With `tests` empty it runs the usual curated suite and addon gate. With
+`smoke_only` set it runs the feature smoke instead. Selected-test dispatches
+are diagnostics; they do not replace the complete Build gate. Reusing a
+framework is appropriate only when its compiled build inputs match the source
+being tested (for example, a patch limited to test files).
 
 ### Flavors, and what's required to merge
 
