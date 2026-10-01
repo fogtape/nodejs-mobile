@@ -84,6 +84,9 @@ jobs:
       - name: Reconstruct + verify
         run: scripts/prepare.sh out
 
+      - name: Check manual prerelease version selection and guards
+        run: python3 scripts/test-release-control.py
+
       # The curated device-test list is the functional gate; validate it against
       # the materialized tree so an upstream bump can't silently shrink it.
       # tools/test.py ignores a path that matches nothing, so a deleted or
@@ -169,8 +172,14 @@ jobs:
         run: |
           SKIP_VERIFY=1 base/scripts/prepare.sh "$RUNNER_TEMP/mat-base"
           SKIP_VERIFY=1 head/scripts/prepare.sh "$RUNNER_TEMP/mat-head"
-          # Drop the per-tree git metadata so the diff is purely about content.
-          rm -rf "$RUNNER_TEMP/mat-base/.git" "$RUNNER_TEMP/mat-head/.git"
+          # Git may still be writing background maintenance files into .git.
+          # Export content without deleting live metadata; preserve symlinks
+          # and compare every source file (not git archive's export-ignore view).
+          mkdir -p "$RUNNER_TEMP/content-base" "$RUNNER_TEMP/content-head"
+          tar --exclude='./.git' -C "$RUNNER_TEMP/mat-base" -cf - . \
+            | tar -C "$RUNNER_TEMP/content-base" -xf -
+          tar --exclude='./.git' -C "$RUNNER_TEMP/mat-head" -cf - . \
+            | tar -C "$RUNNER_TEMP/content-head" -xf -
 
       - name: Diff the reconstructed trees
         run: |
@@ -179,8 +188,8 @@ jobs:
           # real git failure (exit > 1) must not silently publish an empty
           # diff a reviewer could mistake for "no source change".
           rc0() { local rc=0; "$@" || rc=$?; [ "$rc" -le 1 ] || exit "$rc"; }
-          rc0 git diff --no-index --stat mat-base mat-head > tree-diff.stat
-          rc0 git diff --no-index          mat-base mat-head > tree-diff.patch
+          rc0 git diff --no-index --stat content-base content-head > tree-diff.stat
+          rc0 git diff --no-index          content-base content-head > tree-diff.patch
 
           BB=$(grep -Ev '^\s*(#|$)' "$GITHUB_WORKSPACE/base/upstream-base.txt" | head -n1 | tr -d '[:space:]')
           HB=$(grep -Ev '^\s*(#|$)' "$GITHUB_WORKSPACE/head/upstream-base.txt" | head -n1 | tr -d '[:space:]')

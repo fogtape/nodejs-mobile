@@ -73,7 +73,7 @@ it through `tools/test.py`.
 Every job first **materializes** the source tree from the recipe branch
 (`.github/actions/materialize` runs `scripts/prepare.sh` and verifies the
 tree hash), then proceeds exactly as it would on a full checkout. On a release
-(or a `release-dryrun:` rehearsal commit), one `build.yml` run carries the
+(or a manual `prerelease-dryrun` rehearsal), one `build.yml` run carries the
 whole gate chain — smokes, device suites, real devices, and publish —
 connected by `needs:`; there is no cross-run lookup, label contract, or
 manual step.
