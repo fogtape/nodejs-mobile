@@ -34,7 +34,7 @@ nodejs-mobile-android-X.Y.Z-R.zip        nodejs-mobile-ios-X.Y.Z-R.zip
 nodejs-mobile-android-lite-X.Y.Z-R.zip   nodejs-mobile-ios-lite-X.Y.Z-R.zip
 ```
 
-**`full`** is the general-purpose binary. **`lite`** retains full ICU for
+**`full`** is the general-purpose binary. **`lite`** embeds a custom ICU data profile for
 `danmu_api`'s Chinese sorting, Unicode normalization and GBK/Big5 decoding,
 but omits Inspector, SQLite/Web Storage, TypeScript type-stripping and SEA.
 Node 26 lite also omits Temporal and `node:ffi`.

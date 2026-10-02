@@ -27,7 +27,11 @@ Not every API is supported on mobile, the main reason for this being that the mo
   - **Android < 8.0**: values can be inconsistent — some devices power cores on and off as an energy-saving strategy, so a core that is off at the moment of the call reports zero.
 - `os.availableParallelism()` — subject to the same platform limits as `os.cpus()`; treat the value as advisory.
 
-Both current flavors bundle full ICU, including `Intl`, Unicode
+Lite limits locale-specific data to English/Chinese/Cantonese/Japanese/Korean,
+while keeping all Node web text encodings, Unicode normalization and time zones.
+Other locale formatting may fall back; see [DANMU-LITE.md](DANMU-LITE.md).
+
+Both current flavors bundle ICU, including `Intl`, Unicode
 normalization, Chinese sorting and legacy decoders such as GBK and Big5.
 Lite drops optional features listed in [BUILDING.md](./BUILDING.md#the-lite-variant),
 including Inspector, SQLite/Web Storage and TypeScript type-stripping.

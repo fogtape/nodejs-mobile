@@ -130,7 +130,7 @@ To build it instead of the default, set `NODEJS_MOBILE_FLAVOR=lite` on either
 target's build command.
 
 The build ships in two flavors (selected by `NODEJS_MOBILE_FLAVOR`, default
-`full`). Both bundle **full ICU**. The lite flavor is tailored to `danmu_api`:
+`full`). Full bundles **complete ICU data**; lite bundles the reviewed **danmu ICU profile**. The lite flavor is tailored to `danmu_api`:
 it keeps Chinese collation, NFKC normalization, legacy text decoders, networking,
 compression and JavaScript module loading, while removing unused optional features.
 
@@ -146,13 +146,17 @@ Android retains the JIT and V8's native WebAssembly, which Undici uses for
 `fetch`. Its 64-bit lite builds also retain the pointer-compression setting
 below. Both iOS flavors retain the existing jitless `--v8-lite-mode` and
 polywasm implementation; lite does not add an Android-style 4 GB pointer cage.
-Full ICU archives are linked in both iOS flavors.
+Both iOS flavors link ICU; lite profiles its embedded data.
+
+Android lite SDK copies also remove non-runtime symbols/debug sections while
+verifying all dynamic exports remain unchanged. See the retained ICU locales
+and encodings in [DANMU-LITE.md](DANMU-LITE.md).
 
 Dead-code stripping and Android build IDs continue to apply to both flavors.
 Older published size measurements used no-ICU lite builds and do not describe
 this feature set. Measure freshly compiled artifacts before quoting size savings.
 
-The device boot smokes now assert full ICU, GBK/GB2312/Big5 decoding, Chinese
+The device boot smokes assert the ICU API/data contract, GBK/GB2312/Big5 decoding, Chinese
 sorting and NFKC normalization, and check the expected full/lite optional
 feature set. See [DANMU-LITE.md](DANMU-LITE.md) for the compatibility contract
 and the recipe-level configure/archive tests.

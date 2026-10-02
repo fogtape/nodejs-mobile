@@ -121,7 +121,7 @@ Only the options upstream marks `kAllowedInEnvvar` are accepted, and
 
 ### Situational
 
-**`NODE_ICU_DATA`** — current full and lite builds bundle full ICU, so no
+**`NODE_ICU_DATA`** — current full and lite builds embed the required ICU data, so no
 external data file is needed for Chinese locales or GBK/Big5 decoding.
 If overriding ICU data, use data matching the runtime's ICU version. Older
 small-ICU builds may need an external file; older no-ICU lite binaries cannot

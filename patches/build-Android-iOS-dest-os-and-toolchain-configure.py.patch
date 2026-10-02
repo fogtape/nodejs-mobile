@@ -23,12 +23,12 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 ---
- android_configure.py | 72 +++++++++++++++++++++++++++++++++++---------
+ android_configure.py | 73 +++++++++++++++++++++++++++++++++++---------
  configure.py         |  8 +++++
- 2 files changed, 65 insertions(+), 15 deletions(-)
+ 2 files changed, 66 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..bf681e18e3 100644
+index 5cea0393f4..6430bee810 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,14 @@
@@ -68,7 +68,7 @@ index 5cea0393f4..bf681e18e3 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,66 @@ elif platform.system() == "Linux":
+@@ -65,13 +54,67 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -115,6 +115,7 @@ index 5cea0393f4..bf681e18e3 100644
 +intl = "full-icu"
 +extra_flags = ""
 +if flavor == "lite":
++    GYP_DEFINES += " node_mobile_icu_profile=danmu-lite.json"
 +    extra_flags = " --without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print"
 +    # Pointer compression: 32-bit compressed pointers inside a 4GB cage — the
 +    # size lever on the JS heap rather than on the binary. lite only, because it

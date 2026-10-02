@@ -91,6 +91,9 @@ jobs:
       - name: Check danmu_api flavor configuration and ICU contract
         run: python3 scripts/test-mobile-flavors.py out
 
+      - name: Check lite stripping preserves embedding exports
+        run: python3 scripts/test-runtime-stripping.py out
+
       - name: Check manual prerelease version selection and guards
         run: python3 scripts/test-release-control.py
 

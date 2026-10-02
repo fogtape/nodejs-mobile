@@ -51,6 +51,11 @@ BUILD_ARCH() {
     echo "Could not find libnode.so file after compilation"
     exit 1
   fi
+  # Keep the linked build output for debugging; only trim the copied lite SDK.
+  if [ "${NODEJS_MOBILE_FLAVOR:-full}" = "lite" ]; then
+    python3 tools/strip-android-runtime.py --ndk "$ANDROID_NDK_PATH" \
+      "out_android/$TARGET_ARCH_FOLDER/libnode.so"
+  fi
 }
 
 if [ $# -eq 2 ]; then
