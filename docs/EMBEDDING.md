@@ -121,11 +121,11 @@ Only the options upstream marks `kAllowedInEnvvar` are accepted, and
 
 ### Situational
 
-**`NODE_ICU_DATA`** — meaningful only on the `full` flavor, which is built
-`--with-intl=small-icu` on both platforms. Ship a full `icudt*.dat` as an asset
-and point at it if you need locales beyond the small set. It is a **no-op on
-`lite`**, which is `--with-intl=none` and has no `Intl` at all. See
-[BUILDING.md](./BUILDING.md) for the flavor split.
+**`NODE_ICU_DATA`** — current full and lite builds bundle full ICU, so no
+external data file is needed for Chinese locales or GBK/Big5 decoding.
+If overriding ICU data, use data matching the runtime's ICU version. Older
+small-ICU builds may need an external file; older no-ICU lite binaries cannot
+be fixed by supplying a data file. See [BUILDING.md](./BUILDING.md).
 
 **`NODE_USE_SYSTEM_CA=1`** — only if you need user- or MDM-installed CAs
 honoured, and understand that it buys less than it appears to: iOS has no API to

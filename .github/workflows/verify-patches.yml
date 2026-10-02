@@ -84,6 +84,13 @@ jobs:
       - name: Reconstruct + verify
         run: scripts/prepare.sh out
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Check danmu_api flavor configuration and ICU contract
+        run: python3 scripts/test-mobile-flavors.py out
+
       - name: Check manual prerelease version selection and guards
         run: python3 scripts/test-release-control.py
 

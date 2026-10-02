@@ -130,44 +130,32 @@ To build it instead of the default, set `NODEJS_MOBILE_FLAVOR=lite` on either
 target's build command.
 
 The build ships in two flavors (selected by `NODEJS_MOBILE_FLAVOR`, default
-`full`). **`full`** is the general-purpose binary all consumers get. **`lite`**
-is a smaller binary for consumers that don't need the full feature set, built by
-layering feature-drops — and on Android one V8 configuration change, [pointer
-compression](#pointer-compression-android-lite-only) — on top of the full
-configure, so the full binary and its test gate are unchanged.
+`full`). Both bundle **full ICU**. The lite flavor is tailored to `danmu_api`:
+it keeps Chinese collation, NFKC normalization, legacy text decoders, networking,
+compression and JavaScript module loading, while removing unused optional features.
 
-What `lite` drops (all already-available upstream `configure` flags, so no extra
-patch-stack surface):
-
-| Cut | Why it can be dropped |
+| Lite cut | Compatibility cost |
 |---|---|
-| `--without-amaro` (TS type-stripping) | for consumers shipping plain `.js` |
-| `--without-inspector` | not used in production |
-| `--without-sqlite` | for consumers using the `better-sqlite3` addon, not `node:sqlite` |
-| `--with-intl=none` (no ICU) | for consumers that use no `Intl.*` — verify against your own dependency tree (a dependency may reference `Intl` from a code path you never call) |
-| **iOS only:** `--v8-lite-mode` | drops the compiled JIT + V8 WASM engine, both **dead on iOS** (it runs jitless; WebAssembly is served by the bundled polywasm polyfill — see [FAQ](./FAQ.md#does-fetch-work-what-about-webassembly)). This is the big lever. |
+| `--without-amaro` | Cannot execute TypeScript through Node's built-in type stripping; JS/MJS/CJS and ESM remain supported |
+| `--without-inspector` | No Node Inspector debugging |
+| `--without-sqlite` | No `node:sqlite` or Node Web Storage; the core uses files/JSON/Redis and the pure UniDB implementation |
+| `--disable-single-executable-application` | No SEA executable packaging; embedding and external core directories remain supported |
+| `--v8-disable-object-print` | Omits native debugger object-print helpers; JavaScript logging remains supported |
 
-Dead-code stripping (`--gc-sections`) applies to **both** Android flavors: the
-linker only discards unreferenced sections, so it costs no functionality.
+Android retains the JIT and V8's native WebAssembly, which Undici uses for
+`fetch`. Its 64-bit lite builds also retain the pointer-compression setting
+below. Both iOS flavors retain the existing jitless `--v8-lite-mode` and
+polywasm implementation; lite does not add an Android-style 4 GB pointer cage.
+Full ICU archives are linked in both iOS flavors.
 
-Measured shipping sizes (arm64, after symbol strip):
+Dead-code stripping and Android build IDs continue to apply to both flavors.
+Older published size measurements used no-ICU lite builds and do not describe
+this feature set. Measure freshly compiled artifacts before quoting size savings.
 
-- **iOS:** the dead-code removal above cut the lite device slice
-  **54.5 → 33.8 MB** (−38%); full shrinks by the same ~20 MB since every cut
-  is flavor-neutral (its size is measured by the release CI).
-- **Android:** **61.5 MB (full)** / **45.6 MB (lite)** with gc-sections on
-  both flavors; no
-  `--v8-lite-mode` (Android keeps the JIT and V8's native WASM for undici).
-
-Those figures were measured before pointer compression was turned on for
-Android; it aims at the heap rather than at the binary, and the release CI
-re-measures the shipping artifacts on every release.
-
-`build-id` (`-Wl,--build-id=sha1`) is emitted on the Android `libnode.so` in
-**both** flavors so crash reporters (e.g. Sentry) can symbolicate native
-crashes. The safeguard for `intl=none` is running your own application's test
-suite against the lite binary — it catches `Intl` breakage from future
-dependency changes.
+The device boot smokes now assert full ICU, GBK/GB2312/Big5 decoding, Chinese
+sorting and NFKC normalization, and check the expected full/lite optional
+feature set. See [DANMU-LITE.md](DANMU-LITE.md) for the compatibility contract
+and the recipe-level configure/archive tests.
 
 ### Pointer compression (Android lite only)
 

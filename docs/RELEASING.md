@@ -80,8 +80,9 @@ The four archives are
 `SHA256SUMS`. Android includes arm64-v8a, armeabi-v7a and x86_64. iOS includes
 arm64 device and simulator slices. Verify the checksum after downloading.
 
-Node 26.10 full builds enable Temporal and `node:ffi`; lite enables `node:ffi`
-and omits Temporal with ICU. The older 26.1 release disables both features.
+Node 26 full builds enable Temporal and `node:ffi`; the new lite recipe
+omits both and retains full ICU. Already published 26.10.0-0 lite assets
+have FFI and no ICU; the older 26.1 release disables both features.
 iOS uses jitless V8 and the bundled WebAssembly polyfill. See
 [VERSION-LINES.md](VERSION-LINES.md) for compatibility limits.
 

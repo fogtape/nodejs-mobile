@@ -17,7 +17,7 @@ NODELIB_PROJECT_PATH='tools/ios-framework'
 XCODE_PROJECT_PATH='tools/ios-framework/NodeMobile.xcodeproj/project.pbxproj'
 
 # Flavor switch (mobile-only; see "The lite variant" in docs/BUILDING.md on the
-# recipe branch). "full" (default) is unchanged; "lite" is the size-reduced
+# recipe branch). "full" (default) includes all features; "lite" is the size-reduced
 # build. Read here and threaded into both configure blocks and the static-lib
 # link list.
 FLAVOR="${NODEJS_MOBILE_FLAVOR:-full}"
@@ -26,7 +26,7 @@ if [ "$FLAVOR" != "full" ] && [ "$FLAVOR" != "lite" ]; then
 fi
 echo "iOS build flavor: $FLAVOR"
 
-INTL="small-icu"
+INTL="full-icu"
 # --v8-lite-mode drops the compiled JIT and the V8 native WASM engine. Both are
 # dead on iOS for EVERY flavor — iOS runs jitless (no JIT entitlement) and
 # WebAssembly is served by the polywasm polyfill the binary bundles
@@ -44,7 +44,6 @@ V8_NO_TURBOFAN_GYP_DEFINES="v8_enable_turbofan=0"
 V8_DISABLE_MAGLEV="--v8-disable-maglev"
 LITE_FLAGS=""
 if [ "$FLAVOR" = "lite" ]; then
-  INTL="none"
   # lite additionally drops features size-constrained consumers don't need.
   # Deliberately no --experimental-enable-pointer-compression, unlike Android
   # lite: V8 reserves the 4GB cage as one mmap of 4GB + (4GB - page) which it
@@ -53,7 +52,7 @@ if [ "$FLAVOR" = "lite" ]; then
   # most 7.375GB of address space, so that reservation can never succeed and V8
   # aborts the process during Isolate init. See "Pointer compression" in
   # docs/BUILDING.md on the recipe branch.
-  LITE_FLAGS="--without-amaro --without-inspector --without-sqlite"
+  LITE_FLAGS="--without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print"
 fi
 
 declare -a outputs_common=(
@@ -88,6 +87,10 @@ declare -a outputs_common=(
   "libhighway.a"
   "libzlib.a"
   "libzstd.a"
+  # Full ICU is linked in both flavors.
+  "libicudata.a"
+  "libicui18n.a"
+  "libicuucx.a"
 )
 # Static libs present only in the full flavor. lite's configure flags mean these
 # are never built, so for lite they are neither copied nor linked (their
@@ -95,7 +98,7 @@ declare -a outputs_common=(
 # the existing grep -vF idiom):
 #   libcrdtp                 -- --without-inspector
 #   libsqlite                -- --without-sqlite
-#   libicu*                  -- --with-intl=none (no ICU)
+# Full ICU is in outputs_common; only optional feature archives are omitted.
 # NB: libv8_snapshot stays in outputs_common — it is the runtime isolate-setup
 # lib (setup-isolate-deserialize) linked by BOTH flavors. libv8_init
 # (setup-isolate-full) is only a dependency of the host mksnapshot tool and is
@@ -109,10 +112,6 @@ declare -a outputs_common=(
 declare -a outputs_full_only=(
   "libcrdtp.a"
   "libsqlite.a"
-  "libicudata.a"
-  "libicui18n.a"
-  "libicustubdata.a"
-  "libicuucx.a"
 )
 declare -a outputs_x64_only=()
 declare -a outputs_arm64_only=(

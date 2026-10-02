@@ -765,6 +765,11 @@ jobs:
         run: |
           ./out/Release/node -e "console.log(process.versions); process.exit(0)"
 
+      - name: danmu_api ICU and full-feature smoke
+        env:
+          NODEJS_MOBILE_EXPECT_FLAVOR: full
+        run: ./out/Release/node tools/mobile-test/smoke/mobile-features.js
+
       # The iOS binary runs V8 jitless, so its WebAssembly (which undici's
       # llhttp needs for fetch()) comes from the bundled polywasm polyfill.
       # --jitless on the host build reproduces that engine exactly, so this
