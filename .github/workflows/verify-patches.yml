@@ -84,6 +84,21 @@ jobs:
       - name: Reconstruct + verify
         run: scripts/prepare.sh out
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Check danmu_api flavor configuration and ICU contract
+        run: python3 scripts/test-mobile-flavors.py out
+
+      - name: Install LLVM tools for strip regression
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm
+
+      - name: Check lite stripping preserves embedding exports
+        run: python3 scripts/test-runtime-stripping.py out
+
       - name: Check mobile toolchain actions
         run: |
           python3 -m pip install setuptools packaging
