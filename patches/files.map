@@ -113,3 +113,7 @@ ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/update-v8.y
 ci-remove-upstream-only-workflows-and-config.patch	.github/workflows/update-wpt.yml
 lib-install-a-WebAssembly-polyfill-when-the-engine-h.patch	LICENSE
 lib-install-a-WebAssembly-polyfill-when-the-engine-h.patch	lib/internal/process/pre_execution.js
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	deps/icu-small/source/tools/genrb/reslist.h
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/danmu-lite.json
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/icu-generic.gyp
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/prepare-mobile-icu.py

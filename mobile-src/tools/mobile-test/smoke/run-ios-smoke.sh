@@ -27,7 +27,12 @@ POLL_SECONDS="${SMOKE_POLL_SECONDS:-180}"
 # libc exit(), which never returns from node_start, so NodeRunner's post-run
 # PASS write is skipped and only the atexit FAIL fallback fires. Letting the
 # event loop drain returns 0 from node_start -> a clean PASS verdict.
-EXPR="console.log('${MARKER} ' + process.version + ' ' + process.platform + ' ' + process.arch);"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FLAVOR="${NODEJS_MOBILE_FLAVOR:-full}"
+case "$FLAVOR" in full|lite) ;; *) echo "Invalid build flavor: $FLAVOR" >&2; exit 1 ;; esac
+EXPR="globalThis.NODEJS_MOBILE_EXPECT_FLAVOR = '${FLAVOR}';
+$(cat "$SCRIPT_DIR/mobile-features.js")
+console.log('${MARKER} ' + process.version + ' ' + process.platform + ' ' + process.arch);"
 
 # Launch once; echo the app output to stderr (for log visibility) and print the
 # verdict (PASS | FAIL | "") to stdout for the caller to capture.
