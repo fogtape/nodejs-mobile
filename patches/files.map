@@ -132,3 +132,7 @@ lib-install-a-WebAssembly-polyfill-when-the-engine-h.patch	lib/internal/process/
 build-mobile-Temporal-Rust-toolsets-and-libffi-iOS-c.patch	deps/crates/crates.gyp
 build-mobile-Temporal-Rust-toolsets-and-libffi-iOS-c.patch	deps/libffi/generate-headers.py
 build-mobile-Temporal-Rust-toolsets-and-libffi-iOS-c.patch	deps/libffi/libffi.gyp
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	deps/icu-small/source/tools/genrb/reslist.h
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/danmu-lite.json
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/icu-generic.gyp
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/prepare-mobile-icu.py

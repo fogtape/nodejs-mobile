@@ -26,12 +26,12 @@ Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- android_configure.py | 75 +++++++++++++++++++++++++++++++++++---------
+ android_configure.py | 76 +++++++++++++++++++++++++++++++++++---------
  configure.py         |  8 +++++
- 2 files changed, 68 insertions(+), 15 deletions(-)
+ 2 files changed, 69 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..5593019b06 100644
+index 5cea0393f4..c76ec94c8f 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,14 @@
@@ -71,7 +71,7 @@ index 5cea0393f4..5593019b06 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,69 @@ elif platform.system() == "Linux":
+@@ -65,13 +54,70 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -121,6 +121,7 @@ index 5cea0393f4..5593019b06 100644
 +# instead of silently shipping a different feature set. Lite drops FFI.
 +extra_flags = " --v8-enable-temporal-support"
 +if flavor == "lite":
++    GYP_DEFINES += " node_mobile_icu_profile=danmu-lite.json"
 +    extra_flags = " --v8-disable-temporal-support --without-ffi --without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print"
 +    # Pointer compression: 32-bit compressed pointers inside a 4GB cage — the
 +    # size lever on the JS heap rather than on the binary. lite only, because it

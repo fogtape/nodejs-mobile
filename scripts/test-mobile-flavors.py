@@ -41,7 +41,7 @@ class MobileFlavors(unittest.TestCase):
             capture = folder / 'configured.json'
             configure = folder / 'configure'
             configure.write_text(f'#!{sys.executable}\nimport json,sys\n'
-                                 f'open({str(capture)!r}, "w").write(json.dumps(sys.argv[1:]))\n')
+                                 f'open({str(capture)!r}, "w").write(json.dumps({{"flags":sys.argv[1:],"gyp":__import__("os").environ.get("GYP_DEFINES","")}}))\n')
             configure.chmod(0o755)
             for flavor in ('full', 'lite'):
                 for arch in ('arm', 'arm64', 'x86_64'):
@@ -50,7 +50,10 @@ class MobileFlavors(unittest.TestCase):
                         env.pop('NODEJS_MOBILE_SCCACHE', None)
                         subprocess.run(ANDROID_WRAPPER + [str(ndk), '24', arch], cwd=folder, env=env,
                                        check=True, capture_output=True, text=True)
-                        flags = set(json.loads(capture.read_text()))
+                        captured = json.loads(capture.read_text())
+                        flags = set(captured['flags'])
+                        self.assertEqual('node_mobile_icu_profile=danmu-lite.json' in captured['gyp'],
+                                         flavor == 'lite')
                         self.assertIn('--with-intl=full-icu', flags)
                         self.assertIn('--shared', flags)
                         self.assertIn('--cross-compiling', flags)
@@ -71,7 +74,7 @@ class MobileFlavors(unittest.TestCase):
         script = (SOURCE / 'tools/ios_framework_prepare.sh').read_text()
         prefix = script.split('build_for_arm64_device() {', 1)[0]
         probe = prefix + '''
-printf '\nINTL:%s\nFLAGS:%s\n' "$INTL" "$LITE_FLAGS"
+printf '\nINTL:%s\nFLAGS:%s\nICU_PROFILE:%s\n' "$INTL" "$LITE_FLAGS" "$ICU_PROFILE_GYP_DEFINES"
 for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
 '''
         project = (SOURCE / 'tools/ios-framework/NodeMobile.xcodeproj/project.pbxproj').read_text()
@@ -85,6 +88,7 @@ for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
                                             capture_output=True, text=True, check=True)
                     lines = result.stdout.splitlines()
                     self.assertIn('INTL:full-icu', lines)
+                    self.assertIn('ICU_PROFILE:' + ('node_mobile_icu_profile=danmu-lite.json' if flavor == 'lite' else ''), lines)
                     flags = set(shlex.split(next(line[6:] for line in lines
                                                  if line.startswith('FLAGS:'))))
                     archives = {line[4:] for line in lines if line.startswith('LIB:')}
@@ -129,8 +133,11 @@ for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
             for package in output.glob('*.zip'):
                 with zipfile.ZipFile(package) as archive:
                     info = json.loads(archive.read('BUILD-INFO.json'))
-                self.assertIn('full-icu', info['enabled_features'])
                 lite = info['flavor'] == 'lite'
+                self.assertEqual(info['icu_api_mode'], 'full-icu')
+                self.assertEqual(info['icu_data_profile'], 'danmu-lite' if lite else 'complete')
+                self.assertEqual('full-icu' in info['enabled_features'], not lite)
+                self.assertEqual('danmu-icu-profile' in info['enabled_features'], lite)
                 for feature in ('node:ffi', 'Temporal'):
                     self.assertEqual(feature in info['enabled_features'], not lite)
                     self.assertEqual(feature in info['disabled_features'], lite)
@@ -139,6 +146,34 @@ for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
             for line in lines:
                 digest, name = line.split()
                 self.assertEqual(hashlib.sha256((output / name).read_bytes()).hexdigest(), digest)
+
+    def test_icu_profile_required_resources_exist_in_pinned_data(self):
+        # A version upgrade must fail loudly if renamed ICU data invalidates the
+        # reviewed locale/converter closure. Parse the actual canned package.
+        import bz2
+        import importlib.util
+        import re
+        import struct
+        major = re.search(r'"(\d+)\.',
+                          (SOURCE / 'deps/icu-small/source/common/unicode/uvernum.h').read_text()).group(1)
+        canned = SOURCE / f'deps/icu-small/source/data/in/icudt{major}l.dat'
+        data = canned.read_bytes() if canned.exists() else bz2.decompress(
+            canned.with_suffix('.dat.bz2').read_bytes())
+        header = struct.unpack_from('<H', data)[0]
+        count = struct.unpack_from('<I', data, header)[0]
+        items = set()
+        for index in range(count):
+            offset = struct.unpack_from('<I', data, header + 4 + index * 8)[0] + header
+            items.add(data[offset:data.index(b'\0', offset)].decode().split('/', 1)[1])
+        helper_path = SOURCE / 'tools/icu/prepare-mobile-icu.py'
+        spec = importlib.util.spec_from_file_location('mobile_icu_profile', helper_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        profile = json.loads((SOURCE / 'tools/icu/danmu-lite.json').read_text())
+        self.assertFalse(module.required_items(profile, items) - items)
+        for item in ('uts46.nrm', 'nfkc.nrm', 'cnvalias.icu', 'zoneinfo64.res',
+                     'coll/ucadata.icu', 'windows-950-2000.cnv', 'ibm-1373_P100-2002.cnv'):
+            self.assertIn(item, module.required_items(profile, items))
 
     def test_required_icu_smoke_on_host(self):
         # Exercise the exact shipped smoke with a host Node that has full ICU.
@@ -149,7 +184,7 @@ for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
             icu = icu.split('const ffiEnabled =', 1)[0]
         else:
             icu = icu.split('console.log(`NODEJS_MOBILE_FEATURES_OK', 1)[0]
-        subprocess.run(['node', '-e', "const assert=require('node:assert/strict');\n" + icu],
+        subprocess.run(['node', '-e', "const assert=require('node:assert/strict');const lite=false;\n" + icu],
                        check=True, capture_output=True, text=True)
 
 

@@ -22,7 +22,7 @@ Node 26 prereleases are published from `recipe-v26` after the release gates
 pass. CI preview packages are also available from successful **Build** runs.
 Published Node 24 assets remain on the Releases page.
 Node 26 full builds enable Temporal and `node:ffi`. New lite builds retain
-full ICU and disable both Temporal and `node:ffi`. See
+a custom ICU data profile and disable both Temporal and `node:ffi`. See
 [version-specific configuration](docs/VERSION-LINES.md#node-26-configuration).
 
 Download the zips from [Releases](../../releases) — four per release:
@@ -32,7 +32,7 @@ nodejs-mobile-android-X.Y.Z-R.zip        nodejs-mobile-ios-X.Y.Z-R.zip
 nodejs-mobile-android-lite-X.Y.Z-R.zip   nodejs-mobile-ios-lite-X.Y.Z-R.zip
 ```
 
-**`full`** is the general-purpose binary. **`lite`** retains full ICU for
+**`full`** is the general-purpose binary. **`lite`** embeds a custom ICU data profile for
 `danmu_api`'s Chinese sorting, Unicode normalization and GBK/Big5 decoding,
 but omits Inspector, SQLite/Web Storage, TypeScript type-stripping and SEA.
 Node 26 lite also omits Temporal and `node:ffi`.

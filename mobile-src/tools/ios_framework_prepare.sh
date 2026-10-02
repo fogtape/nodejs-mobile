@@ -21,6 +21,7 @@ XCODE_PROJECT_PATH='tools/ios-framework/NodeMobile.xcodeproj/project.pbxproj'
 # build. Read here and threaded into both configure blocks and the static-lib
 # link list.
 FLAVOR="${NODEJS_MOBILE_FLAVOR:-full}"
+ICU_PROFILE_GYP_DEFINES=""
 if [ "$FLAVOR" != "full" ] && [ "$FLAVOR" != "lite" ]; then
   echo "Error: NODEJS_MOBILE_FLAVOR must be 'full' or 'lite'"; exit 1
 fi
@@ -47,6 +48,7 @@ V8_DISABLE_MAGLEV="--v8-disable-maglev"
 # Lite retains full ICU but omits Temporal and FFI.
 LITE_FLAGS="--v8-enable-temporal-support"
 if [ "$FLAVOR" = "lite" ]; then
+  ICU_PROFILE_GYP_DEFINES="node_mobile_icu_profile=danmu-lite.json"
   # lite additionally drops features size-constrained consumers don't need.
   # Deliberately no --experimental-enable-pointer-compression, unlike Android
   # lite: V8 reserves the 4GB cage as one mmap of 4GB + (4GB - page) which it
@@ -130,7 +132,7 @@ fi
 
 build_for_arm64_device() {
   make clean
-  GYP_DEFINES="target_arch=arm64 host_os=mac target_os=ios $V8_NO_TURBOFAN_GYP_DEFINES"
+  GYP_DEFINES="target_arch=arm64 host_os=mac target_os=ios $V8_NO_TURBOFAN_GYP_DEFINES $ICU_PROFILE_GYP_DEFINES"
   export GYP_DEFINES
   ./configure \
     --dest-os=ios \
@@ -168,7 +170,7 @@ build_for_arm64_device() {
 
 build_for_arm64_simulator() {
   make clean
-  GYP_DEFINES="target_arch=arm64 host_os=mac target_os=ios $V8_NO_TURBOFAN_GYP_DEFINES"
+  GYP_DEFINES="target_arch=arm64 host_os=mac target_os=ios $V8_NO_TURBOFAN_GYP_DEFINES $ICU_PROFILE_GYP_DEFINES"
   export GYP_DEFINES
   ./configure \
     --dest-os=ios \
