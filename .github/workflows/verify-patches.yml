@@ -91,6 +91,11 @@ jobs:
       - name: Check danmu_api flavor configuration and ICU contract
         run: python3 scripts/test-mobile-flavors.py out
 
+      - name: Install LLVM tools for strip regression
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm
+
       - name: Check lite stripping preserves embedding exports
         run: python3 scripts/test-runtime-stripping.py out
 
