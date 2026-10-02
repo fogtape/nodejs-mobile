@@ -21,8 +21,8 @@ mobile build is identified by `process.versions.mobile` (e.g. `"26.10.0-0"`).
 Node 26 prereleases are published from `recipe-v26` after the release gates
 pass. CI preview packages are also available from successful **Build** runs.
 Published Node 24 assets remain on the Releases page.
-Node 26 full builds enable Temporal and `node:ffi`. Lite builds also enable
-`node:ffi`, while Temporal stays disabled with the no-ICU flavor. See
+Node 26 full builds enable Temporal and `node:ffi`. New lite builds retain
+full ICU and disable both Temporal and `node:ffi`. See
 [version-specific configuration](docs/VERSION-LINES.md#node-26-configuration).
 
 Download the zips from [Releases](../../releases) — four per release:
@@ -32,12 +32,13 @@ nodejs-mobile-android-X.Y.Z-R.zip        nodejs-mobile-ios-X.Y.Z-R.zip
 nodejs-mobile-android-lite-X.Y.Z-R.zip   nodejs-mobile-ios-lite-X.Y.Z-R.zip
 ```
 
-**`full`** is the general-purpose binary — pick it unless size is critical.
-**`lite`** reduces size by dropping ICU, the inspector,
-`node:sqlite`, and TypeScript type-stripping (see
-[BUILDING.md](docs/BUILDING.md#the-lite-variant) for the
-full list and the caveats — the `Intl` one needs checking against your
-dependency tree).
+**`full`** is the general-purpose binary. **`lite`** retains full ICU for
+`danmu_api`'s Chinese sorting, Unicode normalization and GBK/Big5 decoding,
+but omits Inspector, SQLite/Web Storage, TypeScript type-stripping and SEA.
+Node 26 lite also omits Temporal and `node:ffi`.
+See [BUILDING.md](docs/BUILDING.md#the-lite-variant) and the
+[danmu_api compatibility contract](docs/DANMU-LITE.md). Older release assets
+keep the feature set they were built with; these changes apply to new builds.
 
 To embed it in an app, most people use a plugin rather than the raw library:
 [nodejs-mobile-react-native](https://github.com/nodejs-mobile/nodejs-mobile-react-native)

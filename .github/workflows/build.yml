@@ -596,7 +596,7 @@ jobs:
           if [ "$NODEJS_MOBILE_FLAVOR" = "full" ]; then
             ./configure --with-intl=full-icu --v8-enable-temporal-support
           else
-            ./configure --with-intl=none --v8-disable-temporal-support
+            ./configure --with-intl=full-icu --v8-disable-temporal-support --without-ffi --without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print
           fi
 
       - name: Combine

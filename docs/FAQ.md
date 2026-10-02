@@ -27,13 +27,12 @@ Not every API is supported on mobile, the main reason for this being that the mo
   - **Android < 8.0**: values can be inconsistent — some devices power cores on and off as an energy-saving strategy, so a core that is off at the moment of the call reports zero.
 - `os.availableParallelism()` — subject to the same platform limits as `os.cpus()`; treat the value as advisory.
 
-On the **`lite`** flavor (built without ICU — see
-[BUILDING.md](./BUILDING.md#the-lite-variant)), JavaScript features that
-depend on internationalization support are unavailable — `Intl.*`, and RegExp
-Unicode property escapes such as `/\p{Letter}+/u`. The default `full` flavor
-supports them, with English-only locale data built in (`small-icu`); point
-`NODE_ICU_DATA` at a full `icudt*.dat` for more locales
-([EMBEDDING.md](./EMBEDDING.md#situational)).
+Both current flavors bundle full ICU, including `Intl`, Unicode
+normalization, Chinese sorting and legacy decoders such as GBK and Big5.
+Lite drops optional features listed in [BUILDING.md](./BUILDING.md#the-lite-variant),
+including Inspector, SQLite/Web Storage and TypeScript type-stripping.
+Older releases may have small-ICU full builds and no-ICU lite builds; consult
+the build recipe for the exact release.
 
 WebAssembly is a special case on iOS — see
 [the next question](#does-fetch-work-what-about-webassembly).

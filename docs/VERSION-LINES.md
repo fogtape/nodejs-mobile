@@ -52,8 +52,9 @@ Android archives use the matching NDK compiler driver and position-independent
 code. iOS frameworks link only the target Rust archive, alongside `libffi`,
 `libnode_base`, and `libncrypto_engine`.
 
-Lite builds enable `node:ffi` but retain `--with-intl=none` and explicitly
-disable Temporal, which currently requires bundled ICU. They do not need Rust.
+New lite builds retain `--with-intl=full-icu` and explicitly disable
+Temporal and `node:ffi`. They do not need Rust. Already published 26.10.0-0
+lite assets have FFI and no ICU; changing the recipe does not modify those assets.
 iOS libffi uses its precompiled executable trampoline table for native-to-JS
 callbacks rather than generating executable callback code at runtime. Boot
 smokes exercise C calls, native callbacks, and Temporal date/timezone behavior;
