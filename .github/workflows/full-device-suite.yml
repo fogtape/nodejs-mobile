@@ -169,14 +169,15 @@ jobs:
         run: |
           ./tools/mobile-test/summarize-suite-run.sh shard.log "android shard ${{ matrix.shard }}"
 
-      - uses: actions/upload-artifact@v7
+      # Log transport must not change the device-test verdict. Binary uploads
+      # in Build remain required; only these diagnostic logs are best effort.
+      - uses: ./.github/actions/upload-test-log
         if: always()
         with:
           name: full-suite-android-shard-${{ matrix.shard }}
           path: |
             shard.log
             shard-resources.log
-          if-no-files-found: ignore
 
   ios:
     needs: precheck
@@ -234,12 +235,11 @@ jobs:
         run: |
           ./tools/mobile-test/summarize-suite-run.sh shard.log "ios shard ${{ matrix.shard }}"
 
-      - uses: actions/upload-artifact@v7
+      - uses: ./.github/actions/upload-test-log
         if: always()
         with:
           name: full-suite-ios-shard-${{ matrix.shard }}
           path: shard.log
-          if-no-files-found: ignore
 
       - name: Shutdown simulator
         if: always()

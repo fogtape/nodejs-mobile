@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 import warnings
 
@@ -41,6 +42,31 @@ class AndroidSuite(unittest.TestCase):
 
     def test_matrix_matches_denominator(self):
         self.assertEqual(self.shards, list(range(self.count)))
+
+    def test_watch_cli_exclusions_preserve_in_process_device_tests(self):
+        sys.path.insert(0, str(SOURCE / 'tools'))
+        self.addCleanup(sys.path.remove, str(SOURCE / 'tools'))
+        runner = load_module('mobile_watch_status_runner', SOURCE / 'tools/test.py')
+        for suite, names in {
+            'sequential': ['test-watch-mode', 'test-watch-mode-inspect', 'test-tls-connect'],
+            'parallel': ['test-debugger-run-restart-init', 'test-debugger-wait-for-debugger',
+                         'test-fs-watch', 'test-fs-watch-persistent'],
+        }.items():
+            sections, defs = [], {}
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', ResourceWarning)
+                runner.ReadConfigurationInto(str(SOURCE / 'test' / suite / (suite + '.status')),
+                                             sections, defs)
+            config = runner.Configuration(sections, defs)
+            for platform in ('android', 'ios', 'linux'):
+                with self.subTest(suite=suite, platform=platform):
+                    cases = [SimpleNamespace(path=[suite, name]) for name in names]
+                    env = dict(system=platform, arch='x64', mode='release', type='simple',
+                               asan='off', pointer_compression='false')
+                    classified, _ = config.ClassifyTests(cases, env)
+                    skipped = {case.path[-1] for case in classified if runner.SKIP in case.outcomes}
+                    expected = set(names[:2]) if suite == 'sequential' and platform != 'linux' else set()
+                    self.assertEqual(skipped, expected)
 
     def test_real_test_selector_covers_every_runnable_case_once(self):
         # Use upstream's actual classification and --run selector, replacing

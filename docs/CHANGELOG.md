@@ -54,6 +54,10 @@
   most four running concurrently. Release the Gradle JVM after APK assembly
   and publish resource diagnostics while tests run to investigate runner
   shutdowns without excluding additional tests.
+- Exclude the watch-mode CLI subprocess tests on mobile, matching the
+  existing child-Node limitation; in-process debugger and filesystem-watch
+  tests keep their current coverage. Retry diagnostic log uploads once and
+  report artifact-service failures separately from the device-test verdict.
 - Carry forward the danmu lite ICU data profile, all web encoding converters,
   Chinese collation and Unicode normalization. Lite omits Temporal, FFI, Amaro,
   Inspector, SQLite/Web Storage, SEA and native object-print helpers; Android

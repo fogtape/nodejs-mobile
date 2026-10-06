@@ -164,6 +164,9 @@ per-PR because it costs about eight device-hours per run, which the PR loop
 cannot absorb; the nightly covers drift the rest of the time. Each shard
 writes a summary (counts, plus the failing names, with hangs and crashes
 counted separately — they mean different things) and uploads its log.
+Diagnostic log uploads retry once after a service failure, then warn if the
+artifact is still unavailable. The live job output and test summary remain
+available; test failures and required binary-artifact uploads still fail CI.
 
 ### The curated subset
 

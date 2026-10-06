@@ -60,11 +60,11 @@ Assisted-by: Codex
  test/parallel/test-vfs-fs-readFileSync.js     |    3 +-
  test/parallel/test-vfs-fs-writeFileSync.js    |    3 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
- test/sequential/sequential.status             |  137 ++
+ test/sequential/sequential.status             |  143 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
  ...test-vm-timeout-escape-promise-module-2.js |    6 +-
- 45 files changed, 2041 insertions(+), 66 deletions(-)
+ 45 files changed, 2047 insertions(+), 66 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
 index 0fe217d4e4..4578a1cf97 100644
@@ -2616,10 +2616,10 @@ index 10e078286e..9c4ec8787d 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index f155b67473..2e1401325e 100644
+index f155b67473..c052ca2ceb 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -33,6 +33,143 @@ test-perf-hooks: SKIP
+@@ -33,6 +33,149 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  
@@ -2653,6 +2653,10 @@ index f155b67473..2e1401325e 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++# These CLI tests spawn execPath (app_process), which aborts outside zygote.
++# Confirmed in Build 37473151347: dalvik-cache ownership / SIGABRT.
++test-watch-mode: SKIP
++test-watch-mode-inspect: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build
@@ -2714,6 +2718,8 @@ index f155b67473..2e1401325e 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++# NodeInstance launches a child Node, permitted only on the simulator.
++test-watch-mode-inspect: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build

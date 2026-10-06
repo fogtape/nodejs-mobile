@@ -62,14 +62,17 @@ The 22,081,472-byte reduction measures ICU data, not a compiled libnode or ZIP.
 - A fresh shallow fetch from `nodejs/node` applied all 22 regenerated patches
   directly; regeneration from that fresh tree preserved every recipe byte.
   The current recipe reconstructs tree
-  `26d4f4525e6849205d82ccf0ccd33ea85bf42cce` after the upstream refresh and Android test correction
+  `366de32e0018c646ea07608448b694716229b35b` after the upstream refresh and Android test correction
   described below.
 - 39 local regression tests passed: immutable SHA/tag/cache/CI baseline checks (5),
   flavor/ICU contracts (5), Rust/libffi toolchain actions (5), embedded verdict
   isolation (6), real shared-library symbol stripping (1), release control (17).
-- Five additional Android shard regressions passed, including exact coverage
-  of all 4,127 runnable cases in 16 shards of 257–258 tests, and a failing
+- Six additional Android shard regressions passed, including exact coverage
+  of all 4,125 runnable cases in 16 shards of 257–258 tests, and a failing
   test process retaining its nonzero exit status through logging and cleanup.
+  The actual Node status parser verifies watch-mode CLI exclusions on both
+  mobile platforms while retaining in-process debugger/filesystem tests and
+  leaving the two CLI tests runnable on desktop Linux.
   HdrHistogram 0.12.0 compiled on Termux arm64 and passed recording,
   percentile, bounds, extreme-value and four-thread atomic-recording probes.
 - Recipe ownership, YAML/shell/JavaScript syntax, all 219 curated test entries,
@@ -125,6 +128,26 @@ The runner logs do not prove an out-of-memory cause. These changes reduce
 session length and resource contention and provide evidence for a future
 failure. A complete device-suite rerun is still required before merge.
 Final artifact size measurements are separate from the ICU data measurement.
+
+The [refreshed Build run 37473151347](https://github.com/fogtape/nodejs-mobile/actions/runs/37473151347)
+passed all ten builds, boot smokes and curated gates. All 16 Android shards
+finished without a runner shutdown; 14 passed, while shards 8 and 9 exposed
+two further CLI tests, `test-watch-mode-inspect` and `test-watch-mode`. Their
+independent child Node attempts failed with dalvik-cache permission errors
+and SIGABRT. Android now excludes those two specific tests. iOS already
+excluded `test-watch-mode`; `test-watch-mode-inspect` now has the same
+child-process exclusion because `NodeInstance` uses a separate executable.
+The simulator permitted that spawn, which a shipped iOS app cannot use.
+
+All four iOS shards passed their test sweeps. Shard 0's 1,015 passing tests
+were followed by `Failed to CreateArtifact: Unable to make request: ENOTFOUND`
+from the diagnostic log upload, causing the job and full-suite gate to fail.
+The log action now retries once after 15 seconds, using a distinct retry name
+to avoid a partial-upload collision. If both attempts fail, it emits a warning
+and a job-summary note; the live test log and preceding summary remain
+available. Only diagnostic log uploads are best effort: test execution and
+binary-artifact uploads remain required. These corrections require another
+complete device-suite run.
 
 ## Move to the official release
 
