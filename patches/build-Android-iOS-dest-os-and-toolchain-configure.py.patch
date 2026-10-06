@@ -23,12 +23,12 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Co-authored-by: Julia Samól <j.samol@papers.ch>
 Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 ---
- android_configure.py | 72 +++++++++++++++++++++++++++++++++++---------
+ android_configure.py | 73 +++++++++++++++++++++++++++++++++++---------
  configure.py         |  8 +++++
- 2 files changed, 65 insertions(+), 15 deletions(-)
+ 2 files changed, 66 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..dfec53e67e 100644
+index 5cea0393f4..6430bee810 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,14 @@
@@ -68,7 +68,7 @@ index 5cea0393f4..dfec53e67e 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,66 @@ elif platform.system() == "Linux":
+@@ -65,13 +54,67 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -98,7 +98,7 @@ index 5cea0393f4..dfec53e67e 100644
  GYP_DEFINES += " android_ndk_path=" + android_ndk_path
 +GYP_DEFINES += " android_ndk_sysroot=" + toolchain_path + "/sysroot"
 +# Flavor switch (mobile-only, wrapper-level so configure.py stays upstream-clean):
-+#   full (default) — the shared build all consumers get; flags unchanged.
++#   full (default) — the general-purpose shared build with full ICU.
 +#   lite           — size-reduced subtractions (see "The lite variant" in
 +#                    docs/BUILDING.md on the recipe branch).
 +# Set via env NODEJS_MOBILE_FLAVOR=lite. Android lite keeps the JIT and V8's
@@ -111,11 +111,12 @@ index 5cea0393f4..dfec53e67e 100644
 +    sys.exit(1)
 +print("\033[92mInfo: \033[0m" + "Build flavor: " + flavor)
 +
-+intl = "small-icu"
++# Both flavors need Unicode normalization, Chinese collation and GBK/Big5.
++intl = "full-icu"
 +extra_flags = ""
 +if flavor == "lite":
-+    intl = "none"
-+    extra_flags = " --without-amaro --without-inspector --without-sqlite"
++    GYP_DEFINES += " node_mobile_icu_profile=danmu-lite.json"
++    extra_flags = " --without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print"
 +    # Pointer compression: 32-bit compressed pointers inside a 4GB cage — the
 +    # size lever on the JS heap rather than on the binary. lite only, because it
 +    # changes the V8 ABI for addons that include V8's headers directly (N-API

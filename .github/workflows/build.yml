@@ -228,6 +228,13 @@ jobs:
       - name: Stage NAPI/addon headers
         run: ./tools/copy_libnode_headers.sh android
 
+      # Run on cache hits too: older cached SDK copies may still carry symbols.
+      - name: Strip lite runtime symbols
+        if: matrix.flavor == 'lite'
+        env:
+          MY_ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: python3 tools/strip-android-runtime.py --ndk "$MY_ANDROID_NDK_HOME" out_android
+
       # After the header staging, not right after Build, so the saved tree is
       # byte-identical to what the combined actions/cache used to save from its
       # post step. Guarded on the same condition as Build: nothing to save when
@@ -764,6 +771,11 @@ jobs:
       - name: Smoke test
         run: |
           ./out/Release/node -e "console.log(process.versions); process.exit(0)"
+
+      - name: danmu_api ICU and full-feature smoke
+        env:
+          NODEJS_MOBILE_EXPECT_FLAVOR: full
+        run: ./out/Release/node tools/mobile-test/smoke/mobile-features.js
 
       # The iOS binary runs V8 jitless, so its WebAssembly (which undici's
       # llhttp needs for fetch()) comes from the bundled polywasm polyfill.

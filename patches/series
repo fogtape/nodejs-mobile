@@ -17,3 +17,4 @@ test-skip-adapt-parallel-and-sequential-tests-for-mo.patch
 doc-build-mobile-notes-and-ignores.patch
 ci-remove-upstream-only-workflows-and-config.patch
 lib-install-a-WebAssembly-polyfill-when-the-engine-h.patch
+build-profile-ICU-data-for-danmu_api-lite-runtimes.patch

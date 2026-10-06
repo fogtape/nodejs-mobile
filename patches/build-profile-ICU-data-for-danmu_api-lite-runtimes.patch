@@ -1,0 +1,465 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: fogtape <lilixu3210@gmail.com>
+Date: Fri, 2 Oct 2026 12:00:00 +0800
+Subject: [PATCH] build: profile ICU data for danmu_api lite runtimes
+
+Keep complete ICU API mode while filtering the lite data payload to the
+core's retained locale families and all Node TextDecoder web encodings.
+Preserve converter dependencies, Unicode normalization, IDNA, segmentation
+and complete timezone coverage. Validate required resources before and after
+trimming, and use an independent intermediate package so a host's complete
+ICU cannot hide missing data.
+
+The host genrb's StringBaseResource returns its existing char16_t buffer
+directly. The bundled public char16ptr header has the compatibility helper
+in global scope, so icu::toUCharPtr fails when rebuilding this host tool.
+This does not change the linked mobile runtime.
+---
+ deps/icu-small/source/tools/genrb/reslist.h |   2 +-
+ tools/icu/danmu-lite.json                   | 287 ++++++++++++++++++++
+ tools/icu/icu-generic.gyp                   |  19 +-
+ tools/icu/prepare-mobile-icu.py             |  83 ++++++
+ 4 files changed, 385 insertions(+), 6 deletions(-)
+ create mode 100644 tools/icu/danmu-lite.json
+ create mode 100755 tools/icu/prepare-mobile-icu.py
+
+diff --git a/deps/icu-small/source/tools/genrb/reslist.h b/deps/icu-small/source/tools/genrb/reslist.h
+index 17797bc36c..93f5384d85 100644
+--- a/deps/icu-small/source/tools/genrb/reslist.h
++++ b/deps/icu-small/source/tools/genrb/reslist.h
+@@ -326,7 +326,7 @@ public:
+     StringBaseResource(int8_t type, const char16_t *value, int32_t len, UErrorCode &errorCode);
+     virtual ~StringBaseResource();
+ 
+-    const char16_t *getBuffer() const { return icu::toUCharPtr(fString.getBuffer()); }
++    const char16_t *getBuffer() const { return fString.getBuffer(); }
+     int32_t length() const { return fString.length(); }
+ 
+     virtual void handlePreWrite(uint32_t *byteOffset) override;
+diff --git a/tools/icu/danmu-lite.json b/tools/icu/danmu-lite.json
+new file mode 100644
+index 0000000000..fb9240da2b
+--- /dev/null
++++ b/tools/icu/danmu-lite.json
+@@ -0,0 +1,287 @@
++{
++  "comment": "danmu_api custom ICU: preserve en/zh/yue/ja/ko locale families, all Node TextDecoder web encodings, complete Unicode normalization, IDNA, segmentation and time zones; remove unrelated locale families, non-web converter tables, transliteration and rule-based spellout data.",
++  "variables": {
++    "locales": {
++      "only": [
++        "en",
++        "en_001",
++        "en_150",
++        "en_AE",
++        "en_AG",
++        "en_AI",
++        "en_AS",
++        "en_AT",
++        "en_AU",
++        "en_BB",
++        "en_BE",
++        "en_BI",
++        "en_BM",
++        "en_BS",
++        "en_BW",
++        "en_BZ",
++        "en_CA",
++        "en_CC",
++        "en_CH",
++        "en_CK",
++        "en_CM",
++        "en_CX",
++        "en_CY",
++        "en_CZ",
++        "en_DE",
++        "en_DG",
++        "en_DK",
++        "en_DM",
++        "en_EE",
++        "en_ER",
++        "en_ES",
++        "en_FI",
++        "en_FJ",
++        "en_FK",
++        "en_FM",
++        "en_FR",
++        "en_GB",
++        "en_GD",
++        "en_GE",
++        "en_GG",
++        "en_GH",
++        "en_GI",
++        "en_GM",
++        "en_GS",
++        "en_GU",
++        "en_GY",
++        "en_HK",
++        "en_HU",
++        "en_ID",
++        "en_IE",
++        "en_IL",
++        "en_IM",
++        "en_IN",
++        "en_IO",
++        "en_IT",
++        "en_JE",
++        "en_JM",
++        "en_JP",
++        "en_KE",
++        "en_KI",
++        "en_KN",
++        "en_KY",
++        "en_LC",
++        "en_LR",
++        "en_LS",
++        "en_LT",
++        "en_LV",
++        "en_MG",
++        "en_MH",
++        "en_MO",
++        "en_MP",
++        "en_MS",
++        "en_MT",
++        "en_MU",
++        "en_MV",
++        "en_MW",
++        "en_MY",
++        "en_NA",
++        "en_NF",
++        "en_NG",
++        "en_NH",
++        "en_NL",
++        "en_NO",
++        "en_NR",
++        "en_NU",
++        "en_NZ",
++        "en_PG",
++        "en_PH",
++        "en_PK",
++        "en_PL",
++        "en_PN",
++        "en_PR",
++        "en_PT",
++        "en_PW",
++        "en_RH",
++        "en_RO",
++        "en_RW",
++        "en_SB",
++        "en_SC",
++        "en_SD",
++        "en_SE",
++        "en_SG",
++        "en_SH",
++        "en_SI",
++        "en_SK",
++        "en_SL",
++        "en_SS",
++        "en_SX",
++        "en_SZ",
++        "en_TC",
++        "en_TK",
++        "en_TO",
++        "en_TT",
++        "en_TV",
++        "en_TZ",
++        "en_UA",
++        "en_UG",
++        "en_UM",
++        "en_US",
++        "en_US_POSIX",
++        "en_VC",
++        "en_VG",
++        "en_VI",
++        "en_VU",
++        "en_WS",
++        "en_ZA",
++        "en_ZM",
++        "en_ZW",
++        "ja",
++        "ja_JP",
++        "ja_JP_TRADITIONAL",
++        "ko",
++        "ko_CN",
++        "ko_KP",
++        "ko_KR",
++        "root",
++        "yue",
++        "yue_CN",
++        "yue_HK",
++        "yue_Hans",
++        "yue_Hans_CN",
++        "yue_Hant",
++        "yue_Hant_CN",
++        "yue_Hant_HK",
++        "yue_Hant_MO",
++        "zh",
++        "zh_CN",
++        "zh_HK",
++        "zh_Hans",
++        "zh_Hans_CN",
++        "zh_Hans_HK",
++        "zh_Hans_MO",
++        "zh_Hans_MY",
++        "zh_Hans_SG",
++        "zh_Hant",
++        "zh_Hant_HK",
++        "zh_Hant_MO",
++        "zh_Hant_MY",
++        "zh_Hant_TW",
++        "zh_MO",
++        "zh_SG",
++        "zh_TW"
++      ]
++    },
++    "none": {
++      "only": []
++    }
++  },
++  "trees": {
++    "ROOT": "locales",
++    "coll": "locales",
++    "curr": "locales",
++    "lang": "locales",
++    "region": "locales",
++    "unit": "locales",
++    "zone": "locales",
++    "brkitr": "locales",
++    "rbnf": "none",
++    "translit": "none",
++    "converters": {
++      "only": [
++        "cns-11643-1992",
++        "euc-jp-2007",
++        "gb18030-2022",
++        "ibm-1089_P100-1995",
++        "ibm-1168_P100-2002",
++        "ibm-1363_P11B-1998",
++        "ibm-1373_P100-2002",
++        "ibm-1375_P100-2008",
++        "ibm-1386_P100-2001",
++        "ibm-5012_P100-1999",
++        "ibm-5346_P100-1998",
++        "ibm-5347_P100-1998",
++        "ibm-5348_P100-1997",
++        "ibm-5349_P100-1998",
++        "ibm-5350_P100-1998",
++        "ibm-5354_P100-1998",
++        "ibm-5478_P100-1995",
++        "ibm-866_P100-1995",
++        "ibm-878_P100-1996",
++        "ibm-9005_X110-2007",
++        "ibm-912_P100-1995",
++        "ibm-913_P100-2000",
++        "ibm-914_P100-1995",
++        "ibm-915_P100-1995",
++        "ibm-921_P100-1995",
++        "ibm-923_P100-1998",
++        "ibm-943_P15A-2003",
++        "ibm-9447_P100-2002",
++        "ibm-9448_X100-2005",
++        "ibm-9449_P100-2002",
++        "ibm-949_P110-1999",
++        "ibm-949_P11A-1999",
++        "ibm-970_P110_P110-2006_U2",
++        "iso-8859_10-1998",
++        "iso-8859_14-1998",
++        "jisx-212",
++        "macos-0_2-10.2",
++        "macos-7_3-10.2",
++        "windows-874-2000",
++        "windows-936-2000",
++        "windows-949-2000",
++        "windows-950-2000"
++      ]
++    }
++  },
++  "remove": [],
++  "keep": [
++    "pool.res",
++    "supplementalData.res",
++    "zoneinfo64.res",
++    "cnvalias.icu",
++    "brkitr/root.res",
++    "cns-11643-1992.cnv",
++    "euc-jp-2007.cnv",
++    "gb18030-2022.cnv",
++    "ibm-1089_P100-1995.cnv",
++    "ibm-1168_P100-2002.cnv",
++    "ibm-1363_P11B-1998.cnv",
++    "ibm-1373_P100-2002.cnv",
++    "ibm-1375_P100-2008.cnv",
++    "ibm-1386_P100-2001.cnv",
++    "ibm-5012_P100-1999.cnv",
++    "ibm-5346_P100-1998.cnv",
++    "ibm-5347_P100-1998.cnv",
++    "ibm-5348_P100-1997.cnv",
++    "ibm-5349_P100-1998.cnv",
++    "ibm-5350_P100-1998.cnv",
++    "ibm-5354_P100-1998.cnv",
++    "ibm-5478_P100-1995.cnv",
++    "ibm-866_P100-1995.cnv",
++    "ibm-878_P100-1996.cnv",
++    "ibm-9005_X110-2007.cnv",
++    "ibm-912_P100-1995.cnv",
++    "ibm-913_P100-2000.cnv",
++    "ibm-914_P100-1995.cnv",
++    "ibm-915_P100-1995.cnv",
++    "ibm-921_P100-1995.cnv",
++    "ibm-923_P100-1998.cnv",
++    "ibm-943_P15A-2003.cnv",
++    "ibm-9447_P100-2002.cnv",
++    "ibm-9448_X100-2005.cnv",
++    "ibm-9449_P100-2002.cnv",
++    "ibm-949_P110-1999.cnv",
++    "ibm-949_P11A-1999.cnv",
++    "ibm-970_P110_P110-2006_U2.cnv",
++    "iso-8859_10-1998.cnv",
++    "iso-8859_14-1998.cnv",
++    "jisx-212.cnv",
++    "macos-0_2-10.2.cnv",
++    "macos-7_3-10.2.cnv",
++    "windows-874-2000.cnv",
++    "windows-936-2000.cnv",
++    "windows-949-2000.cnv",
++    "windows-950-2000.cnv",
++    "nfkc.nrm",
++    "nfkc_cf.nrm",
++    "nfkc_scf.nrm",
++    "uts46.nrm",
++    "coll/ucadata.icu"
++  ]
++}
+diff --git a/tools/icu/icu-generic.gyp b/tools/icu/icu-generic.gyp
+index c4e8c6fbb9..d293800d14 100644
+--- a/tools/icu/icu-generic.gyp
++++ b/tools/icu/icu-generic.gyp
+@@ -7,6 +7,7 @@
+ 
+ {
+   'variables': {
++    'node_mobile_icu_profile%': '',
+     'icu_src_derb': [
+       '<(icu_path)/source/tools/genrb/derb.c',
+       '<(icu_path)/source/tools/genrb/derb.cpp'
+@@ -224,6 +225,11 @@
+               # full data - no trim needed
+               'sources': [ '<(SHARED_INTERMEDIATE_DIR)/icudt<(icu_ver_major)_dat.<(icu_asm_ext)' ],
+               'dependencies': [ 'genccode#host', 'icupkg#host', 'icu_implementation#host', 'icu_uconfig' ],
++              'conditions': [
++                [ 'node_mobile_icu_profile != ""', {
++                  'dependencies': [ 'genrb#host', 'iculslocs#host' ],
++                } ],
++              ],
+               'include_dirs': [
+                 '<(icu_path)/source/common',
+               ],
+@@ -231,12 +237,15 @@
+                 {
+                    # Copy the .dat file, swapping endianness if needed.
+                    'action_name': 'icupkg',
+-                   'inputs': [ '<(icu_data_in)' ],
++                   'inputs': [ '<(icu_data_in)', 'prepare-mobile-icu.py',
++                               'icutrim.py', 'danmu-lite.json' ],
+                    'outputs':[ '<(SHARED_INTERMEDIATE_DIR)/icudt<(icu_ver_major)<(icu_endianness).dat' ],
+-                   'action': [ '<(PRODUCT_DIR)/icupkg<(EXECUTABLE_SUFFIX)',
+-                               '-t<(icu_endianness)',
+-                               '<@(_inputs)',
+-                               '<@(_outputs)',
++                   'action': [ '<(python)', 'prepare-mobile-icu.py',
++                               '--tools', '<(PRODUCT_DIR)',
++                               '--input', '<(icu_data_in)',
++                               '--output', '<@(_outputs)',
++                               '--endian', '<(icu_endianness)',
++                               '--profile', '<(node_mobile_icu_profile)',
+                              ],
+                 },
+                 {
+diff --git a/tools/icu/prepare-mobile-icu.py b/tools/icu/prepare-mobile-icu.py
+new file mode 100755
+index 0000000000..1e79535e55
+--- /dev/null
++++ b/tools/icu/prepare-mobile-icu.py
+@@ -0,0 +1,83 @@
++#!/usr/bin/env python3
++"""Prepare complete or profiled ICU data without enabling Node's small-ICU mode."""
++import argparse
++import json
++from pathlib import Path
++import re
++import subprocess
++import sys
++import tempfile
++
++
++def listing(icupkg, data):
++    return set(subprocess.check_output([str(icupkg), '-l', str(data)], text=True).splitlines())
++
++
++def required_items(profile, original):
++    required = set(profile['keep'])
++    # Protect selected locale resources and aliases, including parent fallbacks.
++    for tree, settings in profile['trees'].items():
++        if isinstance(settings, str):
++            settings = profile['variables'][settings]
++        prefix = '' if tree in ('ROOT', 'converters') else tree + '/'
++        extension = '.cnv' if tree == 'converters' else '.res'
++        for item in settings.get('only', []):
++            name = prefix + item + extension
++            if tree == 'converters' or name in original:
++                required.add(name)
++    return required
++
++
++def prepare(tools, source, output, endian, profile_path):
++    icupkg = tools / 'icupkg'
++    output.parent.mkdir(parents=True, exist_ok=True)
++    if not profile_path:
++        subprocess.run([str(icupkg), '-t' + endian, str(source), str(output)], check=True)
++        return
++    profile = json.loads(Path(profile_path).read_text())
++    original = listing(icupkg, source)
++    required = required_items(profile, original)
++    if missing := required - original:
++        raise RuntimeError('ICU source is missing required data: ' + ', '.join(sorted(missing)))
++    match = re.fullmatch(r'icudt(\d+)[bl]\.dat', source.name)
++    if not match:
++        raise RuntimeError(f'unrecognized ICU source data filename: {source.name}')
++    # An independent package name prevents an installed host's complete ICU
++    # from supplying resources that were deleted from the candidate package.
++    name = 'dmlt' + match[1].zfill(3) + endian + '.dat'
++    with tempfile.TemporaryDirectory(prefix='icu-profile-', dir=output.parent) as folder:
++        folder = Path(folder)
++        result = subprocess.run([
++            sys.executable, str(Path(__file__).with_name('icutrim.py')),
++            '-P', str(tools), '-D', str(source), '-T', str(folder / 'trim'),
++            '-F', str(Path(profile_path).resolve()), '-O', name,
++            '-e', 'little' if endian == 'l' else 'big',
++        ], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
++        if result.returncode:
++            raise RuntimeError('ICU profile generation failed:\n' + result.stdout[-8000:])
++        trimmed = folder / 'trim' / name
++        if missing := required - listing(icupkg, trimmed):
++            raise RuntimeError('ICU trimming removed required data: ' + ', '.join(sorted(missing)))
++        staged = folder / output.name
++        subprocess.run([str(icupkg), '-t' + endian, str(trimmed), str(staged)], check=True)
++        # icupkg verifies data dependencies while repackaging. The conventional
++        # package/entry-point name must remain icudt<N> for V8 and Node.
++        staged.replace(output)
++    print(f'ICU profile {Path(profile_path).name}: '
++          f'{source.stat().st_size} -> {output.stat().st_size} bytes')
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--tools', type=Path, required=True)
++    parser.add_argument('--input', type=Path, required=True)
++    parser.add_argument('--output', type=Path, required=True)
++    parser.add_argument('--endian', choices=('l', 'b'), required=True)
++    parser.add_argument('--profile', default='')
++    args = parser.parse_args()
++    prepare(args.tools.resolve(), args.input.resolve(), args.output.resolve(),
++            args.endian, args.profile)
++
++
++if __name__ == '__main__':
++    main()
