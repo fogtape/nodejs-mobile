@@ -70,8 +70,8 @@ permissions:
 
 jobs:
   package-preview:
-    if: github.ref == 'refs/heads/recipe-v26'
-    needs: [ci-required, curated-tests-android, curated-tests-ios]
+    if: github.ref == 'refs/heads/recipe-v26' || (github.event_name == 'pull_request' && needs.upgrade-check.outputs.upgrade == 'true')
+    needs: [release-check, upgrade-check, ci-required, curated-tests-android, curated-tests-ios]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -86,7 +86,7 @@ jobs:
         run: python3 scripts/package-preview.py preview-input preview-packages
       - uses: actions/upload-artifact@v7
         with:
-          name: nodejs-mobile-26.10.0-0-preview
+          name: nodejs-mobile-${{ needs.release-check.outputs.version }}-preview
           path: preview-packages
           retention-days: 90
           if-no-files-found: error
@@ -94,9 +94,10 @@ jobs:
   # Flavor matrices are inline expressions, not a helper job (a full VM boot
   # to echo two constants earns nothing). Android always runs both flavors
   # (ubuntu+KVM is 1x-billed and plentiful); iOS drops to full-only on
-  # pull_request because hosted macOS concurrency is capped far below Linux
+  # ordinary pull_request because hosted macOS concurrency is capped far below Linux
   # and two PRs running the complete iOS matrix could queue the release
-  # pipeline behind them. What the lite iOS leg uniquely catches —
+  # pipeline behind them. Upstream upgrades build and smoke both iOS flavors.
+  # What the lite iOS leg uniquely catches —
   # lite-specific configure/link breakage — is still caught at compile time
   # on the merge run. Pushes and releases run both. See docs/TESTING.md,
   # "Flavors, and what's required to merge".
@@ -319,11 +320,11 @@ jobs:
           path: out_android
 
   build-ios:
-    needs: release-check
+    needs: [release-check, upgrade-check]
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ github.event_name == 'pull_request' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
+        flavor: ${{ github.event_name == 'pull_request' && needs.upgrade-check.outputs.upgrade != 'true' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
         config:
           # x86_64 (Intel Mac) simulator support was dropped for v24 — Intel
           # Macs are EOL.
@@ -567,9 +568,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ github.event_name == 'pull_request' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
+        flavor: ${{ github.event_name == 'pull_request' && needs.upgrade-check.outputs.upgrade != 'true' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
     runs-on: macos-26
-    needs: [build-ios]
+    needs: [build-ios, upgrade-check]
     env:
       NODEJS_MOBILE_FLAVOR: ${{ matrix.flavor }}
       FLAVOR_SUFFIX: ${{ matrix.flavor == 'lite' && '-lite' || '' }}
@@ -696,11 +697,11 @@ jobs:
   # Boot smoke for iOS: install the testnode app on a booted simulator and run a
   # console.log via the freshly built NodeMobile.xcframework.
   smoke-ios:
-    needs: [combine-ios]
+    needs: [combine-ios, upgrade-check]
     strategy:
       fail-fast: false
       matrix:
-        flavor: ${{ github.event_name == 'pull_request' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
+        flavor: ${{ github.event_name == 'pull_request' && needs.upgrade-check.outputs.upgrade != 'true' && fromJSON('["full"]') || fromJSON('["full","lite"]') }}
     runs-on: macos-26
     env:
       NODEJS_MOBILE_FLAVOR: ${{ matrix.flavor }}
@@ -1223,12 +1224,22 @@ jobs:
           fetch-depth: 1
 
       - name: Check the pinned upstream base is on this fork
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # || true: grep exits 1 on a comments-only file, which under pipefail
           # would kill the step before the message below ever prints.
           BASE=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]' || true)
           [ -n "$BASE" ] || { echo "::error::no base in upstream-base.txt"; exit 1; }
+
+          if [[ "$BASE" =~ ^[0-9a-f]{40}$ ]]; then
+            WANT=$(gh api "repos/nodejs/node/commits/$BASE" --jq .sha)
+            [ "$WANT" = "$BASE" ] || { echo "::error::upstream snapshot SHA mismatch"; exit 1; }
+            echo "Verified upstream PR snapshot $BASE; no release ancestry ref is required."
+            # release-control.py rejects Cut release/publication for SHA bases.
+            exit 0
+          fi
 
           # Each major keeps an independent upstream ancestry ref.
           MAJOR=${BASE#v}; MAJOR=${MAJOR%%.*}

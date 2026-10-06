@@ -30,6 +30,10 @@ recording the upstream commit, outside the source tree.
 
 ## Flavor contract
 
+Upstream upgrade PRs build and boot-smoke both iOS flavors, and preview
+package names use the recorded mobile version. SHA baselines are verified
+against the official repository without requiring a release ancestry branch.
+
 Full retains complete ICU data, Temporal and FFI, with the existing mobile
 Rust/libffi integration. The 26.11 rebase also preserves upstream's new
 Temporal zoneinfo source generator and the iOS platform guards.
@@ -52,7 +56,7 @@ The 22,081,472-byte reduction measures ICU data, not a compiled libnode or ZIP.
 - A fresh shallow fetch from `nodejs/node` applied all 22 regenerated patches
   directly; regeneration from that fresh tree preserved every recipe byte.
   It reconstructed tree `a92053298021a6780ac09b4c31653fc210d68ec8`.
-- 38 local regression tests passed: immutable SHA/tag/cache cloning (4),
+- 39 local regression tests passed: immutable SHA/tag/cache/CI baseline checks (5),
   flavor/ICU contracts (5), Rust/libffi toolchain actions (5), embedded verdict
   isolation (6), real shared-library symbol stripping (1), release control (17).
 - Recipe ownership, YAML/shell/JavaScript syntax, all 219 curated test entries,
