@@ -249,6 +249,13 @@ jobs:
       - name: Stage NAPI/addon headers
         run: ./tools/copy_libnode_headers.sh android
 
+      # Run on cache hits too: older cached SDK copies may still carry symbols.
+      - name: Strip lite runtime symbols
+        if: matrix.flavor == 'lite'
+        env:
+          MY_ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: python3 tools/strip-android-runtime.py --ndk "$MY_ANDROID_NDK_HOME" out_android
+
       # After the header staging, not right after Build, so the saved tree is
       # byte-identical to what the combined actions/cache used to save from its
       # post step. Guarded on the same condition as Build: nothing to save when
@@ -596,7 +603,7 @@ jobs:
           if [ "$NODEJS_MOBILE_FLAVOR" = "full" ]; then
             ./configure --with-intl=full-icu --v8-enable-temporal-support
           else
-            ./configure --with-intl=none --v8-disable-temporal-support
+            ./configure --with-intl=full-icu --v8-disable-temporal-support --without-ffi --without-amaro --without-inspector --without-sqlite --disable-single-executable-application --v8-disable-object-print
           fi
 
       - name: Combine

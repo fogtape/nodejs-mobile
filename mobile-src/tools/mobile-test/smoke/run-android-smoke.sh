@@ -21,7 +21,9 @@ adbx push "$SCRIPT_DIR/smoke.js" "$DEST/" >/dev/null
 adbx push "$SCRIPT_DIR/mobile-features.js" "$DEST/" >/dev/null
 adbx shell "chmod 755 $DEST/node_smoke"
 
-OUT=$(adbx shell "cd $DEST && LD_LIBRARY_PATH=$DEST TMPDIR=$DEST ./node_smoke smoke.js; echo SMOKE_EXIT:\$?")
+FLAVOR="${NODEJS_MOBILE_FLAVOR:-full}"
+case "$FLAVOR" in full|lite) ;; *) echo "Invalid build flavor: $FLAVOR" >&2; exit 1 ;; esac
+OUT=$(adbx shell "cd $DEST && NODEJS_MOBILE_EXPECT_FLAVOR=$FLAVOR LD_LIBRARY_PATH=$DEST TMPDIR=$DEST ./node_smoke smoke.js; echo SMOKE_EXIT:\$?")
 echo "----- device output -----"
 echo "$OUT"
 echo "--------------------------"

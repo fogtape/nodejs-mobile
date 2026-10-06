@@ -43,8 +43,14 @@ def main():
                         flavor=flavor, recipe_commit=sha, source_tree=tree,
                         branch=os.environ.get('GITHUB_REF_NAME', ''),
                         run_url=f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
-                        preview=True, enabled_features=['node:ffi'] + (['Temporal'] if flavor == 'full' else []),
-                        disabled_features=[] if flavor == 'full' else ['Temporal'])
+                        preview=True, icu_api_mode='full-icu',
+                        icu_data_profile='complete' if flavor == 'full' else 'danmu-lite',
+                        android_symbols='stripped' if platform == 'android' and flavor == 'lite' else 'default',
+                        enabled_features=(['full-icu', 'node:ffi', 'Temporal'] if flavor == 'full' else ['icu', 'danmu-icu-profile']),
+                        disabled_features=[] if flavor == 'full' else [
+                            'node:ffi', 'Temporal', 'node:sqlite', 'Web Storage',
+                            'Inspector', 'TypeScript type-stripping', 'SEA',
+                            'V8 native debugger object print'])
             (artifact / 'BUILD-INFO.json').write_text(json.dumps(info, indent=2) + '\n')
             package = output / f'{name}-{version}-preview.zip'
             with zipfile.ZipFile(package, 'w', zipfile.ZIP_DEFLATED) as archive:

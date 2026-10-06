@@ -55,12 +55,9 @@ permissions:
 
 jobs:
   ios-simulator-tests:
-    # Both flavors run the SAME curated list, no exclusions: the whole list
-    # verified passing on a local lite build despite iOS lite dropping the
-    # WebAssembly + Intl globals (--v8-lite-mode + intl=none) — the ICU tests
-    # self-skip via common.hasIntl and the WebAssembly-named test only
-    # inspects a string fixture. Each flavor fetches its own framework from
-    # the same Build run (which produces both).
+    # Both flavors run the same curated list with full ICU enabled. iOS uses
+    # jitless V8/polywasm in both flavors. Each leg fetches its own framework
+    # from this Build run; no flavor-specific test exclusions are added.
     strategy:
       fail-fast: false
       matrix:
