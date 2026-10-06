@@ -46,8 +46,14 @@
 ## Unreleased, Version 26.11.0-0 (upstream PR preview)
 
 - Pin official Node.js release proposal [#66546](https://github.com/nodejs/node/pull/66546)
-  at `7f68d75ee7963cd38ddc3783dd529f826bbde614` and rebase the mobile patch series.
+  at `49072a0be4c7410982557aebf5b5c924fe7db597` and rebase the mobile patch series.
   This source upgrade does not arm publication.
+- Include the proposal's HdrHistogram 0.12.0, NSS 3.129 certificate source,
+  WebCrypto/source-map fixtures and Alpine support documentation updates.
+- Split the complete Android device suite into 16 shorter sessions, with at
+  most four running concurrently. Release the Gradle JVM after APK assembly
+  and publish resource diagnostics while tests run to investigate runner
+  shutdowns without excluding additional tests.
 - Carry forward the danmu lite ICU data profile, all web encoding converters,
   Chinese collation and Unicode normalization. Lite omits Temporal, FFI, Amaro,
   Inspector, SQLite/Web Storage, SEA and native object-print helpers; Android

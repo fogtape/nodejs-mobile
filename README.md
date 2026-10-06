@@ -11,7 +11,7 @@ in-app, with npm modules and N-API native addons.
 
 Current line: **Node.js 26** (`v26.11.0`, upstream PR preview).
 This checkout pins [official release proposal #66546](https://github.com/nodejs/node/pull/66546)
-at `7f68d75ee7963cd38ddc3783dd529f826bbde614`, before its merge/tag.
+at `49072a0be4c7410982557aebf5b5c924fe7db597`, before its merge/tag.
 Builds are CI previews; [provenance and validation](docs/UPSTREAM-26.11.md)
 record how to move to the official tag after release.
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).

@@ -1,4 +1,4 @@
 # Node.js 26.11.0 release proposal, not yet an official release tag.
 # https://github.com/nodejs/node/pull/66546 (v26.11.0-proposal)
 # Pin the reviewed PR commit; do not follow the moving proposal branch.
-7f68d75ee7963cd38ddc3783dd529f826bbde614
+49072a0be4c7410982557aebf5b5c924fe7db597

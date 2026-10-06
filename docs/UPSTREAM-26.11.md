@@ -3,14 +3,20 @@
 This recipe previews official Node.js release proposal
 [#66546](https://github.com/nodejs/node/pull/66546), titled
 `2026-10-07, Version 26.11.0 (Current)`. At preparation time on 2026-10-06,
-it was open and in draft, with no official `v26.11.0` tag.
+it was open and ready for review, with no official `v26.11.0` tag.
 
 `upstream-base.txt` pins the proposal's exact commit:
-`7f68d75ee7963cd38ddc3783dd529f826bbde614`.
+`49072a0be4c7410982557aebf5b5c924fe7db597`.
 The upstream version header reports `v26.11.0`; the mobile header reports
 `26.11.0-0`. These identifiers do not mean the official release or a mobile
 release has been published. The immutable commit and expected source-tree
 checksum identify this preview even if the proposal branch changes.
+
+The refreshed pin includes HdrHistogram 0.12.0, NSS 3.129 certificate source
+data, WebCrypto WPT and test426 fixture updates, plus the Alpine support
+documentation added after the initial `7f68d75ee7` preview. The certificate
+source update does not change `src/node_root_certs.h`. V8, ICU, Temporal,
+FFI and the existing mobile/lite configuration are unchanged by this refresh.
 
 ## Build and inspect
 
@@ -56,11 +62,16 @@ The 22,081,472-byte reduction measures ICU data, not a compiled libnode or ZIP.
 - A fresh shallow fetch from `nodejs/node` applied all 22 regenerated patches
   directly; regeneration from that fresh tree preserved every recipe byte.
   The current recipe reconstructs tree
-  `e52cbddd35a391b2ae554be1b171e4febeffe5ec` after the Android test correction
+  `26d4f4525e6849205d82ccf0ccd33ea85bf42cce` after the upstream refresh and Android test correction
   described below.
 - 39 local regression tests passed: immutable SHA/tag/cache/CI baseline checks (5),
   flavor/ICU contracts (5), Rust/libffi toolchain actions (5), embedded verdict
   isolation (6), real shared-library symbol stripping (1), release control (17).
+- Five additional Android shard regressions passed, including exact coverage
+  of all 4,127 runnable cases in 16 shards of 257–258 tests, and a failing
+  test process retaining its nonzero exit status through logging and cleanup.
+  HdrHistogram 0.12.0 compiled on Termux arm64 and passed recording,
+  percentile, bounds, extreme-value and four-thread atomic-recording probes.
 - Recipe ownership, YAML/shell/JavaScript syntax, all 219 curated test entries,
   zero upstream workflows and the test-edit audit passed.
 - All ten full GYP graphs generated successfully: Android arm/arm64/x64 and
@@ -93,7 +104,26 @@ in-process `test-debugger-run-restart-init` and `test-debugger-wait-for-debugger
 remain runnable. Node's actual status-file parser verified that distinction.
 
 These exclusions correct test applicability; they do not explain the runner
-shutdowns. A complete device-suite rerun is still required before merge.
+shutdowns. The next [Build run 37441663775](https://github.com/fogtape/nodejs-mobile/actions/runs/37441663775)
+again passed all ten builds, boot smokes and curated gates. Android shards
+1, 2 and 3 then lost their runners with 514, 559 and 470 passed tests and
+zero failed tests; QEMU reported unresponsive threads in two of those logs.
+All four iOS full-suite shards passed. No new test exclusion is justified by
+the Android failures.
+
+The Android full suite now uses 16 deterministic shards, with four jobs at
+most running concurrently, to limit the number of app relaunches per emulator.
+APK assembly uses Gradle's `--no-daemon --max-workers=2`, so its JVM exits
+before the sweep. The AVD has explicit 2048 MB RAM / 256 MB Java heap settings.
+The shard wrapper records host/guest memory, disk and process statistics at
+startup, every minute and exit, in both the live job output and an artifact.
+Its pipefail exit status retains actual test failures. The integrity gate
+checks the workflow denominator and uses Node's actual test selector to verify
+that every runnable parallel/sequential test appears exactly once.
+
+The runner logs do not prove an out-of-memory cause. These changes reduce
+session length and resource contention and provide evidence for a future
+failure. A complete device-suite rerun is still required before merge.
 Final artifact size measurements are separate from the ICU data measurement.
 
 ## Move to the official release

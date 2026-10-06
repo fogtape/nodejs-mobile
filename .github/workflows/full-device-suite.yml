@@ -1,6 +1,6 @@
 # The full device suite: everything test/parallel + test/sequential that
-# .status does not skip, on an Android emulator and an iOS simulator, in 4
-# round-robin shards per platform (test.py --run=n,4).
+# .status does not skip, on an Android emulator and an iOS simulator, in
+# round-robin shards (16 Android, 4 iOS).
 #
 # The curated gate (build.yml) is the fast PR allow-list; this job is the
 # complement: a test upstream adds is picked up automatically, and excluding
@@ -97,10 +97,15 @@ jobs:
     if: needs.precheck.outputs.skip != 'true' && inputs.platform != 'ios'
     strategy:
       fail-fast: false
-      # Keep in step with the ,4 in --run below: a matrix of a different
-      # length would drop or double-run tests rather than fail.
+      # Two Node 26.11 runs lost runners after ~470-560 app launches, with
+      # QEMU hangs and no failing test. Shorter emulator sessions retain all
+      # test coverage; bound concurrency to the previous four Android jobs.
+      max-parallel: 4
       matrix:
-        shard: [0, 1, 2, 3]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    env:
+      # The denominator and matrix length are checked by the integrity gate.
+      ANDROID_SUITE_SHARDS: 16
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -149,13 +154,15 @@ jobs:
           api-level: ${{ env.EMULATOR_API_LEVEL }}
           target: default
           arch: x86_64
+          ram-size: 2048M
+          heap-size: 256M
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
             adb wait-for-device
             ./tools/mobile-test/android/prepare-android-test.sh
-            bash -o pipefail -c "./tools/test.py -j 1 --flaky-tests=skip --timeout=300 --arch android --run=${{ matrix.shard }},4 parallel sequential 2>&1 | tee shard.log"
+            ./tools/mobile-test/android/run-suite-shard.sh ${{ matrix.shard }} "$ANDROID_SUITE_SHARDS"
 
       - name: Summarize shard ${{ matrix.shard }}
         if: always()
@@ -166,7 +173,9 @@ jobs:
         if: always()
         with:
           name: full-suite-android-shard-${{ matrix.shard }}
-          path: shard.log
+          path: |
+            shard.log
+            shard-resources.log
           if-no-files-found: ignore
 
   ios:

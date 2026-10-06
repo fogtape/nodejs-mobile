@@ -110,6 +110,9 @@ jobs:
       - name: Check mobile verdict isolation and final output
         run: python3 scripts/test-mobile-verdicts.py out
 
+      - name: Check Android full-suite coverage and failure propagation
+        run: python3 scripts/test-android-suite.py out
+
       - name: Check manual prerelease version selection and guards
         run: python3 scripts/test-release-control.py
 
