@@ -16,7 +16,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  2 files changed, 32 insertions(+), 893 deletions(-)
 
 diff --git a/.gitignore b/.gitignore
-index 9277cdf090..b6f48a2e7c 100644
+index 2a87849224..96f28306c5 100644
 --- a/.gitignore
 +++ b/.gitignore
 @@ -38,6 +38,10 @@
@@ -39,7 +39,7 @@ index 9277cdf090..b6f48a2e7c 100644
  /deps/openssl/openssl.props
  /deps/openssl/openssl.targets
 diff --git a/README.md b/README.md
-index d90887e0f5..1d3ab7e321 100644
+index d14fba943d..1d3ab7e321 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,915 +1,49 @@
@@ -516,6 +516,8 @@ index d90887e0f5..1d3ab7e321 100644
 -  **Vladimir Morozov** <<vmorozov@microsoft.com>> (he/him)
 -* [watilde](https://github.com/watilde) -
 -  **Daijiro Wachi** <<daijiro.wachi@gmail.com>> (he/him)
+-* [XadillaX](https://github.com/XadillaX) -
+-  **Khaidi Chu** <<i@2333.moe>> (he/him)
 -* [ZYSzys](https://github.com/ZYSzys) -
 -  **Yongsheng Zhang** <<zyszys98@gmail.com>> (he/him)
 -
@@ -796,8 +798,6 @@ index d90887e0f5..1d3ab7e321 100644
 -  **Thomas Watson** <<w@tson.dk>>
 -* [whitlockjc](https://github.com/whitlockjc) -
 -  **Jeremy Whitlock** <<jwhitlock@apache.org>>
--* [XadillaX](https://github.com/XadillaX) -
--  **Khaidi Chu** <<i@2333.moe>> (he/him)
 -* [yashLadha](https://github.com/yashLadha) -
 -  **Yash Ladha** <<yash@yashladha.in>> (he/him)
 -* [yhwang](https://github.com/yhwang) -

@@ -9,12 +9,16 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 26** (`v26.10.0`, prerelease line).
+Current line: **Node.js 26** (`v26.11.0`, upstream PR preview).
+This checkout pins [official release proposal #66546](https://github.com/nodejs/node/pull/66546)
+at `7f68d75ee7963cd38ddc3783dd529f826bbde614`, before its merge/tag.
+Builds are CI previews; [provenance and validation](docs/UPSTREAM-26.11.md)
+record how to move to the official tag after release.
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
 See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
 build instructions and download locations. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (e.g. `"26.10.0-0"`).
+mobile build is identified by `process.versions.mobile` (e.g. `"26.11.0-0"`).
 
 ## Get it
 
@@ -53,13 +57,13 @@ for building one — about 1.5 MB instead of a 1 GB fork:
 
 | | |
 |---|---|
-| `upstream-base.txt` | the pinned upstream release tag (`v26.10.0`) |
+| `upstream-base.txt` | the pinned upstream PR commit (see [26.11 provenance](docs/UPSTREAM-26.11.md)) |
 | `patches/` | per-concern patches to upstream files, plus `series` (apply order) and `files.map` (which patch owns which file) |
 | `mobile-src/` | files that have no upstream counterpart — build scripts, the iOS framework project, test apps and harness |
 | `expected-tree.txt` | the git tree hash the reconstruction must produce |
 | `scripts/` | `prepare.sh` (recipe → source tree) and `regenerate-patches.py` (source tree → recipe) |
 
-`scripts/prepare.sh` clones upstream at the pinned tag, applies the patch
+`scripts/prepare.sh` clones upstream at the pinned tag or commit, applies the patch
 series, overlays `mobile-src/`, and verifies the result hashes to
 `expected-tree.txt` — so what CI builds, what a release tag contains, and
 what was reviewed here are provably the same bytes.

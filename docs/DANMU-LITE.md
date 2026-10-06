@@ -29,7 +29,8 @@ cannot be inferred from today's imports.
 before/after trimming and lets icupkg validate package dependencies. A unique
 intermediate package name prevents an installed host's full ICU from hiding
 missing resources. The final conventional data entry point is preserved.
-With the pinned ICU 78.3, data goes from 33,105,536 to 11,024,064 bytes. This
+With the Node 26.11 proposal’s bundled ICU data, the production helper
+reduces 33,107,952 to 11,026,480 bytes (22,081,472 bytes removed). This
 measures data only, not a complete newly compiled libnode or compressed ZIP.
 
 ## Other lite subtractions

@@ -11,6 +11,20 @@ the patches are files, and the upgrade is an ordinary reviewable PR.
 Expect a handful of small conflicts resolvable in minutes — plus,
 occasionally, one that only the compile catches (see the warning below).
 
+## Preview an upstream release proposal
+
+A full 40-character commit SHA in `upstream-base.txt` is supported by
+`scripts/clone-upstream.sh`, including the materialization cache and per-patch
+CI configuration checks. Pin the exact reviewed proposal commit, never a
+moving PR branch. `prepare.sh` records a local `refs/nodejs-mobile/upstream-base`
+ref for the in-tree test audit; it creates no upstream release tag.
+
+PR snapshots can run normal builds and produce CI preview packages. Cut release
+and prerelease publication reject a SHA baseline. After upstream releases,
+compare the proposal commit with the official tag, rebase/regenerate as needed,
+update the tree checksum, and complete the build/device gates before release
+preparation. The [26.11 preview](UPSTREAM-26.11.md) records the current pin.
+
 ## Re-base the series
 
 ```sh

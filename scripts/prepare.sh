@@ -9,7 +9,7 @@
 #
 # Env overrides (mainly for CI/offline use):
 #   UPSTREAM_REPO   git URL or local path (default https://github.com/nodejs/node.git)
-#   UPSTREAM_REF    tag/branch to clone   (default: first line of upstream-base.txt)
+#   UPSTREAM_REF    tag/branch/full SHA   (default: first line of upstream-base.txt)
 #   SKIP_VERIFY=1   don't fail on an expected-tree mismatch (prints both hashes)
 set -euo pipefail
 
@@ -27,7 +27,7 @@ if [ -e "${OUT}" ]; then
 fi
 
 echo "1/4 Cloning ${UPSTREAM_REPO} @ ${UPSTREAM_REF} (shallow)..."
-git clone --depth 1 --branch "${UPSTREAM_REF}" "${UPSTREAM_REPO}" "${OUT}"
+"${HERE}/scripts/clone-upstream.sh" "${UPSTREAM_REPO}" "${UPSTREAM_REF}" "${OUT}"
 git -C "${OUT}" config user.name  "${GIT_AUTHOR_NAME:-nodejs-mobile}"
 git -C "${OUT}" config user.email "${GIT_AUTHOR_EMAIL:-nodejs-mobile@invalid}"
 

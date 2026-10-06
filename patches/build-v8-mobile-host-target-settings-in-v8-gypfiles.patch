@@ -46,7 +46,7 @@ index 3676848df8..61af0a4044 100644
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index 093be6e539..664542b0d6 100644
+index fd8394b370..caba744b0a 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
 @@ -906,6 +906,15 @@
@@ -112,7 +112,7 @@ index 093be6e539..664542b0d6 100644
          ['v8_enable_turbofan==1', {
            'dependencies': ['v8_compiler_sources'],
          }, {
-@@ -1263,7 +1274,7 @@
+@@ -1268,7 +1279,7 @@
            'conditions': [
              ['v8_enable_webassembly==1', {
                'conditions': [
@@ -121,7 +121,7 @@ index 093be6e539..664542b0d6 100644
                    'sources': [
                      '<(V8_ROOT)/src/trap-handler/handler-inside-posix.cc',
                      '<(V8_ROOT)/src/trap-handler/handler-outside-posix.cc',
-@@ -1406,7 +1417,8 @@
+@@ -1411,7 +1422,8 @@
          # Platforms that don't have Compare-And-Swap (CAS) support need to link atomic library
          # to implement atomic memory access.
          # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
@@ -131,7 +131,7 @@ index 093be6e539..664542b0d6 100644
            'link_settings': {
              'libraries': ['-latomic', ],
            },
-@@ -1560,6 +1572,8 @@
+@@ -1565,6 +1577,8 @@
              '<(V8_ROOT)/src/base/platform/platform-posix.h',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.cc',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.h',
@@ -140,7 +140,7 @@ index 093be6e539..664542b0d6 100644
            ],
            'link_settings': {
              'target_conditions': [
-@@ -1572,9 +1586,18 @@
+@@ -1577,9 +1591,18 @@
            },
            'target_conditions': [
              ['_toolset=="host"', {
@@ -162,7 +162,7 @@ index 093be6e539..664542b0d6 100644
                ],
              }, {
                'sources': [
-@@ -2183,12 +2206,14 @@
+@@ -2188,12 +2211,14 @@
              ],
            }, { # 'OS!="win"'
              'conditions': [
@@ -179,7 +179,7 @@ index 093be6e539..664542b0d6 100644
                  'sources': [
                    '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                  ],
-@@ -2406,6 +2431,46 @@
+@@ -2411,6 +2436,46 @@
        },
      },  # postmortem-metadata
  
@@ -226,7 +226,7 @@ index 093be6e539..664542b0d6 100644
      {
        'target_name': 'v8_zlib',
        'type': 'static_library',
-@@ -2420,6 +2485,10 @@
+@@ -2425,6 +2490,10 @@
              }]
            ]
          }],

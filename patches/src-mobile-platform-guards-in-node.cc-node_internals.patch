@@ -18,7 +18,7 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/node.cc b/src/node.cc
-index cd83e7c043..63dd2b6e2d 100644
+index 163070b501..468b5d2c2c 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -706,6 +706,8 @@ void ResetStdio() {
@@ -39,10 +39,10 @@ index cd83e7c043..63dd2b6e2d 100644
  #endif  // __POSIX__
  }
 diff --git a/src/node_internals.h b/src/node_internals.h
-index cf3ce9e13f..2795f738dd 100644
+index 1c4da8e2d2..3dc190f0a0 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -319,7 +319,7 @@ class ThreadPoolWork {
+@@ -326,7 +326,7 @@ class ThreadPoolWork {
  
  // Functions defined in node.cc that are exposed via the bootstrapper object
  

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
@@ -15,9 +16,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / 'out'
 if len(sys.argv) > 1:
     del sys.argv[1]
-MAJOR = int(next(line.strip().lstrip('v').split('.')[0]
-                 for line in (ROOT / 'upstream-base.txt').read_text().splitlines()
-                 if line.strip() and not line.startswith('#')))
+MAJOR = int(re.search(r'^#define NODE_MAJOR_VERSION (\d+)$',
+                     (SOURCE / 'src/node_version.h').read_text(), re.M)[1])
 # android_configure supports Linux/macOS build hosts; simulate Linux so this
 # configure-only test also runs on Termux's Python (which reports Android).
 ANDROID_WRAPPER = [sys.executable, '-c',

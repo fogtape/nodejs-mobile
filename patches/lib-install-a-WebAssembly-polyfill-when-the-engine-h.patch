@@ -46,7 +46,7 @@ index 67cd2feb69..994885b996 100644
 +    SOFTWARE.
 +  """
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 00647022a8..c70a1e99f5 100644
+index 2111579151..9a1b965e5c 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -10,6 +10,7 @@ const {
@@ -57,7 +57,7 @@ index 00647022a8..c70a1e99f5 100644
    NumberParseInt,
    ObjectDefineProperty,
    ObjectFreeze,
-@@ -113,6 +114,7 @@ function prepareExecution(options) {
+@@ -111,6 +112,7 @@ function prepareExecution(options) {
  
    // Patch the process object and get the resolved main entry point.
    const mainEntry = patchProcessObject(expandArgv1);
@@ -65,7 +65,7 @@ index 00647022a8..c70a1e99f5 100644
    setupTraceCategoryState();
    setupInspectorHooks();
    setupNetworkInspection();
-@@ -492,6 +494,94 @@ function setupEventsource() {
+@@ -451,6 +453,94 @@ function setupEventsource() {
    }
  }
  

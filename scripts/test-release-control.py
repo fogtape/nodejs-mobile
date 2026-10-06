@@ -70,6 +70,19 @@ This source upgrade does not arm publication.
     def test_choose_exact_unused_version(self):
         self.assertEqual(self.plan('v26.10.0-7')['version'], '26.10.0-7')
 
+    def test_upstream_pr_snapshot_builds_but_cannot_arm_or_publish(self):
+        (self.root / 'upstream-base.txt').write_text('7f68d75ee7963cd38ddc3783dd529f826bbde614\n')
+        for event in ('push', 'pull_request', 'workflow_dispatch'):
+            with self.subTest(event=event):
+                result = self.check(event=event, operation='build', version='')
+                self.assertEqual(result['release'], 'false')
+        with self.assertRaisesRegex(CONTROL.ReleaseError, 'unreleased upstream PR'):
+            self.plan()
+        for operation in ('prerelease', 'prerelease-dryrun'):
+            with self.subTest(operation=operation), self.assertRaisesRegex(
+                    CONTROL.ReleaseError, 'unreleased upstream PR'):
+                self.check(operation=operation)
+
     def test_plan_never_mutates_source(self):
         before = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         self.plan('26.10.0-0')

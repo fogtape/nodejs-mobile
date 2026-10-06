@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.11.0-0">26.11.0-0 (upstream PR preview)</a><br/>
 <a href="#26.10.0-0">26.10.0-0</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
@@ -41,8 +42,26 @@
 </tr>
 </table>
 
+<a id="26.11.0-0"></a>
+## Unreleased, Version 26.11.0-0 (upstream PR preview)
+
+- Pin official Node.js release proposal [#66546](https://github.com/nodejs/node/pull/66546)
+  at `7f68d75ee7963cd38ddc3783dd529f826bbde614` and rebase the mobile patch series.
+  This source upgrade does not arm publication.
+- Carry forward the danmu lite ICU data profile, all web encoding converters,
+  Chinese collation and Unicode normalization. Lite omits Temporal, FFI, Amaro,
+  Inspector, SQLite/Web Storage, SEA and native object-print helpers; Android
+  retains JIT/native WASM and 64-bit pointer compression. Keep the lite runtime
+  strip helper and dynamic-export checks.
+- Preserve upstream's new Temporal zoneinfo generator alongside the mobile
+  Rust host/target actions. Adapt the z/OS build refactor without losing iOS guards.
+- Triage new subprocess tests on both platforms, keep in-process bench/negative-zero
+  assertions, update the renamed VFS exclusion and add 11 in-process device regressions.
+- Support SHA-pinned materialization in local builds and CI. Block release
+  preparation/publication until an official release tag is pinned and validated.
+
 <a id="26.10.0-0"></a>
-## 2026-10-01, Version 26.10.0-0 (Current)
+## 2026-10-01, Version 26.10.0-0
 
 - Upgrade the independent Node 26 line to official Node.js 26.10.0.
 - Enable Temporal in Android/iOS full builds using Rust 1.86.0, with separate
