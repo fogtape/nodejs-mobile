@@ -55,7 +55,9 @@ The 22,081,472-byte reduction measures ICU data, not a compiled libnode or ZIP.
 
 - A fresh shallow fetch from `nodejs/node` applied all 22 regenerated patches
   directly; regeneration from that fresh tree preserved every recipe byte.
-  It reconstructed tree `a92053298021a6780ac09b4c31653fc210d68ec8`.
+  The current recipe reconstructs tree
+  `e52cbddd35a391b2ae554be1b171e4febeffe5ec` after the Android test correction
+  described below.
 - 39 local regression tests passed: immutable SHA/tag/cache/CI baseline checks (5),
   flavor/ICU contracts (5), Rust/libffi toolchain actions (5), embedded verdict
   isolation (6), real shared-library symbol stripping (1), release control (17).
@@ -73,9 +75,26 @@ The 22,081,472-byte reduction measures ICU data, not a compiled libnode or ZIP.
   exclusion was updated. Existing bench/negative-zero tests retain their
   in-process assertions and skip only the child startup checks.
 
-Complete Android/iOS compilation, newly added device tests and final artifact
-size measurements remain CI work. The local checks do not establish that new
-mobile binaries have passed device testing.
+[Build run 37410879823](https://github.com/fogtape/nodejs-mobile/actions/runs/37410879823)
+completed all ten Android/iOS full/lite compilations, both platforms' full/lite
+boot smokes, Android full/lite curated tests and iOS full curated tests
+successfully. Recipe reconstruction and per-patch configure checks also passed.
+
+The Android full-suite attempt was incomplete: shards 0, 1 and 2 received
+`The runner has received a shutdown signal` before completing or uploading
+their summaries. Shards 1 and 2 also exposed missing debugger CLI exclusions:
+`test-debugger-backtrace`, `test-debugger-exec` and
+`test-debugger-restart-message` launch `process.execPath` through
+`test/common/debugger.js`. In an Android app this starts `app_process`, whose
+child aborted with `Error changing dalvik-cache ownership : Permission denied`.
+The recipe now excludes those three tests and the same subprocess-dependent
+`test-debugger-low-level` and `test-debugger-repeat-last` on Android. The
+in-process `test-debugger-run-restart-init` and `test-debugger-wait-for-debugger`
+remain runnable. Node's actual status-file parser verified that distinction.
+
+These exclusions correct test applicability; they do not explain the runner
+shutdowns. A complete device-suite rerun is still required before merge.
+Final artifact size measurements are separate from the ICU data measurement.
 
 ## Move to the official release
 

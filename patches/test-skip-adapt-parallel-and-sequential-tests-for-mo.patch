@@ -19,7 +19,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- test/parallel/parallel.status                 | 1659 +++++++++++++++++
+ test/parallel/parallel.status                 | 1667 +++++++++++++++++
  test/parallel/test-bench-stream.js            |    3 +-
  test/parallel/test-common-wpt-inspect.js      |   10 +-
  test/parallel/test-dgram-bind-fd.js           |    2 +-
@@ -64,13 +64,13 @@ Assisted-by: Codex
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
  ...test-vm-timeout-escape-promise-module-2.js |    6 +-
- 45 files changed, 2033 insertions(+), 66 deletions(-)
+ 45 files changed, 2041 insertions(+), 66 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 0fe217d4e4..b3000c5a03 100644
+index 0fe217d4e4..4578a1cf97 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -138,6 +138,1665 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -138,6 +138,1673 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -208,23 +208,31 @@ index 0fe217d4e4..b3000c5a03 100644
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
++# The Node 26.11 Android sweep exposed missing debugger CLI exclusions.
++# These tests spawn app_process via test/common/debugger.js (or directly).
++# Keep the in-process run-restart-init and wait-for-debugger tests runnable.
 +test-debugger-address: SKIP
 +test-debugger-auto-resume: SKIP
++test-debugger-backtrace: SKIP
 +test-debugger-break: SKIP
 +test-debugger-breakpoint-exists: SKIP
 +test-debugger-clear-breakpoints: SKIP
 +test-debugger-exceptions: SKIP
++test-debugger-exec: SKIP
 +test-debugger-exec-scope: SKIP
 +test-debugger-extract-function-name: SKIP
 +test-debugger-heap-profiler: SKIP
 +test-debugger-help: SKIP
 +test-debugger-invalid-json: SKIP
 +test-debugger-list: SKIP
++test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-profile: SKIP
 +test-debugger-profile-command: SKIP
 +test-debugger-random-port: SKIP
 +test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-repeat-last: SKIP
++test-debugger-restart-message: SKIP
 +test-debugger-run-after-quit-restart: SKIP
 +test-debugger-sb-before-load: SKIP
 +test-debugger-scripts: SKIP
