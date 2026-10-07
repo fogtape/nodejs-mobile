@@ -6,7 +6,7 @@
 </tr>
 <tr>
 <td>
-<a href="#26.11.0-0">26.11.0-0 (upstream PR preview)</a><br/>
+<a href="#26.11.0-0">26.11.0-0</a><br/>
 <a href="#26.10.0-0">26.10.0-0</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
@@ -43,12 +43,11 @@
 </table>
 
 <a id="26.11.0-0"></a>
-## Unreleased, Version 26.11.0-0 (upstream PR preview)
+## 2026-10-07, Version 26.11.0-0 (Current)
 
 - Pin official Node.js release proposal [#66546](https://github.com/nodejs/node/pull/66546)
   at `49072a0be4c7410982557aebf5b5c924fe7db597` and rebase the mobile patch series.
-  This source upgrade does not arm publication.
-- Include the proposal's HdrHistogram 0.12.0, NSS 3.129 certificate source,
+  - Include the proposal's HdrHistogram 0.12.0, NSS 3.129 certificate source,
   WebCrypto/source-map fixtures and Alpine support documentation updates.
 - Split the complete Android device suite into 16 shorter sessions, with at
   most four running concurrently. Release the Gradle JVM after APK assembly
