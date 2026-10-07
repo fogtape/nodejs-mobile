@@ -2,6 +2,8 @@
 """Plan reviewed release PRs and validate explicit manual prerelease requests."""
 
 import argparse
+import base64
+import binascii
 import datetime
 import json
 import os
@@ -34,14 +36,40 @@ def version_text(parts):
         f'-{parts[3]}' if len(parts) == 4 else '')
 
 
-def upstream(root):
+def snapshot_version(sha):
+    process = subprocess.run(
+        ['gh', 'api', f'repos/nodejs/node/contents/src/node_version.h?ref={sha}',
+         '--jq', '.content'], capture_output=True, text=True)
+    if process.returncode:
+        raise ReleaseError('Cannot verify the snapshot version on official nodejs/node. Retry later.')
+    try:
+        source = base64.b64decode(''.join(process.stdout.split()), validate=True).decode('ascii')
+    except (ValueError, binascii.Error, UnicodeError) as error:
+        raise ReleaseError('Official snapshot version header is invalid') from error
+    parts = []
+    for field in ('MAJOR', 'MINOR', 'PATCH'):
+        matches = re.findall(rf'^#define NODE_{field}_VERSION\s+([0-9]+)\s*$', source, re.M)
+        if len(matches) != 1:
+            raise ReleaseError(f'Expected one NODE_{field}_VERSION in the official snapshot')
+        parts.append(int(matches[0]))
+    return tuple(parts)
+
+
+def upstream(root, snapshot=''):
     lines = [line.strip() for line in (root / 'upstream-base.txt').read_text().splitlines()
              if line.strip() and not line.lstrip().startswith('#')]
     if len(lines) != 1:
         raise ReleaseError('upstream-base.txt must pin exactly one upstream ref')
     if re.fullmatch(r'[0-9a-f]{40}', lines[0]):
-        raise ReleaseError('This source pins an unreleased upstream PR commit. '
-                           'Build a CI preview; pin the official release tag before Cut release or publication.')
+        if not snapshot:
+            raise ReleaseError('This source pins an unreleased upstream PR commit. '
+                               'Pin an official release tag, or explicitly provide upstream_snapshot '
+                               'with this exact SHA to prepare/publish an upstream snapshot prerelease.')
+        if snapshot != lines[0]:
+            raise ReleaseError('upstream_snapshot must exactly match the full SHA in upstream-base.txt')
+        return snapshot_version(snapshot)
+    if snapshot:
+        raise ReleaseError('upstream_snapshot is only valid for a SHA-pinned upstream proposal')
     return parse_version(lines[0])
 
 
@@ -75,8 +103,8 @@ def require_line(line, base):
         raise ReleaseError(f'{line} is the Node {LINES[line]} line, but its source pins Node {base[0]}')
 
 
-def plan(root, line, requested, exists):
-    base = upstream(root)
+def plan(root, line, requested, exists, snapshot=''):
+    base = upstream(root, snapshot)
     require_line(line, base)
     if requested == 'auto':
         selected, revision = base, None
@@ -104,13 +132,14 @@ def plan(root, line, requested, exists):
                            'revision or review the existing release PR. Nothing will be overwritten.')
     return {'line': line, 'upstream': 'v' + version_text(base), 'version': version,
             'tag': 'v' + version, 'release_branch': 'release/v' + version,
-            'prerelease': True, 'latest': False}
+            'prerelease': True, 'latest': False, 'upstream_snapshot': snapshot}
 
 
 def prepare(root, release_plan):
     version = release_plan['version']
+    snapshot = release_plan.get('upstream_snapshot', '')
     parts = parse_version(version, mobile=True)
-    if parts[:3] != upstream(root):
+    if parts[:3] != upstream(root, snapshot):
         raise ReleaseError('The release plan does not match the checked-out source')
     header = root / 'mobile-src/src/node_mobile_version.h'
     source = header.read_text()
@@ -132,7 +161,8 @@ def prepare(root, release_plan):
         if not heading.startswith('## ') or f'Version {version}' not in heading:
             raise ReleaseError('Existing CHANGELOG entry has an unexpected heading')
         body = original.lstrip('\n')
-        body = body.replace('This source upgrade does not arm publication.\n', '')
+        body = re.sub(r'^[ \t]*This source upgrade does not arm publication\.\n',
+                      '', body, flags=re.M)
         if not body.strip():
             body = '- _TODO: summarize changes before publishing._\n\n'
         notes = section.sub('', notes)
@@ -152,9 +182,10 @@ def prepare(root, release_plan):
     header.write_text(source)
     changelog.write_text(notes)
     (root / 'release-ready.txt').write_text(version + '\n')
+    (root / 'release-upstream-snapshot.txt').write_text(snapshot + '\n' if snapshot else '')
 
 
-def check(root, event, ref, operation, requested, exists):
+def check(root, event, ref, operation, requested, exists, snapshot=''):
     version = version_text(recorded_version(root))
     answer = dict(version=version, release='false', dryrun='false', cold='false')
     # PR/push builds never publish, regardless of a marker or commit message.
@@ -163,13 +194,14 @@ def check(root, event, ref, operation, requested, exists):
     if operation not in ('build', 'prerelease-dryrun', 'prerelease'):
         raise ReleaseError('Unknown operation; choose build, prerelease-dryrun or prerelease')
     if operation == 'build':
-        if requested:
-            raise ReleaseError('The version input is for prerelease/dryrun only; clear it for a build')
+        if requested or snapshot:
+            raise ReleaseError('The version and upstream_snapshot inputs are for prerelease/dryrun only; '
+                               'clear them for a build')
         return answer
     line = ref.removeprefix('refs/heads/')
     if ref != 'refs/heads/' + line:
         raise ReleaseError('Prereleases must run on a maintained branch, not a tag')
-    base = upstream(root)
+    base = upstream(root, snapshot)
     require_line(line, base)
     selected = version_text(parse_version(requested, mobile=True))
     if selected != version or parse_version(version, mobile=True)[:3] != base:
@@ -178,6 +210,10 @@ def check(root, event, ref, operation, requested, exists):
     marker = root / 'release-ready.txt'
     if not marker.is_file() or marker.read_text().strip() != version:
         raise ReleaseError(f'{version} is not armed: merge its reviewed Cut release PR first')
+    if snapshot:
+        snapshot_marker = root / 'release-upstream-snapshot.txt'
+        if not snapshot_marker.is_file() or snapshot_marker.read_text().strip() != snapshot:
+            raise ReleaseError('The reviewed Cut release PR must arm this exact upstream snapshot SHA')
     for tag in ('v' + version, 'nodejs-mobile-' + version):
         if exists('tags', tag):
             raise ReleaseError(f'Tag {tag} already exists; inspect/resume its original publish '
@@ -204,6 +240,7 @@ def main():
     planner.add_argument('--line', required=True, choices=LINES)
     planner.add_argument('--version', default='auto')
     planner.add_argument('--out', type=Path, required=True)
+    planner.add_argument('--upstream-snapshot', default='')
     preparer = sub.add_parser('prepare')
     preparer.add_argument('--root', type=Path, default=Path('.'))
     preparer.add_argument('--plan', type=Path, required=True)
@@ -213,17 +250,19 @@ def main():
     checker.add_argument('--ref', default=os.environ.get('GITHUB_REF', ''))
     checker.add_argument('--operation', default=os.environ.get('RELEASE_OPERATION', 'build'))
     checker.add_argument('--version', default=os.environ.get('RELEASE_VERSION', ''))
+    checker.add_argument('--upstream-snapshot', default=os.environ.get('UPSTREAM_SNAPSHOT', ''))
     args = parser.parse_args()
     exists = lambda kind, name: ref_exists(os.environ.get('GITHUB_REPOSITORY', ''), kind, name)
     try:
         if args.command == 'plan':
-            result = plan(args.root, args.line, args.version, exists)
+            result = plan(args.root, args.line, args.version, exists, args.upstream_snapshot)
             args.out.write_text(json.dumps(result, indent=2) + '\n')
             emit(result)
         elif args.command == 'prepare':
             prepare(args.root, json.loads(args.plan.read_text()))
         else:
-            emit(check(args.root, args.event, args.ref, args.operation, args.version, exists))
+            emit(check(args.root, args.event, args.ref, args.operation, args.version, exists,
+                       args.upstream_snapshot))
     except (ReleaseError, FileNotFoundError) as error:
         print(f'::error::{error}', file=sys.stderr)
         return 1

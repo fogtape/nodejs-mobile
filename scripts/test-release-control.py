@@ -2,6 +2,7 @@
 """Release version selection, API failure handling and manual publish guards."""
 
 import importlib.util
+import base64
 import json
 import os
 from pathlib import Path
@@ -39,7 +40,8 @@ class ReleaseControl(unittest.TestCase):
 ## Unreleased, Version {version} (Current)
 
 - Temporal and FFI.
-This source upgrade does not arm publication.
+  This source upgrade does not arm publication.
+- Preserve the next release-note bullet.
 
 <a id="26.1.0-0"></a>
 ## 2026-05-01, Version 26.1.0-0
@@ -47,12 +49,12 @@ This source upgrade does not arm publication.
 - Previous release.
 ''')
 
-    def plan(self, version='auto', line='recipe-v26'):
-        return CONTROL.plan(self.root, line, version, self.exists)
+    def plan(self, version='auto', line='recipe-v26', snapshot=''):
+        return CONTROL.plan(self.root, line, version, self.exists, snapshot)
 
     def check(self, *, event='workflow_dispatch', ref='refs/heads/recipe-v26',
-              operation='prerelease', version='26.10.0-0'):
-        return CONTROL.check(self.root, event, ref, operation, version, self.exists)
+              operation='prerelease', version='26.10.0-0', snapshot=''):
+        return CONTROL.check(self.root, event, ref, operation, version, self.exists, snapshot)
 
     def arm(self, version='26.10.0-0'):
         (self.root / 'release-ready.txt').write_text(version + '\n')
@@ -89,6 +91,65 @@ This source upgrade does not arm publication.
         after = {p.relative_to(self.root): p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
         self.assertEqual(before, after)
 
+    def test_snapshot_requires_exact_manual_opt_in_and_reviewed_sha_marker(self):
+        sha = '49072a0be4c7410982557aebf5b5c924fe7db597'
+        (self.root / 'upstream-base.txt').write_text(sha + '\n')
+        with patch.object(CONTROL, 'snapshot_version', return_value=(26, 10, 0)):
+            for invalid in ('', sha[:10], '0' * 40, sha + ';echo bad'):
+                with self.subTest(invalid=invalid), self.assertRaises(CONTROL.ReleaseError):
+                    self.plan(snapshot=invalid)
+            release_plan = self.plan('26.10.0-0', snapshot=sha)
+            self.assertEqual(release_plan['upstream_snapshot'], sha)
+            self.arm()
+            with self.assertRaisesRegex(CONTROL.ReleaseError, 'reviewed Cut release PR'):
+                self.check(snapshot=sha)
+            CONTROL.prepare(self.root, release_plan)
+            self.assertEqual((self.root / 'release-upstream-snapshot.txt').read_text(), sha + '\n')
+            for operation in ('prerelease', 'prerelease-dryrun'):
+                result = self.check(snapshot=sha, operation=operation)
+                self.assertEqual(result['cold'], 'true')
+                self.assertEqual(result['release'], 'true' if operation == 'prerelease' else 'false')
+            (self.root / 'release-upstream-snapshot.txt').write_text('0' * 40 + '\n')
+            with self.assertRaises(CONTROL.ReleaseError):
+                self.check(snapshot=sha)
+
+    def test_snapshot_version_is_verified_against_official_source(self):
+        sha = '4' * 40
+        header = b'#define NODE_MAJOR_VERSION 26\n#define NODE_MINOR_VERSION 11\n#define NODE_PATCH_VERSION 0\n'
+        response = subprocess.CompletedProcess([], 0, base64.b64encode(header).decode() + '\n', '')
+        with patch.object(CONTROL.subprocess, 'run', return_value=response) as run:
+            self.assertEqual(CONTROL.snapshot_version(sha), (26, 11, 0))
+            self.assertIn(f'repos/nodejs/node/contents/src/node_version.h?ref={sha}', run.call_args[0][0])
+        for response in (subprocess.CompletedProcess([], 1, '', 'HTTP 403'),
+                         subprocess.CompletedProcess([], 0, 'not base64', ''),
+                         subprocess.CompletedProcess([], 0, base64.b64encode(b'no macros').decode(), '')):
+            with self.subTest(response=response), patch.object(CONTROL.subprocess, 'run', return_value=response), \
+                    self.assertRaises(CONTROL.ReleaseError):
+                CONTROL.snapshot_version(sha)
+        (self.root / 'upstream-base.txt').write_text(sha + '\n')
+        with patch.object(CONTROL, 'snapshot_version', return_value=(26, 11, 0)):
+            with self.assertRaisesRegex(CONTROL.ReleaseError, 'currently pins 26.11.0'):
+                self.plan('26.10.0-0', snapshot=sha)
+            self.arm()
+            with self.assertRaisesRegex(CONTROL.ReleaseError, 'upstream 26.11.0'):
+                self.check(snapshot=sha)
+
+    def test_snapshot_input_cannot_change_normal_tag_releases_or_builds(self):
+        with self.assertRaises(CONTROL.ReleaseError):
+            self.plan(snapshot='4' * 40)
+        with self.assertRaises(CONTROL.ReleaseError):
+            self.check(operation='build', version='', snapshot='4' * 40)
+        self.arm()
+        with self.assertRaises(CONTROL.ReleaseError):
+            self.check(snapshot='4' * 40)
+        for event in ('push', 'pull_request'):
+            self.assertEqual(self.check(event=event, snapshot='4' * 40)['release'], 'false')
+
+    def test_official_release_preparation_clears_previous_snapshot_marker(self):
+        (self.root / 'release-upstream-snapshot.txt').write_text('4' * 40 + '\n')
+        CONTROL.prepare(self.root, self.plan())
+        self.assertEqual((self.root / 'release-upstream-snapshot.txt').read_text(), '')
+
     def test_wrong_version_or_line_is_rejected(self):
         for line, version in [('recipe', '26.10.0'), ('recipe-v26', '26.1.0'),
                               ('dev', '26.10.0'), ('recipe-v26', '24.21.0-0')]:
@@ -117,6 +178,7 @@ This source upgrade does not arm publication.
         self.assertIn('Temporal and FFI.', notes)
         self.assertNotIn('TODO', notes)
         self.assertNotIn('does not arm publication', notes)
+        self.assertIn('\n- Preserve the next release-note bullet.', notes)
         self.assertEqual((self.root / 'release-ready.txt').read_text(), '26.10.0-0\n')
 
     def test_new_revision_has_review_stub_and_updated_header(self):

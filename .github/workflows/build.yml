@@ -22,6 +22,10 @@ on:
         description: Exact mobile version for prerelease/dryrun (26.10.0-0); empty for build
         type: string
         default: ''
+      upstream_snapshot:
+        description: Optional full upstream SHA; explicitly publish an unreleased proposal prerelease
+        type: string
+        default: ''
 
 # One run per PR/branch. cancel-in-progress ONLY for pull_request: a push to
 # recipe may be carrying the release gate chain and must never be cancelled
@@ -147,6 +151,7 @@ jobs:
           token: ${{ github.token }}
           operation: ${{ inputs.operation || 'build' }}
           version: ${{ inputs.version || '' }}
+          upstream_snapshot: ${{ inputs.upstream_snapshot || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -354,6 +359,7 @@ jobs:
           token: ${{ github.token }}
           operation: ${{ inputs.operation || 'build' }}
           version: ${{ inputs.version || '' }}
+          upstream_snapshot: ${{ inputs.upstream_snapshot || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -775,6 +781,7 @@ jobs:
           token: ${{ github.token }}
           operation: ${{ inputs.operation || 'build' }}
           version: ${{ inputs.version || '' }}
+          upstream_snapshot: ${{ inputs.upstream_snapshot || '' }}
 
       - uses: ./.github/actions/materialize
 
@@ -1062,6 +1069,7 @@ jobs:
           token: ${{ github.token }}
           operation: ${{ inputs.operation || 'build' }}
           version: ${{ inputs.version || '' }}
+          upstream_snapshot: ${{ inputs.upstream_snapshot || '' }}
       - name: Validate publishable notes before compiling
         if: steps.d.outputs.cold == 'true'
         env:
@@ -1237,7 +1245,8 @@ jobs:
             WANT=$(gh api "repos/nodejs/node/commits/$BASE" --jq .sha)
             [ "$WANT" = "$BASE" ] || { echo "::error::upstream snapshot SHA mismatch"; exit 1; }
             echo "Verified upstream PR snapshot $BASE; no release ancestry ref is required."
-            # release-control.py rejects Cut release/publication for SHA bases.
+            # Snapshot releases additionally require exact-SHA manual opt-in
+            # and the reviewed Cut release marker in release-control.py.
             exit 0
           fi
 
@@ -1327,6 +1336,7 @@ jobs:
     env:
       DRY: ${{ needs.release-check.outputs.dryrun == 'true' && '1' || '0' }}
       V: ${{ needs.release-check.outputs.version }}
+      UPSTREAM_SNAPSHOT: ${{ inputs.upstream_snapshot || '' }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
@@ -1402,8 +1412,8 @@ jobs:
                 exit 1
               }
           else
-            SOURCE_COMMIT=$(printf '%s\n\n%s\n%s\n' "nodejs-mobile ${V} source snapshot" "Upstream: ${BASE}" "Recipe-Commit: ${GITHUB_SHA}" | git commit-tree "$TREE")
-            git tag -a "$TAG" "$SOURCE_COMMIT" -m "nodejs-mobile ${V}" -m "Recipe-Commit: ${GITHUB_SHA}" -m "Source-Tree: ${TREE}"
+            SOURCE_COMMIT=$(printf '%s\n\n%s\n%s\n%s\n' "nodejs-mobile ${V} source snapshot" "Upstream: ${BASE}" "Upstream-Snapshot: ${UPSTREAM_SNAPSHOT:-none}" "Recipe-Commit: ${GITHUB_SHA}" | git commit-tree "$TREE")
+            git tag -a "$TAG" "$SOURCE_COMMIT" -m "nodejs-mobile ${V}" -m "Recipe-Commit: ${GITHUB_SHA}" -m "Source-Tree: ${TREE}" -m "Upstream-Snapshot: ${UPSTREAM_SNAPSHOT:-none}"
           fi
           if [ "$DRY" = "1" ]; then
             echo "DRY RUN: would push tag $TAG (materialized tree $(git rev-parse 'HEAD^{tree}'))"
@@ -1422,6 +1432,20 @@ jobs:
             LINE="Node.js ${MAJOR}"
           fi
           RELEASE_TITLE="${LINE} · nodejs-mobile v${V}（预发布）"
+          if [ -n "$UPSTREAM_SNAPSHOT" ]; then
+            RELEASE_TITLE="${LINE} · nodejs-mobile v${V}（上游 PR 快照预发布）"
+            python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'release-notes.md'
+          sha = os.environ['UPSTREAM_SNAPSHOT']
+          notice = ("**Upstream proposal snapshot:** this prerelease is built from an "
+                    "unreleased Node.js proposal, not an official Node.js release tag. "
+                    f"Pinned upstream commit: [{sha}](https://github.com/nodejs/node/commit/{sha}). "
+                    "The final upstream release may differ.\n\n")
+          path.write_text(notice + path.read_text())
+          PY
+          fi
           NOTES=$(cat "$RUNNER_TEMP/release-notes.md")
           # Human-visible copy of the tag's Recipe-Commit trailer.
           PROV="Generated from [\`${GITHUB_REF_NAME}@${GITHUB_SHA:0:10}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
