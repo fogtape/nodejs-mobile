@@ -67,8 +67,12 @@
   Rust host/target actions. Adapt the z/OS build refactor without losing iOS guards.
 - Triage new subprocess tests on both platforms, keep in-process bench/negative-zero
   assertions, update the renamed VFS exclusion and add 11 in-process device regressions.
-- Support SHA-pinned materialization in local builds and CI. Block release
-  preparation/publication until an official release tag is pinned and validated.
+- Support SHA-pinned materialization in local builds and CI. Snapshot
+  prereleases require the exact upstream SHA as an explicit manual input
+  in both release preparation and publication, a reviewed SHA marker and
+  version verification against the official source. Mark their release
+  titles and notes as unreleased upstream proposals; default releases still
+  require an official upstream tag.
 
 <a id="26.10.0-0"></a>
 ## 2026-10-01, Version 26.10.0-0
