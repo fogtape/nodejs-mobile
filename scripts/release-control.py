@@ -161,7 +161,8 @@ def prepare(root, release_plan):
         if not heading.startswith('## ') or f'Version {version}' not in heading:
             raise ReleaseError('Existing CHANGELOG entry has an unexpected heading')
         body = original.lstrip('\n')
-        body = body.replace('This source upgrade does not arm publication.\n', '')
+        body = re.sub(r'^[ \t]*This source upgrade does not arm publication\.\n',
+                      '', body, flags=re.M)
         if not body.strip():
             body = '- _TODO: summarize changes before publishing._\n\n'
         notes = section.sub('', notes)

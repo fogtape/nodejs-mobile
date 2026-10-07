@@ -47,7 +47,7 @@
 
 - Pin official Node.js release proposal [#66546](https://github.com/nodejs/node/pull/66546)
   at `49072a0be4c7410982557aebf5b5c924fe7db597` and rebase the mobile patch series.
-  - Include the proposal's HdrHistogram 0.12.0, NSS 3.129 certificate source,
+- Include the proposal's HdrHistogram 0.12.0, NSS 3.129 certificate source,
   WebCrypto/source-map fixtures and Alpine support documentation updates.
 - Split the complete Android device suite into 16 shorter sessions, with at
   most four running concurrently. Release the Gradle JVM after APK assembly

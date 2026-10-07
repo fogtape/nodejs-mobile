@@ -40,7 +40,8 @@ class ReleaseControl(unittest.TestCase):
 ## Unreleased, Version {version} (Current)
 
 - Temporal and FFI.
-This source upgrade does not arm publication.
+  This source upgrade does not arm publication.
+- Preserve the next release-note bullet.
 
 <a id="26.1.0-0"></a>
 ## 2026-05-01, Version 26.1.0-0
@@ -177,6 +178,7 @@ This source upgrade does not arm publication.
         self.assertIn('Temporal and FFI.', notes)
         self.assertNotIn('TODO', notes)
         self.assertNotIn('does not arm publication', notes)
+        self.assertIn('\n- Preserve the next release-note bullet.', notes)
         self.assertEqual((self.root / 'release-ready.txt').read_text(), '26.10.0-0\n')
 
     def test_new_revision_has_review_stub_and_updated_header(self):
