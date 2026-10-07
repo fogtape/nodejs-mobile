@@ -27,7 +27,7 @@ Assisted-by: Codex
  2 files changed, 33 insertions(+), 7 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 2cf1e62b56..010117fb97 100644
+index 587df5cace..c1d6e6735f 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -77,6 +77,11 @@
@@ -42,7 +42,7 @@ index 2cf1e62b56..010117fb97 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -583,6 +588,11 @@
+@@ -580,6 +585,11 @@
        ['OS=="linux" and clang==1', {
          'libraries': ['-latomic'],
        }],
@@ -54,7 +54,7 @@ index 2cf1e62b56..010117fb97 100644
      ],
    },
  
-@@ -1434,8 +1444,9 @@
+@@ -1427,8 +1437,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -66,7 +66,7 @@ index 2cf1e62b56..010117fb97 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1659,7 +1670,8 @@
+@@ -1652,7 +1663,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -77,7 +77,7 @@ index 2cf1e62b56..010117fb97 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index b382784e61..75d619dbeb 100644
+index 9eb972adc4..67d8100fa5 100644
 --- a/node.gypi
 +++ b/node.gypi
 @@ -280,6 +280,11 @@
@@ -120,9 +120,9 @@ index b382784e61..75d619dbeb 100644
              # -force_load or --whole-archive are not applicable for
              # the static library
              [ 'force_load=="true"', {
-@@ -487,5 +496,10 @@
-     }, {
-       'defines': [ 'HAVE_QUIC=0' ]
+@@ -484,5 +493,10 @@
+         }],
+       ],
      }],
 +    [ 'OS=="android" or OS=="ios"', {
 +      'defines': [

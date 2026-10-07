@@ -1,4 +1,4 @@
-# The upstream nodejs/node release the patch series applies to.
-# First non-comment line is the tag (or SHA); update it as part of every
-# upstream bump (see README.md).
-v26.10.0
+# Node.js 26.11.0 release proposal, not yet an official release tag.
+# https://github.com/nodejs/node/pull/66546 (v26.11.0-proposal)
+# Pin the reviewed PR commit; do not follow the moving proposal branch.
+49072a0be4c7410982557aebf5b5c924fe7db597

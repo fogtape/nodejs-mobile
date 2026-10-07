@@ -84,6 +84,9 @@ jobs:
       - name: Reconstruct + verify
         run: scripts/prepare.sh out
 
+      - name: Check immutable upstream clones and cache transport
+        run: python3 scripts/test-upstream-clone.py
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -106,6 +109,9 @@ jobs:
 
       - name: Check mobile verdict isolation and final output
         run: python3 scripts/test-mobile-verdicts.py out
+
+      - name: Check Android full-suite coverage and failure propagation
+        run: python3 scripts/test-android-suite.py out
 
       - name: Check manual prerelease version selection and guards
         run: python3 scripts/test-release-control.py
@@ -286,7 +292,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE=$(grep -Ev '^\s*(#|$)' upstream-base.txt | head -n1 | tr -d '[:space:]')
-          git clone --depth 1 --branch "$BASE" https://github.com/nodejs/node.git src
+          scripts/clone-upstream.sh https://github.com/nodejs/node.git "$BASE" src
           git -C src config user.name ci
           git -C src config user.email ci@invalid
           while IFS= read -r p; do

@@ -15,7 +15,7 @@ Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
  2 files changed, 14 insertions(+)
 
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index b91b1b4881..e7ffe0457e 100644
+index 0f3a76105a..1ef9ec58df 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
 @@ -55,6 +55,10 @@

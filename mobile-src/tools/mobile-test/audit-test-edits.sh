@@ -18,6 +18,9 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
+# prepare.sh records the exact upstream commit as local git metadata, so
+# unreleased PR snapshots can be audited without a fabricated release tag.
+# For older materializations, derive the tag from src/node_version.h.
 # The upstream base is derived from the tree itself: src/node_version.h is
 # upstream's own version header and is not patched by this project, so it
 # states exactly which nodejs/node release this tree was built from. That
@@ -28,6 +31,9 @@ MA=$(grep -oE '#define NODE_MAJOR_VERSION [0-9]+' src/node_version.h | awk '{pri
 MI=$(grep -oE '#define NODE_MINOR_VERSION [0-9]+' src/node_version.h | awk '{print $3}')
 PA=$(grep -oE '#define NODE_PATCH_VERSION [0-9]+' src/node_version.h | awk '{print $3}')
 BASE="v${MA}.${MI}.${PA}"
+if git rev-parse --verify --quiet 'refs/nodejs-mobile/upstream-base^{commit}' >/dev/null; then
+  BASE=refs/nodejs-mobile/upstream-base
+fi
 if ! git rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null; then
   echo "error: upstream base '${BASE}' (from src/node_version.h) is not a commit here." >&2
   echo "       This audit needs the upstream tag present, as it is in a tree" >&2

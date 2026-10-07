@@ -8,6 +8,11 @@ versioned together on that branch.
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
 | `recipe-v26` | Node.js 26.10.0 | Independent Node 26 maintenance and prereleases | Android and iOS, full and lite |
+| `upgrade/node26.11-mobile-lite` | Node.js 26.11.0 proposal at a pinned SHA | Preview of upstream PR #66546 with the danmu lite profile | Android and iOS, full and lite |
+
+For the 26.11 preview, clone `upgrade/node26.11-mobile-lite`; it pins an immutable
+commit, and release preparation is disabled until the official release tag is
+reviewed and pinned. See [26.11 provenance](UPSTREAM-26.11.md).
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published
@@ -42,7 +47,7 @@ partition and expected source-tree checksum.
 The Node 26 line uses Android NDK r29 (`29.0.14206865`) and Clang 19 for
 Linux host tools. Node 24 keeps its existing NDK r27d configuration.
 
-Node 26.10 full builds enable V8 Temporal and the experimental `node:ffi`
+This Node 26.11 preview’s full builds enable V8 Temporal and the experimental `node:ffi`
 module on Android and iOS, with complete ICU data (`--with-intl=full-icu`)
 for named time zones. small-ICU cannot load Temporal timezone information
 in this upstream version. The build requires Rust **1.86.0** and its standard
@@ -89,7 +94,7 @@ run URL with the downloaded files; do not mix platform slices or flavors
 from different runs. Versioned preview packages additionally contain
 `BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
 
-`process.version` reports `v26.10.0`; `process.versions.mobile` identifies
+This preview reports `process.version` as `v26.11.0`; `process.versions.mobile` identifies
 the mobile build revision. A CI preview is not a published release. **Cut release** also supports
 `recipe-v26`; its reviewed PR arms a specific version; after merge, manually run **Build**
 with `operation=prerelease` and that exact mobile version. Push/PR builds do

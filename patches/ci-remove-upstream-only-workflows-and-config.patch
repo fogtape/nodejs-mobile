@@ -22,12 +22,12 @@ is read only from the default branch and is left untouched.
 ---
  .github/ISSUE_TEMPLATE/config.yml             |  14 -
  .github/SUPPORT.md                            |  27 --
- .github/label-pr-config.yml                   | 224 -----------
+ .github/label-pr-config.yml                   | 236 -----------
  .github/workflows/author-ready-conflicts.yml  |  48 ---
- .github/workflows/auto-start-ci.yml           |  80 ----
- .github/workflows/benchmark.yml               | 279 --------------
- .github/workflows/build-shared.yml            |  96 -----
- .github/workflows/build-tarball.yml           | 132 -------
+ .github/workflows/auto-start-ci.yml           |  93 -----
+ .github/workflows/benchmark.yml               | 271 -------------
+ .github/workflows/build-shared.yml            |  93 -----
+ .github/workflows/build-tarball.yml           | 137 -------
  .github/workflows/close-stalled.yml           |  36 --
  .github/workflows/codeql.yml                  |  44 ---
  .github/workflows/comment-labeled.yml         |  57 ---
@@ -36,7 +36,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/contributor-guidance.yml    | 141 -------
  .../workflows/coverage-linux-without-intl.yml |  90 -----
  .github/workflows/coverage-linux.yml          |  90 -----
- .github/workflows/coverage-windows.yml        | 106 ------
+ .github/workflows/coverage-windows.yml        | 106 -----
  .github/workflows/create-release-proposal.yml |  81 ----
  .github/workflows/daily-wpt-fyi.yml           | 163 --------
  .github/workflows/daily.yml                   |  30 --
@@ -47,11 +47,11 @@ is read only from the default branch and is left untouched.
  .github/workflows/label-pr.yml                |  18 -
  .github/workflows/license-builder.yml         |  38 --
  .github/workflows/lint-release-proposal.yml   | 119 ------
- .github/workflows/linters.yml                 | 255 -------------
+ .github/workflows/linters.yml                 | 278 -------------
  .github/workflows/major-release.yml           |  49 ---
  .github/workflows/nix-changes-comment.yml     |  98 -----
- .github/workflows/nix-changes.yml             | 122 ------
- .github/workflows/notify-on-push.yml          |  64 ----
+ .github/workflows/nix-changes.yml             | 128 ------
+ .github/workflows/notify-on-push.yml          |  64 ---
  .github/workflows/notify-on-review-wanted.yml |  45 ---
  .github/workflows/post-release.yml            |  33 --
  .../remark-lint-problem-matcher.json          |  22 --
@@ -59,17 +59,17 @@ is read only from the default branch and is left untouched.
  .github/workflows/stale.yml                   |  51 ---
  .github/workflows/stress-test.yml             | 114 ------
  .github/workflows/test-internet.yml           |  70 ----
- .github/workflows/test-linux-perfetto.yml     |  70 ----
+ .github/workflows/test-linux-perfetto.yml     |  73 ----
  .github/workflows/test-linux-quic.yml         |  80 ----
  .github/workflows/test-linux.yml              | 100 -----
  .github/workflows/test-macos.yml              | 142 -------
- .github/workflows/test-shared.yml             | 274 --------------
+ .github/workflows/test-shared.yml             | 273 -------------
  .github/workflows/timezone-update.yml         |  74 ----
- .github/workflows/tools.yml                   | 355 ------------------
- .github/workflows/update-openssl.yml          |  61 ---
+ .github/workflows/tools.yml                   | 365 ------------------
+ .github/workflows/update-openssl.yml          |  69 ----
  .github/workflows/update-v8.yml               |  57 ---
  .github/workflows/update-wpt.yml              |  95 -----
- 49 files changed, 4690 deletions(-)
+ 49 files changed, 4758 deletions(-)
  delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
  delete mode 100644 .github/SUPPORT.md
  delete mode 100644 .github/label-pr-config.yml
@@ -175,10 +175,10 @@ index 4613512bf2..0000000000
 -your expectations.
 diff --git a/.github/label-pr-config.yml b/.github/label-pr-config.yml
 deleted file mode 100644
-index 8b36066473..0000000000
+index f30b6b8a5e..0000000000
 --- a/.github/label-pr-config.yml
 +++ /dev/null
-@@ -1,224 +0,0 @@
+@@ -1,236 +0,0 @@
 -## Order of entries in this map *does* matter for the resolved labels
 -## earlier entries override later entries
 -subSystemLabels:
@@ -196,6 +196,7 @@ index 8b36066473..0000000000
 -  /^src\/uv\./: c++, libuv
 -  /^src\/(?:connect(?:ion)?|pipe|tcp)_/: c++, net
 -  /^src\/node_os/: c++, os
+-  /^src\/permission\//: c++, permission
 -  /^src\/(?:node_main|signal_)/: c++, process
 -  /^src\/timer[_s]/: c++, timers
 -  /^src\/node_root_certs/: c++, tls
@@ -283,6 +284,7 @@ index 8b36066473..0000000000
 -  /^lib\/test.js$/: test_runner
 -  /^lib\/v8.js$/: v8 module
 -  /^lib\/internal\/url\.js$/: whatwg-url
+-  /^lib\/internal\/process\/permission\.js$/: permission
 -  /^lib\/internal\/modules\/esm/: esm
 -  /^lib\/internal\/modules/: module
 -  /^lib\/internal\/source_map/: source maps
@@ -297,6 +299,13 @@ index 8b36066473..0000000000
 -
 -exlusiveLabels:
 -  # More specific tests
+-  /^test\/(?:parallel|sequential)\/test-(?:[^/]+-)?permission(?:-|\.)/: test, permission
+-  /^test\/ffi\/test-ffi-permissions?(?:-|\.)/: test, permission
+-  /^test\/addons\/no-addons\/permission\.js$/: test, addons, permission
+-  /^test\/es-module\/test-[^/]*-permission(?:-|\.)/: test, esm, permission
+-  /^test\/module-hooks\/test-[^/]*-permission(?:-|\.)/: test, module, loaders, permission
+-  /^test\/fixtures\/permission\//: test, permission
+-  /^test\/fixtures\/rc\/permission-namespace\.json$/: test, permission
 -  /^test\/addons\//: test, addons
 -  /^test\/debugger/: test, debugger
 -  /^test\/doctool\//: test, doc, tools
@@ -331,6 +340,7 @@ index 8b36066473..0000000000
 -  # test_runner documentation
 -  /^doc\/api\/test.md$/: doc, test_runner
 -  # Automatically tag JS subsystem-specific API doc changes
+-  /^doc\/api\/permissions\.md$/: doc, permission
 -  /^doc\/api\/(\w+)\.md$/: doc, $1
 -  # Add deprecations label to PRs that affect doc/api/deprecations.md
 -  /^doc\/api\/deprecations.md$/: doc, deprecations
@@ -343,6 +353,7 @@ index 8b36066473..0000000000
 -  /^doc\//: doc
 -
 -  # More specific benchmarks
+-  /^benchmark\/fs\/readfile-permission-enabled\.js$/: benchmark, fs, permission
 -  /^benchmark\/buffers\//: benchmark, buffer
 -  /^benchmark\/es\//: benchmark, v8 engine
 -  /^benchmark\/_http/: benchmark, http
@@ -379,6 +390,7 @@ index 8b36066473..0000000000
 -  - os
 -  - path
 -  - perf_hooks
+-  - permission
 -  - process
 -  - punycode
 -  - querystring
@@ -459,13 +471,16 @@ index f447c6b80a..0000000000
 -            done
 diff --git a/.github/workflows/auto-start-ci.yml b/.github/workflows/auto-start-ci.yml
 deleted file mode 100644
-index dc827d62ba..0000000000
+index 85f3e92f2f..0000000000
 --- a/.github/workflows/auto-start-ci.yml
 +++ /dev/null
-@@ -1,80 +0,0 @@
+@@ -1,93 +0,0 @@
 -# This action uses the following secrets:
 -#   JENKINS_USER: GitHub user whose Jenkins token is defined below
--#   JENKINS_TOKEN: Jenkins token, to be used to start CI
+-#   JENKINS_TOKEN: Jenkins token, to be used to start or resume CI
+-# Optional repository variables:
+-#   AUTO_START_CI_BATCH_SIZE: maximum PRs to process per run (default: 5)
+-#   AUTO_START_CI_MAX_WORKLOAD: pause at this many running or queued PR jobs (default: 15)
 -name: Auto Start CI
 -
 -on:
@@ -495,16 +510,25 @@ index dc827d62ba..0000000000
 -    steps:
 -      - name: Get Pull Requests
 -        id: get_prs_for_ci
--        run: >
--          echo "numbers=$(gh pr list \
+-        # Explicit bash enables pipefail so jq cannot hide a failed gh query.
+-        shell: bash
+-        run: |
+-          if ! [[ "$BATCH_SIZE" =~ ^[1-9][0-9]*$ ]]; then
+-            echo '::error::AUTO_START_CI_BATCH_SIZE must be a strictly positive integer'
+-            exit 1
+-          fi
+-          # Filter before selecting the batch; UNKNOWN mergeability is retried later.
+-          numbers=$(gh pr list \
 -                  --repo "$GITHUB_REPOSITORY" \
--                  --label 'request-ci' \
--                  --json 'number' \
--                  --search 'review:approved' \
--                  -t '{{ range . }}{{ .number }} {{ end }}' \
--                  --limit 5)" >> "$GITHUB_OUTPUT"
+-                  --json 'number,mergeable' \
+-                  --search 'review:approved label:request-ci,resume-ci' \
+-                  --limit 100 \
+-                  | jq --argjson limit "$BATCH_SIZE" \
+-                    '[.[] | select(.mergeable == "MERGEABLE") | .number] | .[:$limit] | map(tostring) | join(" ")' -r)
+-          echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
 -        env:
 -          GH_TOKEN: ${{ github.token }}
+-          BATCH_SIZE: ${{ vars.AUTO_START_CI_BATCH_SIZE || '5' }}
 -  start-ci:
 -    permissions:
 -      checks: read
@@ -535,7 +559,7 @@ index dc827d62ba..0000000000
 -          GH_TOKEN: ${{ github.token }}
 -          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
 -
--      - name: Start the CI
+-      - name: Start or resume the CI
 -        run: |
 -          read -r -a numbers <<< "$PULL_REQUESTS"
 -          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/raw/${GITHUB_SHA}/tools/actions/start-ci.sh" \
@@ -543,12 +567,13 @@ index dc827d62ba..0000000000
 -        env:
 -          GH_TOKEN: ${{ github.token }}
 -          PULL_REQUESTS: ${{ needs.get-prs-for-ci.outputs.numbers }}
+-          MAX_WORKLOAD: ${{ vars.AUTO_START_CI_MAX_WORKLOAD || '15' }}
 diff --git a/.github/workflows/benchmark.yml b/.github/workflows/benchmark.yml
 deleted file mode 100644
-index 92bab7856b..0000000000
+index 0e901de78d..0000000000
 --- a/.github/workflows/benchmark.yml
 +++ /dev/null
-@@ -1,279 +0,0 @@
+@@ -1,271 +0,0 @@
 -name: Benchmark
 -
 -on:
@@ -672,15 +697,11 @@ index 92bab7856b..0000000000
 -            --pure --keep TAR_DIR --keep FLAKY_TESTS \
 -            --keep SCCACHE_GHA_ENABLED --keep SCCACHE_GHA_RW_MODE \
 -            --keep ACTIONS_CACHE_SERVICE_V2 --keep ACTIONS_RESULTS_URL --keep ACTIONS_RUNTIME_TOKEN \
--            --arg useSeparateDerivationForV8 true \
 -            --arg withPerfetto ${{ matrix.perfetto || false }} \
--            --arg loadJSBuiltinsDynamically false \
 -            --arg ccache '(import <nixpkgs> {}).sccache' \
--            --arg devTools '[]' \
--            --arg benchmarkTools '[]' \
 -            --run '
 -              make build-ci -j4 V=1 && sccache --stop-server
--            '
+-            ' tools/nix/ci-shell.nix
 -          mv out/Release/node base_node
 -
 -      - name: Checkout the merge commit
@@ -692,15 +713,11 @@ index 92bab7856b..0000000000
 -          nix-shell \
 -            -I nixpkgs=./tools/nix/pkgs.nix \
 -            --pure --keep SCCACHE_LOCAL_RW_MODE \
--            --arg useSeparateDerivationForV8 true \
 -            --arg withPerfetto ${{ matrix.perfetto || false }} \
--            --arg loadJSBuiltinsDynamically false \
 -            --arg ccache '(import <nixpkgs> {}).sccache' \
--            --arg devTools '[]' \
--            --arg benchmarkTools '[]' \
 -            --run '
 -                make build-ci -j4 V=1
--            '
+-            ' tools/nix/ci-shell.nix
 -        env:
 -          SCCACHE_LOCAL_RW_MODE: READ_ONLY
 -
@@ -783,7 +800,7 @@ index 92bab7856b..0000000000
 -          nix-shell \
 -            -I nixpkgs=./tools/nix/pkgs.nix \
 -            --pure \
--            -E '(import <nixpkgs> {}).mkShell { buildInputs = import ./tools/nix/benchmarkTools.nix { withHttpBenchmarkDeps = false; }; }' \
+-            -E '(import <nixpkgs> {}).mkShellNoCC { buildInputs = import ./tools/nix/benchmarkTools.nix { withHttpBenchmarkDeps = false; }; }' \
 -            --run '
 -                export LC_ALL=C.UTF-8
 -                echo "> [!WARNING] "
@@ -830,10 +847,10 @@ index 92bab7856b..0000000000
 -          PR_ID: ${{ inputs.pr_id }}
 diff --git a/.github/workflows/build-shared.yml b/.github/workflows/build-shared.yml
 deleted file mode 100644
-index 7d77c13e56..0000000000
+index 73f7ec6afb..0000000000
 --- a/.github/workflows/build-shared.yml
 +++ /dev/null
-@@ -1,96 +0,0 @@
+@@ -1,93 +0,0 @@
 -name: Build Node.js (shared libraries)
 -
 -on:
@@ -921,21 +938,18 @@ index 7d77c13e56..0000000000
 -            -I "nixpkgs=$TAR_DIR/tools/nix/pkgs.nix" \
 -            --pure --keep TAR_DIR --keep FLAKY_TESTS \
 -            --keep SCCACHE_GHA_ENABLED --keep ACTIONS_CACHE_SERVICE_V2 --keep ACTIONS_RESULTS_URL --keep ACTIONS_RUNTIME_TOKEN \
--            --arg loadJSBuiltinsDynamically false \
 -            --arg ccache "${NIX_SCCACHE:-null}" \
--            --arg devTools '[]' \
--            --arg benchmarkTools '[]' \
 -            --arg pkcs11 ${{ inputs.pkcs11-store-test }} \
 -            ${{ inputs.extra-nix-flags }} \
 -            --run '
 -                make -C "$TAR_DIR" run-ci -j4 V=1 TEST_CI_ARGS="-p actions --measure-flakiness 9 --skip-tests=$CI_SKIP_TESTS"
--            ' "$TAR_DIR/shell.nix"
+-            ' "$TAR_DIR/tools/nix/ci-shell.nix"
 diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
 deleted file mode 100644
-index 045bd3ae93..0000000000
+index 53e625ef88..0000000000
 --- a/.github/workflows/build-tarball.yml
 +++ /dev/null
-@@ -1,132 +0,0 @@
+@@ -1,137 +0,0 @@
 -name: Build from tarball
 -
 -on:
@@ -1005,6 +1019,7 @@ index 045bd3ae93..0000000000
 -  PYTHON_VERSION: '3.14'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
+-  NODE_VERSION: lts/*
 -
 -permissions:
 -  contents: read
@@ -1022,12 +1037,16 @@ index 045bd3ae93..0000000000
 -        with:
 -          python-version: ${{ env.PYTHON_VERSION }}
 -          allow-prereleases: true
+-      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+-        with:
+-          node-version: ${{ env.NODE_VERSION }}
 -      - name: Make tarball
 -        run: |
 -          export DISTTYPE=nightly
 -          export DATESTRING=$(date "+%Y-%m-%d")
 -          export COMMIT=$(git rev-parse --short=10 "$GITHUB_SHA")
--          ./configure && make tar -j4 SKIP_XZ=1
+-          ./configure && make tar -j4 SKIP_XZ=1 GZIP_COMPRESSION=6
 -      - name: Upload tarball artifact
 -        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
 -        with:
@@ -1112,7 +1131,7 @@ index 3c7ab04339..0000000000
 -          days-before-stale: -1
 diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
 deleted file mode 100644
-index 1b3179ef4a..0000000000
+index d8eca1f2b7..0000000000
 --- a/.github/workflows/codeql.yml
 +++ /dev/null
 @@ -1,44 +0,0 @@
@@ -1148,16 +1167,16 @@ index 1b3179ef4a..0000000000
 -
 -      # Initializes the CodeQL tools for scanning.
 -      - name: Initialize CodeQL
--        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
+-        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
 -        with:
 -          languages: ${{ matrix.language }}
 -          config-file: ./.github/codeql-config.yml
 -
 -      - name: Autobuild
--        uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
+-        uses: github/codeql-action/autobuild@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
 -
 -      - name: Perform CodeQL Analysis
--        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
+-        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
 -        with:
 -          category: /language:${{matrix.language}}
 diff --git a/.github/workflows/comment-labeled.yml b/.github/workflows/comment-labeled.yml
@@ -1643,7 +1662,7 @@ index 4035ea9320..0000000000
 -            gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body-file -
 diff --git a/.github/workflows/coverage-linux-without-intl.yml b/.github/workflows/coverage-linux-without-intl.yml
 deleted file mode 100644
-index a98492ec66..0000000000
+index 9b8f8e2fd8..0000000000
 --- a/.github/workflows/coverage-linux-without-intl.yml
 +++ /dev/null
 @@ -1,90 +0,0 @@
@@ -1734,12 +1753,12 @@ index a98492ec66..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-linux.yml b/.github/workflows/coverage-linux.yml
 deleted file mode 100644
-index 4ba373b790..0000000000
+index 0c7fc292d3..0000000000
 --- a/.github/workflows/coverage-linux.yml
 +++ /dev/null
 @@ -1,90 +0,0 @@
@@ -1830,12 +1849,12 @@ index 4ba373b790..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-windows.yml b/.github/workflows/coverage-windows.yml
 deleted file mode 100644
-index 5da225b171..0000000000
+index a4db4ccc08..0000000000
 --- a/.github/workflows/coverage-windows.yml
 +++ /dev/null
 @@ -1,106 +0,0 @@
@@ -1942,7 +1961,7 @@ index 5da225b171..0000000000
 -      - name: Clean tmp
 -        run: npx rimraf ./coverage/tmp
 -      - name: Upload
--        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/create-release-proposal.yml b/.github/workflows/create-release-proposal.yml
@@ -2662,10 +2681,10 @@ index 027aee336a..0000000000
 -          GH_TOKEN: ${{ github.token }}
 diff --git a/.github/workflows/linters.yml b/.github/workflows/linters.yml
 deleted file mode 100644
-index 848fffc117..0000000000
+index 9afdb2ef5a..0000000000
 --- a/.github/workflows/linters.yml
 +++ /dev/null
-@@ -1,255 +0,0 @@
+@@ -1,278 +0,0 @@
 -name: Linters
 -
 -on:
@@ -2709,6 +2728,12 @@ index 848fffc117..0000000000
 -      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 -        with:
 -          persist-credentials: false
+-          # Skip large vendored trees that lint-cpp does not use.
+-          sparse-checkout: |
+-            /*
+-            !/deps/openssl/
+-            !/deps/v8/
+-          sparse-checkout-cone-mode: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
 -        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
 -        with:
@@ -2722,7 +2747,8 @@ index 848fffc117..0000000000
 -    steps:
 -      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 -        with:
--          fetch-depth: 0
+-          # The first parent of the PR merge commit is the base branch commit.
+-          fetch-depth: 2
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
 -        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
@@ -2740,7 +2766,7 @@ index 848fffc117..0000000000
 -          # because it is irrelevant. We already check if the formatter produced
 -          # a diff in the next line.
 -          # Refs: https://github.com/nodejs/node/pull/42764
--          CLANG_FORMAT_START="$(git merge-base HEAD refs/remotes/origin/$GITHUB_BASE_REF)" \
+-          CLANG_FORMAT_START=HEAD^ \
 -            make format-cpp || true
 -          git --no-pager diff --exit-code && EXIT_CODE="$?" || EXIT_CODE="$?"
 -          if [ "$EXIT_CODE" != "0" ]
@@ -2761,13 +2787,29 @@ index 848fffc117..0000000000
 -        with:
 -          persist-credentials: false
 -      - name: Use Node.js ${{ env.NODE_VERSION }}
+-        id: setup-node
 -        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
 -        with:
 -          node-version: ${{ env.NODE_VERSION }}
+-          cache: npm
+-          cache-dependency-path: |
+-            tools/doc/package-lock.json
+-            tools/eslint/package-lock.json
+-            tools/lint-md/package-lock.json
+-      - name: Cache ESLint results
+-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+-        env:
+-          # ESLint only invalidates its cache on config changes, so the key also
+-          # covers the custom rules and the files they read.
+-          cache-prefix: eslint-${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-${{ hashFiles('eslint.config.mjs', '*/eslint.config_partial.mjs', 'tools/eslint/*', 'tools/eslint-rules/**', 'doc/api/errors.md', 'doc/api/deprecations.md') }}
+-        with:
+-          path: .eslintcache
+-          key: ${{ env.cache-prefix }}-${{ github.sha }}
+-          restore-keys: ${{ env.cache-prefix }}-
 -      - name: Lint JavaScript files
 -        run: |
 -          set +e
--          NODE=$(command -v node) make lint-js
+-          NODE=$(command -v node) make lint-js ESLINT_CACHE_FLAGS='--cache --cache-strategy content'
 -          EXIT_CODE="$?"
 -          if [ "$EXIT_CODE" != "0" ]; then
 -            echo
@@ -2797,7 +2839,7 @@ index 848fffc117..0000000000
 -      - name: Lint markdown files
 -        run: |
 -          echo "::add-matcher::.github/workflows/remark-lint-problem-matcher.json"
--          NODE=$(command -v node) make lint-md
+-          NODE=$(command -v node) make lint-md ESLINT_CACHE_FLAGS='--cache --cache-strategy content'
 -        env:
 -          NODE_RELEASED_VERSIONS: ${{ steps.get-released-versions.outputs.NODE_RELEASED_VERSIONS }}
 -
@@ -3082,10 +3124,10 @@ index db96ff4a09..0000000000
 -          PR_NUMBER: ${{ steps.pr-data.outputs.NUMBER }}
 diff --git a/.github/workflows/nix-changes.yml b/.github/workflows/nix-changes.yml
 deleted file mode 100644
-index 8aeaf2c0e4..0000000000
+index c80e9e53f5..0000000000
 --- a/.github/workflows/nix-changes.yml
 +++ /dev/null
-@@ -1,122 +0,0 @@
+@@ -1,128 +0,0 @@
 -# This action uses the following secrets:
 -#   CACHIX_AUTH_TOKEN: Write access to nodejs.cachix.org – without it, the cache is read-only.
 -name: Nix files edited
@@ -3156,10 +3198,16 @@ index 8aeaf2c0e4..0000000000
 -
 -      - name: Compute requisites before change
 -        run: |
--          git reset HEAD^ --hard
--          # TODO(aduh95): remove this once list-requisites.sh has reached `main`
--          [ -f tools/nix/list-requisites.sh ] || git checkout FETCH_HEAD -- tools/nix/list-requisites.sh
+-          BASE_SHA="$(git rev-parse HEAD^)"
+-          if [ -n "$PUSH_BEFORE_SHA" ] && [ "$PUSH_BEFORE_SHA" != "$BASE_SHA" ] \
+-            && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] \
+-            && git fetch --no-tags --depth=1 origin "$PUSH_BEFORE_SHA"; then
+-            BASE_SHA="$PUSH_BEFORE_SHA"
+-          fi
+-          git reset "$BASE_SHA" --hard
 -          ./tools/nix/list-requisites.sh > requisites-${{ matrix.system }}-before.list
+-        env:
+-          PUSH_BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
 -
 -      - name: Output diff
 -        run: |
@@ -3398,7 +3446,7 @@ index cfb281310a..0000000000
 -}
 diff --git a/.github/workflows/scorecard.yml b/.github/workflows/scorecard.yml
 deleted file mode 100644
-index 4a7415bc90..0000000000
+index 2663019bcc..0000000000
 --- a/.github/workflows/scorecard.yml
 +++ /dev/null
 @@ -1,81 +0,0 @@
@@ -3480,7 +3528,7 @@ index 4a7415bc90..0000000000
 -
 -      # Upload the results to GitHub's code scanning dashboard.
 -      - name: Upload to code-scanning
--        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
+-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2  # v4.38.2
 -        with:
 -          sarif_file: results.sarif
 diff --git a/.github/workflows/stale.yml b/.github/workflows/stale.yml
@@ -3738,10 +3786,10 @@ index 43d71f5f31..0000000000
 -        run: make test-internet -j4 V=1;
 diff --git a/.github/workflows/test-linux-perfetto.yml b/.github/workflows/test-linux-perfetto.yml
 deleted file mode 100644
-index ce31704f81..0000000000
+index d2bfbfbd68..0000000000
 --- a/.github/workflows/test-linux-perfetto.yml
 +++ /dev/null
-@@ -1,70 +0,0 @@
+@@ -1,73 +0,0 @@
 -name: Test Linux (with Perfetto)
 -
 -on:
@@ -3806,6 +3854,9 @@ index ce31704f81..0000000000
 -      - name: Build
 -        working-directory: node
 -        run: make build-ci -j4 V=1 CONFIG_FLAGS="--error-on-warn --v8-enable-temporal-support --with-perfetto"
+-      - name: Get trace_processor
+-        working-directory: node
+-        run: make tools/perfetto/trace_processor_shell
 -      - name: Test
 -        working-directory: node
 -        run: make test-ci -j1 V=1 TEST_CI_ARGS="-p actions --measure-flakiness 9"
@@ -4154,10 +4205,10 @@ index 6954112115..0000000000
 -          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
 diff --git a/.github/workflows/test-shared.yml b/.github/workflows/test-shared.yml
 deleted file mode 100644
-index 9f4d2e031f..0000000000
+index 8292ac253f..0000000000
 --- a/.github/workflows/test-shared.yml
 +++ /dev/null
-@@ -1,274 +0,0 @@
+@@ -1,273 +0,0 @@
 -# This action uses the following secrets:
 -#   CACHIX_AUTH_TOKEN: Write access to nodejs.cachix.org – without it, the cache is read-only.
 -name: Test Shared libraries
@@ -4173,11 +4224,12 @@ index 9f4d2e031f..0000000000
 -      - android-patches/**
 -      - benchmarks/**
 -      - codecov.yml
+-      - deps/LIEF/**
 -      - deps/ada/**
 -      - deps/brotli/**
 -      - deps/cares/**
--      - deps/crates/**
 -      - deps/corepack/**
+-      - deps/crates/**
 -      - deps/googletest/**
 -      - deps/histogram/**
 -      - deps/icu-small/**
@@ -4230,11 +4282,12 @@ index 9f4d2e031f..0000000000
 -      - android-patches/**
 -      - benchmarks/**
 -      - codecov.yml
+-      - deps/LIEF/**
 -      - deps/ada/**
 -      - deps/brotli/**
 -      - deps/cares/**
--      - deps/crates/**
 -      - deps/corepack/**
+-      - deps/crates/**
 -      - deps/googletest/**
 -      - deps/histogram/**
 -      - deps/icu-small/**
@@ -4293,7 +4346,7 @@ index 9f4d2e031f..0000000000
 -        run: |
 -          export DATESTRING=$(date "+%Y-%m-%d")
 -          export COMMIT=$(git rev-parse --short=10 "$GITHUB_SHA")
--          ./configure && make tar -j4 SKIP_XZ=1 SKIP_SHARED_DEPS=1
+-          ./configure && make tar -j4 SKIP_XZ=1 SKIP_SHARED_DEPS=1 GZIP_COMPRESSION=6
 -        env:
 -          DISTTYPE: nightly
 -
@@ -4325,10 +4378,7 @@ index 9f4d2e031f..0000000000
 -    with:
 -      runner: ${{ matrix.runner }}
 -      with-sccache: ${{ github.base_ref == 'main' || github.ref_name == 'main' }}
--      extra-nix-flags: |
--        --arg useSeparateDerivationForV8 true \
--        ${{ matrix.perfetto && '--arg withPerfetto true \' || '\' }}
--        ${{ endsWith(matrix.system, '-darwin') && '--arg withAmaro false --arg withLief false --arg withSQLite false --arg withFFI false --arg extraConfigFlags ''["--without-inspector" "--without-node-options"]'' \' || '\' }}
+-      extra-nix-flags: ${{ matrix.perfetto && '--arg withPerfetto true' || '' }}
 -    secrets:
 -      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
 -
@@ -4360,7 +4410,7 @@ index 9f4d2e031f..0000000000
 -        id: v8-drv
 -        run: |
 -          V8_DRV=$(
--            nix-instantiate -E "builtins.filter (p: p.pname == ''v8'') (import $TAR_DIR/shell.nix { useSeparateDerivationForV8=true; }).buildInputs"
+-            nix-instantiate -E "builtins.filter (p: p.pname == ''v8'') (import $TAR_DIR/tools/nix/ci-shell.nix {}).buildInputs"
 -          )
 -          V8_STORE_PATH=$(nix-store -q --outputs "$V8_DRV")
 -          echo "V8_DRV=$V8_DRV" >> "$GITHUB_OUTPUT"
@@ -4514,10 +4564,10 @@ index abe4516db4..0000000000
 -          update-pull-request-title-and-body: true
 diff --git a/.github/workflows/tools.yml b/.github/workflows/tools.yml
 deleted file mode 100644
-index fe2db7ac95..0000000000
+index 497a5c1230..0000000000
 --- a/.github/workflows/tools.yml
 +++ /dev/null
-@@ -1,355 +0,0 @@
+@@ -1,365 +0,0 @@
 -name: Tools and deps update
 -on:
 -  schedule:
@@ -4548,6 +4598,7 @@ index fe2db7ac95..0000000000
 -          - inspector_protocol
 -          - libffi
 -          - libuv
+-          - lief
 -          - llhttp
 -          - minimatch
 -          - nbytes
@@ -4670,6 +4721,7 @@ index fe2db7ac95..0000000000
 -          - id: icu
 -            subsystem: deps
 -            label: dependencies, test, icu
+-            requires-python: true
 -            run: |
 -              ./tools/dep_updaters/update-icu.sh > temp-output
 -              cat temp-output
@@ -4678,6 +4730,7 @@ index fe2db7ac95..0000000000
 -          - id: inspector_protocol
 -            subsystem: deps
 -            label: dependencies, inspector
+-            requires-python: true
 -            run: |
 -              ./tools/dep_updaters/update-inspector-protocol.sh > temp-output
 -              cat temp-output
@@ -4696,6 +4749,15 @@ index fe2db7ac95..0000000000
 -            label: dependencies
 -            run: |
 -              ./tools/dep_updaters/update-libuv.sh > temp-output
+-              cat temp-output
+-              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
+-              rm temp-output
+-          - id: lief
+-            subsystem: deps
+-            label: dependencies, dont-land-on-v22.x
+-            requires-python: true
+-            run: |
+-              ./tools/dep_updaters/update-lief.sh > temp-output
 -              cat temp-output
 -              tail -n1 temp-output | grep "NEW_VERSION=" >> "$GITHUB_ENV" || true
 -              rm temp-output
@@ -4841,9 +4903,7 @@ index fe2db7ac95..0000000000
 -        with:
 -          persist-credentials: false
 -      - name: Set up Python ${{ env.PYTHON_VERSION }}
--        if: |
--          (matrix.id == 'icu' || matrix.id == 'inspector_protocol') &&
--          (github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id)
+-        if: matrix.requires-python && (github.event_name == 'schedule' || inputs.id == 'all' || inputs.id == matrix.id)
 -        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
 -        with:
 -          python-version: ${{ env.PYTHON_VERSION }}
@@ -4875,10 +4935,10 @@ index fe2db7ac95..0000000000
 -          author: Node.js GitHub Bot <github-bot@iojs.org>
 diff --git a/.github/workflows/update-openssl.yml b/.github/workflows/update-openssl.yml
 deleted file mode 100644
-index 10eb3289a1..0000000000
+index b81a260312..0000000000
 --- a/.github/workflows/update-openssl.yml
 +++ /dev/null
-@@ -1,61 +0,0 @@
+@@ -1,69 +0,0 @@
 -name: OpenSSL update
 -on:
 -  schedule:
@@ -4908,6 +4968,7 @@ index 10eb3289a1..0000000000
 -        env:
 -          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
 -      - name: Create PR with first commit
+-        id: create-pull-request
 -        if: env.NEW_VERSION
 -        uses: gr2m/create-or-update-pull-request-action@b65137ca591da0b9f43bad7b24df13050ea45d1b  # v1.10.1
 -        # Creates a PR with the new OpenSSL source code committed
@@ -4922,6 +4983,7 @@ index 10eb3289a1..0000000000
 -          title: 'deps: update OpenSSL to ${{ env.NEW_VERSION }}'
 -          path: deps/openssl
 -          update-pull-request-title-and-body: true
+-          draft: true
 -      - name: Regenerate platform specific files
 -        if: env.NEW_VERSION
 -        run: |
@@ -4940,6 +5002,12 @@ index 10eb3289a1..0000000000
 -          branch: actions/tools-update-openssl  # Custom branch *just* for this Action.
 -          commit-message: 'deps: update archs files for openssl-${{ env.NEW_VERSION }}'
 -          path: deps/openssl
+-      - name: Mark PR as ready for review
+-        if: env.NEW_VERSION
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GH_USER_TOKEN }}
+-          PR_ID: ${{ steps.create-pull-request.outputs.pull-request-number }}
+-        run: gh --repo "$GITHUB_REPOSITORY" pr ready "$PR_ID"
 diff --git a/.github/workflows/update-v8.yml b/.github/workflows/update-v8.yml
 deleted file mode 100644
 index 8e71e56389..0000000000

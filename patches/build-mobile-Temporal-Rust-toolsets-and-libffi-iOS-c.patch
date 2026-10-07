@@ -5,26 +5,29 @@ Subject: [PATCH] build: mobile Temporal Rust toolsets and libffi iOS callbacks
 
 Separate native host tools from Android/iOS Rust archives and use libffi's
 precompiled executable trampoline table for iOS callbacks. Full builds
-retain ICU and enable Temporal; lite keeps its existing no-ICU policy.
+retain complete ICU and enable Temporal; lite retains the danmu ICU profile
+and disables Temporal and FFI. Preserve upstream's Temporal zoneinfo generator.
 
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- deps/crates/crates.gyp          | 215 +++++++++++++-------------------
+ deps/crates/crates.gyp          | 261 ++++++++++++--------------------
  deps/libffi/generate-headers.py |  19 ++-
- deps/libffi/libffi.gyp          |  70 ++++++++---
- 3 files changed, 153 insertions(+), 151 deletions(-)
+ deps/libffi/libffi.gyp          |  70 ++++++---
+ 3 files changed, 166 insertions(+), 184 deletions(-)
 
 diff --git a/deps/crates/crates.gyp b/deps/crates/crates.gyp
-index 0720ee6dcf..9ebf172222 100644
+index 216b0cff51..12c1718b6d 100644
 --- a/deps/crates/crates.gyp
 +++ b/deps/crates/crates.gyp
-@@ -1,129 +1,86 @@
+@@ -1,162 +1,99 @@
 -{
 -  'variables': {
 -    'cargo%': 'cargo',
 -    'cargo_vendor_dir': './vendor',
 -    'temporal_capi_dir': 'temporal_capi-v0_2',
+-    'zoneinfo64_dir': 'zoneinfo64-v0_3',
+-    'temporal_zoneinfo64_data_output': '<(SHARED_INTERMEDIATE_DIR)/src/builtins/builtins-temporal-zoneinfo64-data.cc',
 -    'cargo_rust_target%': '',
 -  },
 -  'conditions': [
@@ -147,6 +150,37 @@ index 0720ee6dcf..9ebf172222 100644
 -        ],
 -      },
 -    },
+-    {
+-      # Bakes zoneinfo64.res into a C++ source for Temporal when ICU is not
+-      # available to load it at runtime.
+-      'target_name': 'temporal_zoneinfo64_data',
+-      'type': 'none',
+-      'toolsets': ['host', 'target'],
+-      'hard_dependency': 1,
+-      'direct_dependent_settings': {
+-        'sources': [
+-          '<(temporal_zoneinfo64_data_output)',
+-        ],
+-      },
+-      'actions': [
+-        {
+-          'action_name': 'make_temporal_zoneinfo_cpp',
+-          'inputs': [
+-            '../v8/tools/include-file-as-bytes.py',
+-            '<(cargo_vendor_dir)/<(zoneinfo64_dir)/src/data/zoneinfo64.res',
+-          ],
+-          'outputs': [
+-            '<(temporal_zoneinfo64_data_output)',
+-          ],
+-          'action': [
+-            '<(python)',
+-            '<@(_inputs)',
+-            '<@(_outputs)',
+-            'zoneinfo64_static_data',
+-          ],
+-        },
+-      ],
+-    },
 -  ]
 -}
 +# Mobile Rust actions select their triple per toolset; desktop builds retain
@@ -154,12 +188,13 @@ index 0720ee6dcf..9ebf172222 100644
 +{'variables': {'cargo%': 'cargo',
 +               'cargo_vendor_dir': './vendor',
 +               'temporal_capi_dir': 'temporal_capi-v0_2',
-+               'cargo_rust_target%': ''},
++               'cargo_rust_target%': '',
++               'zoneinfo64_dir': 'zoneinfo64-v0_3',
++               'temporal_zoneinfo64_data_output': '<(SHARED_INTERMEDIATE_DIR)/src/builtins/builtins-temporal-zoneinfo64-data.cc'},
 + 'conditions': [['build_type == "Release"',
 +                 {'variables': {'cargo_build_flags': ['--release']},
 +                  'conditions': [['cargo_rust_target!=""',
-+                                  {'variables': {'cargo_build_flags': ['--target',
-+                                                                       '<(cargo_rust_target)']}}],
++                                  {'variables': {'cargo_build_flags': ['--target', '<(cargo_rust_target)']}}],
 +                                 ['OS=="win"',
 +                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/$(Platform)/release/node_crates.lib'}},
 +                                  {'variables': {'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)'}}]]},
@@ -173,8 +208,7 @@ index 0720ee6dcf..9ebf172222 100644
 +              'hard_dependency': 1,
 +              'sources': ['Cargo.toml', 'Cargo.lock', 'src/lib.rs'],
 +              'link_settings': {'libraries': ['<(node_crates_libpath)'],
-+                                'conditions': [['OS=="win"',
-+                                                {'libraries': ['-lntdll', '-luserenv']}]]},
++                                'conditions': [['OS=="win"', {'libraries': ['-lntdll', '-luserenv']}]]},
 +              'conditions': [['OS in "android ios"',
 +                              {'link_settings': {'libraries!': ['<(node_crates_libpath)'],
 +                                                 'libraries': ['<(SHARED_INTERMEDIATE_DIR)/mobile-rust/<(_toolset)/libnode_crates.a'],
@@ -234,7 +268,20 @@ index 0720ee6dcf..9ebf172222 100644
 +              'toolsets': ['host', 'target'],
 +              'sources': [],
 +              'dependencies': ['node_crates'],
-+              'direct_dependent_settings': {'include_dirs': ['<(cargo_vendor_dir)/<(temporal_capi_dir)/bindings/cpp']}}]}
++              'direct_dependent_settings': {'include_dirs': ['<(cargo_vendor_dir)/<(temporal_capi_dir)/bindings/cpp']}},
++             {'target_name': 'temporal_zoneinfo64_data',
++              'type': 'none',
++              'toolsets': ['host', 'target'],
++              'hard_dependency': 1,
++              'direct_dependent_settings': {'sources': ['<(temporal_zoneinfo64_data_output)']},
++              'actions': [{'action_name': 'make_temporal_zoneinfo_cpp',
++                           'inputs': ['../v8/tools/include-file-as-bytes.py',
++                                      '<(cargo_vendor_dir)/<(zoneinfo64_dir)/src/data/zoneinfo64.res'],
++                           'outputs': ['<(temporal_zoneinfo64_data_output)'],
++                           'action': ['<(python)',
++                                      '<@(_inputs)',
++                                      '<@(_outputs)',
++                                      'zoneinfo64_static_data']}]}]}
 diff --git a/deps/libffi/generate-headers.py b/deps/libffi/generate-headers.py
 index fb58edf17b..5369c1e194 100644
 --- a/deps/libffi/generate-headers.py

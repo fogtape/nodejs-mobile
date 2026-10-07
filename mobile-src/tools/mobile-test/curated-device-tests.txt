@@ -218,3 +218,16 @@ parallel/test-zlib-convenience-methods
 parallel/test-zlib-destroy-pipe
 parallel/test-zlib-flush-drain
 parallel/test-zlib-invalid-arg-value-brotli-compress
+
+# Node 26.11 in-process buffer, HTTP, crypto, stream and compression regressions.
+parallel/test-buffer-islatin1
+parallel/test-buffer-stringlength
+parallel/test-http-is-valid-header
+parallel/test-http-parser-cached-callbacks
+parallel/test-http-server-raw-header-lookup
+parallel/test-crypto-randomfill-properties
+parallel/test-whatwg-readablestream-async-iterator-shape
+parallel/test-zlib-decode-strings
+parallel/test-zlib-reset-incomplete-output
+parallel/test-zlib-brotli-reset
+parallel/test-zlib-zstd-reset-incomplete-frame

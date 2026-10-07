@@ -38,7 +38,10 @@ def upstream(root):
     lines = [line.strip() for line in (root / 'upstream-base.txt').read_text().splitlines()
              if line.strip() and not line.lstrip().startswith('#')]
     if len(lines) != 1:
-        raise ReleaseError('upstream-base.txt must pin exactly one upstream release tag')
+        raise ReleaseError('upstream-base.txt must pin exactly one upstream ref')
+    if re.fullmatch(r'[0-9a-f]{40}', lines[0]):
+        raise ReleaseError('This source pins an unreleased upstream PR commit. '
+                           'Build a CI preview; pin the official release tag before Cut release or publication.')
     return parse_version(lines[0])
 
 
