@@ -10,6 +10,9 @@ inputs:
   version:
     description: Exact mobile version required for manual prerelease requests
     default: ''
+  upstream_snapshot:
+    description: Explicit full SHA opt-in for an unreleased upstream proposal prerelease
+    default: ''
   token:
     description: Token with contents:read on this repository, for the tag probe.
     required: true
@@ -38,4 +41,5 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         RELEASE_OPERATION: ${{ inputs.operation }}
         RELEASE_VERSION: ${{ inputs.version }}
+        UPSTREAM_SNAPSHOT: ${{ inputs.upstream_snapshot }}
       run: python3 scripts/release-control.py check

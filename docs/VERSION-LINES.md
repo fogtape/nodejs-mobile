@@ -7,12 +7,12 @@ versioned together on that branch.
 | Branch | Upstream base | Purpose | Outputs |
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
-| `recipe-v26` | Node.js 26.10.0 | Independent Node 26 maintenance and prereleases | Android and iOS, full and lite |
-| `upgrade/node26.11-mobile-lite` | Node.js 26.11.0 proposal at a pinned SHA | Preview of upstream PR #66546 with the danmu lite profile | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.11.0 proposal at a pinned SHA | Independent Node 26 maintenance and explicit upstream snapshot prereleases | Android and iOS, full and lite |
 
-For the 26.11 preview, clone `upgrade/node26.11-mobile-lite`; it pins an immutable
-commit, and release preparation is disabled until the official release tag is
-reviewed and pinned. See [26.11 provenance](UPSTREAM-26.11.md).
+For Node 26.11, clone `recipe-v26`; the reviewed upgrade is merged and pins
+an immutable commit. Snapshot publication requires an explicit full-SHA
+input in both manual workflows and its reviewed release marker; default
+releases require an official upstream tag. See [26.11 provenance](UPSTREAM-26.11.md).
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published

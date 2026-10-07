@@ -8,8 +8,9 @@ it was open and ready for review, with no official `v26.11.0` tag.
 `upstream-base.txt` pins the proposal's exact commit:
 `49072a0be4c7410982557aebf5b5c924fe7db597`.
 The upstream version header reports `v26.11.0`; the mobile header reports
-`26.11.0-0`. These identifiers do not mean the official release or a mobile
-release has been published. The immutable commit and expected source-tree
+`26.11.0-0`. These identifiers do not mean the official Node.js release has
+been published. An explicitly requested mobile snapshot prerelease may be
+published with the provenance and gates described below. The immutable commit and expected source-tree
 checksum identify this preview even if the proposal branch changes.
 
 The refreshed pin includes HdrHistogram 0.12.0, NSS 3.129 certificate source
@@ -20,11 +21,11 @@ FFI and the existing mobile/lite configuration are unchanged by this refresh.
 
 ## Build and inspect
 
-Use `upgrade/node26.11-mobile-lite` for this preview. The Node 24 `recipe`
+Use `recipe-v26` for this preview; upgrade PR #8 is merged. The Node 24 `recipe`
 line and maintained Node 26.10 release assets remain independent.
 
 ```sh
-git clone -b upgrade/node26.11-mobile-lite https://github.com/fogtape/nodejs-mobile.git
+git clone -b recipe-v26 https://github.com/fogtape/nodejs-mobile.git
 cd nodejs-mobile
 scripts/prepare.sh
 ```
@@ -126,7 +127,7 @@ that every runnable parallel/sequential test appears exactly once.
 
 The runner logs do not prove an out-of-memory cause. These changes reduce
 session length and resource contention and provide evidence for a future
-failure. A complete device-suite rerun is still required before merge.
+failure. The corrected complete device-suite rerun is recorded below.
 Final artifact size measurements are separate from the ICU data measurement.
 
 The [refreshed Build run 37473151347](https://github.com/fogtape/nodejs-mobile/actions/runs/37473151347)
@@ -146,14 +147,29 @@ The log action now retries once after 15 seconds, using a distinct retry name
 to avoid a partial-upload collision. If both attempts fail, it emits a warning
 and a job-summary note; the live test log and preceding summary remain
 available. Only diagnostic log uploads are best effort: test execution and
-binary-artifact uploads remain required. These corrections require another
-complete device-suite run.
+binary-artifact uploads remain required.
+
+The corrected [Build run 37549215230](https://github.com/fogtape/nodejs-mobile/actions/runs/37549215230)
+passed all ten platform/flavor builds, boot and curated checks, all 16 Android
+shards (4,125 passed) and all four iOS shards (4,057 passed). Every shard
+uploaded its diagnostic log; no tests failed, hung or crashed. Both final
+gates and the four-package preview completed successfully.
+
+## Publish an explicitly requested snapshot
+
+Use Cut release on `recipe-v26` with version `26.11.0-0` and
+`upstream_snapshot=49072a0be4c7410982557aebf5b5c924fe7db597`. Review and merge
+its PR, then run Build with `operation=prerelease`, the same mobile version
+and the same explicit SHA. Both stages verify the official commit's version;
+publication also requires the reviewed SHA marker and all device gates from
+the publication run. The release title/body identify the unreleased upstream
+proposal, and the source tag records the SHA. See [RELEASING.md](RELEASING.md).
 
 ## Move to the official release
 
 After upstream publishes `v26.11.0`, compare its commit against this pin,
 review any additional changes, update `upstream-base.txt` to the official tag,
 regenerate the recipe and checksum, and rerun the platform/device gates.
-The SHA baseline is deliberately rejected by Cut release and manual
-prerelease publication. This upgrade does not include a release-ready marker.
-Follow [RELEASING.md](RELEASING.md) after the official-tag upgrade is reviewed.
+Default Cut release and publication still reject SHA baselines. After the
+official-tag upgrade is reviewed, use the next unused mobile revision and
+follow [RELEASING.md](RELEASING.md); keep any published snapshot immutable.

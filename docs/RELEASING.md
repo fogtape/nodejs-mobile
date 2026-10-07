@@ -23,6 +23,7 @@ Run **Cut release** (the workflow-definition branch may be `recipe` or
 | `version` | `26.10.0-0` | Exact mobile version. `26.10.0` or `auto` selects the next unused revision for the line's pinned upstream. |
 | `operation` | `plan` | Validate and show the plan without changing source or creating a PR. |
 | `operation` | `prepare-pr` | Prepare the version header, CHANGELOG, release marker, verified source hash, and open a review PR. |
+| `upstream_snapshot` | Full 40-character SHA, or empty | Explicit opt-in for an unreleased proposal snapshot. Must match the SHA in `upstream-base.txt`; empty retains the official-tag requirement. |
 
 The selected upstream version must match `upstream-base.txt` on the target
 line. Merge an upstream upgrade into that line first; a version input cannot
@@ -47,6 +48,7 @@ Run **Build** on the maintained version-line branch with:
 | `operation` | `prerelease-dryrun` | Run the full prerelease gates and packaging without pushing a tag or creating a GitHub release. |
 | `operation` | `prerelease` | Run the same gates, then publish a GitHub prerelease. |
 | `version` | `26.10.0-0` | Required for either prerelease operation; must exactly match the reviewed header, upstream and release marker. |
+| `upstream_snapshot` | Same full SHA used by Cut release, or empty | Required again for snapshot prereleases; must match the reviewed `release-upstream-snapshot.txt` marker and the upstream pin. |
 
 A cheap preflight rejects version/branch/marker/tag/notes problems before
 starting compiler jobs. Publication requires both flavors on every platform,
@@ -59,6 +61,37 @@ source, packages this run's artifacts, and publishes `vX.Y.Z-R` as a GitHub
 **prerelease**, with `latest=false`. Titles show the Node major line and full
 mobile version, for example `Node.js 26 Current · nodejs-mobile v26.10.0-0（预发布）`.
 Existing release tags retain their names so download URLs remain valid.
+
+### Unreleased upstream proposal snapshots
+
+An explicitly requested upstream snapshot follows the same release PR,
+maintained-branch, version, unused-tag and full device-test gates. Both
+manual workflows require `upstream_snapshot` with the exact full SHA pinned
+in `upstream-base.txt`. The controller reads `src/node_version.h` at that
+commit from official `nodejs/node` to verify the requested version. Cut
+release records the SHA in `release-upstream-snapshot.txt`; publication
+rejects a missing or different reviewed marker. Ordinary builds and the
+default release inputs cannot publish a SHA baseline.
+
+Snapshot release titles explicitly say **上游 PR 快照预发布**. The body warns
+that the build uses an unreleased upstream proposal, links the immutable
+commit, and explains that the final upstream release may differ. The source
+commit and annotated release tag record `Upstream-Snapshot` provenance.
+No official Node.js tag is fabricated. After the official tag is reviewed,
+publish the next unused mobile revision rather than replacing the snapshot.
+
+For the reviewed Node 26.11 proposal:
+
+```sh
+gh workflow run cut-release.yml --ref recipe-v26 \
+  -f release_line=recipe-v26 -f version=26.11.0-0 -f operation=prepare-pr \
+  -f upstream_snapshot=49072a0be4c7410982557aebf5b5c924fe7db597
+
+# After the release PR is reviewed and merged:
+gh workflow run build.yml --ref recipe-v26 \
+  -f operation=prerelease -f version=26.11.0-0 \
+  -f upstream_snapshot=49072a0be4c7410982557aebf5b5c924fe7db597
+```
 
 ```sh
 # Plan only. Cut release loads the selected recipe-v26 source.
