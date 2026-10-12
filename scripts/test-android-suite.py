@@ -68,6 +68,26 @@ class AndroidSuite(unittest.TestCase):
                     expected = set(names[:2]) if suite == 'sequential' and platform != 'linux' else set()
                     self.assertEqual(skipped, expected)
 
+    def test_native_wasm_flag_exclusion_keeps_other_regressions_runnable(self):
+        sys.path.insert(0, str(SOURCE / 'tools'))
+        self.addCleanup(sys.path.remove, str(SOURCE / 'tools'))
+        runner = load_module('mobile_buffer_status_runner', SOURCE / 'tools/test.py')
+        sections, defs = [], {}
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ResourceWarning)
+            runner.ReadConfigurationInto(str(SOURCE / 'test/parallel/parallel.status'), sections, defs)
+        config = runner.Configuration(sections, defs)
+        names = ['test-internal-webidl-buffer-source', 'test-intl', 'test-sqlite-backup',
+                 'test-fs-rmSync-special-char-additional-error']
+        for platform in ('android', 'ios', 'linux'):
+            with self.subTest(platform=platform):
+                cases = [SimpleNamespace(path=['parallel', name]) for name in names]
+                env = dict(system=platform, arch='x64', mode='release', type='simple',
+                           asan='off', pointer_compression='false')
+                classified, _ = config.ClassifyTests(cases, env)
+                skipped = {case.path[-1] for case in classified if runner.SKIP in case.outcomes}
+                self.assertEqual(skipped, {names[0]} if platform == 'ios' else set())
+
     def test_real_test_selector_covers_every_runnable_case_once(self):
         # Use upstream's actual classification and --run selector, replacing
         # only device execution. This detects missing/duplicate coverage when

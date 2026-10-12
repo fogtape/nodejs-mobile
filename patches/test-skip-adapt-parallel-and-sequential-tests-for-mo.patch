@@ -31,12 +31,14 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-readdir-ucs2.js         |    2 +-
  test/parallel/test-fs-realpath-native.js      |    7 +
  test/parallel/test-fs-realpath.js             |    8 +-
+ ...fs-rmSync-special-char-additional-error.js |    3 +-
  test/parallel/test-fs-rmdir-recursive.js      |    6 +
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
  test/parallel/test-fs-watchfile.js            |    4 +-
  .../parallel/test-http-response-setheaders.js |    6 +
  .../test-http2-respond-file-error-dir.js      |    7 +
+ test/parallel/test-intl.js                    |    4 +-
  test/parallel/test-net-connect-options-fd.js  |    2 +-
  test/parallel/test-os.js                      |   25 +-
  test/parallel/test-parse-args.mjs             |    2 +
@@ -48,14 +50,15 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-repl-options.js            |    6 +-
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
+ test/parallel/test-sqlite-backup.mjs          |    6 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
  test/sequential/sequential.status             |  132 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 36 files changed, 1825 insertions(+), 47 deletions(-)
+ 39 files changed, 1834 insertions(+), 51 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..a637f109ef 100644
+index d13efc8ac1..fccf6d71a2 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
@@ -1145,6 +1148,7 @@ index d13efc8ac1..a637f109ef 100644
 +# jitless configuration on the host instead (host-smoke workflow).
 +#
 +test-fetch-disabled: SKIP
++test-internal-webidl-buffer-source: SKIP
 +test-vm-codegen: SKIP
 +test-wasm: SKIP
 +test-wasm-simple: SKIP
@@ -1456,7 +1460,6 @@ index d13efc8ac1..a637f109ef 100644
 +test-http-server-drop-connections-in-cluster: SKIP
 +test-http2-respond-file-with-pipe: SKIP
 +test-http2-respond-with-file-connection-abort: SKIP
-+test-intl: SKIP
 +test-is-internal-thread: SKIP
 +test-macos-app-sandbox: SKIP
 +test-module-loading-error: SKIP
@@ -1814,6 +1817,20 @@ index 6ad074397e..c27aee2759 100644
    try { fs.unlinkSync(link); } catch {
      // Continue regardless of error.
    }
+diff --git a/test/parallel/test-fs-rmSync-special-char-additional-error.js b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+index 9b4de3c84d..7b2ebf1290 100644
+--- a/test/parallel/test-fs-rmSync-special-char-additional-error.js
++++ b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+@@ -43,7 +43,8 @@ try {
+   }, (err) => {
+     // Verify that the error is due to permission restrictions
+     let expectedCode = 'EACCES';
+-    if (common.isMacOS) {
++    // nodejs-mobile patch: both device suites return ENOTEMPTY for this case.
++    if (common.isMacOS || common.isAndroid || common.isIOS) {
+       expectedCode = 'ENOTEMPTY';
+     } else if (common.isWindows) {
+       expectedCode = 'EPERM';
 diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
 index 77c205794b..4c52904b43 100644
 --- a/test/parallel/test-fs-rmdir-recursive.js
@@ -1956,6 +1973,28 @@ index e5d0cfe880..ff428d3db2 100644
  
  const server = http2.createServer();
  server.on('stream', (stream) => {
+diff --git a/test/parallel/test-intl.js b/test/parallel/test-intl.js
+index 7d1742f2c7..28df1d924a 100644
+--- a/test/parallel/test-intl.js
++++ b/test/parallel/test-intl.js
+@@ -140,7 +140,7 @@ if (!common.hasIntl) {
+   // `ffi` ligature (contraction)
+   assert.strictEqual(coll.compare('\ufb03', 'ffi'), 0);
+ 
+-  {
++  if (!common.isAndroid && !common.isIOS) { // nodejs-mobile patch: child Node is unavailable.
+     // Regression test for https://github.com/nodejs/node/issues/27379
+     const env = { ...process.env, LC_ALL: 'ja' };
+     execFile(
+@@ -150,7 +150,7 @@ if (!common.hasIntl) {
+     );
+   }
+ 
+-  {
++  if (!common.isAndroid && !common.isIOS) { // nodejs-mobile patch: child Node is unavailable.
+     // Regression test for https://github.com/nodejs/node/issues/27418
+     const env = { ...process.env, LC_ALL: 'fr@EURO' };
+     execFile(
 diff --git a/test/parallel/test-net-connect-options-fd.js b/test/parallel/test-net-connect-options-fd.js
 index bd761cf072..c913299ef7 100644
 --- a/test/parallel/test-net-connect-options-fd.js
@@ -2215,6 +2254,29 @@ index b84d2063a2..4411854e0b 100644
    }
  }, 1);
  
+diff --git a/test/parallel/test-sqlite-backup.mjs b/test/parallel/test-sqlite-backup.mjs
+index ee5f54fd90..cad9dc5e90 100644
+--- a/test/parallel/test-sqlite-backup.mjs
++++ b/test/parallel/test-sqlite-backup.mjs
+@@ -1,5 +1,7 @@
+ // Flags: --expose-gc
+ import {
++  isAndroid,
++  isIOS,
+   isWindows,
+   skipIfSQLiteMissing,
+   spawnPromisified,
+@@ -380,7 +382,9 @@ test('source database is kept alive while a backup is in flight', async (t) => {
+   t.assert.strictEqual(rows.n, 500);
+ });
+ 
+-test('backup promise settles when the backup is the last active request', async (t) => {
++test('backup promise settles when the backup is the last active request', {
++  skip: isAndroid || isIOS, // nodejs-mobile patch: requires a separate Node process.
++}, async (t) => {
+   const { code, signal, stderr } = await spawnPromisified(process.execPath, [
+     fixtures.path('sqlite', 'backup-last-request.mjs'),
+     nextDb(),
 diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
 index e1595350cd..f5d84f7480 100644
 --- a/test/parallel/test-watch-mode-files_watcher.mjs

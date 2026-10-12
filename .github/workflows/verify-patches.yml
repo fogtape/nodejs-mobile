@@ -108,6 +108,9 @@ jobs:
       - name: Check Android full-suite coverage and failure propagation
         run: python3 scripts/test-android-suite.py out
 
+      - name: Check Intl assertions stay runnable without mobile subprocesses
+        run: python3 scripts/test-device-compat.py out
+
       # The curated device-test list is the functional gate; validate it against
       # the materialized tree so an upstream bump can't silently shrink it.
       # tools/test.py ignores a path that matches nothing, so a deleted or

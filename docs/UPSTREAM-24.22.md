@@ -76,6 +76,45 @@ full/lite), with assertions for the ICU API, WebAssembly, feature omissions
 and Android-only 64-bit lite pointer compression. This configure-only check
 uses Termux Clang and does not substitute for an NDK cross-compile.
 
+## First complete device sweep and corrections
+
+[Build run 38280763394](https://github.com/fogtape/nodejs-mobile/actions/runs/38280763394)
+passed all ten platform/flavor builds, host checks, full/lite boot smokes and
+Android full/lite plus iOS full curated tests. The full suites finished with
+three failing Android tests and two failing iOS tests, representing four
+unique cases. Every failing shard completed; there were no hung, crashed or
+missing-verdict tests in those shard summaries.
+
+- Android `test-intl` spawned `process.execPath`, which is `app_process64`
+  in the embedder, and the child aborted with dalvik-cache permission errors.
+  Both mobile platforms now skip only its two child startup probes. All
+  in-process assertions remain; iOS's previous whole-test exclusion is removed.
+- Android `test-sqlite-backup` gained a child-process subtest upstream. Only
+  that subtest is skipped on both mobile platforms; the other backup and
+  source-lifetime/GC regressions still run. The iOS simulator happened to allow
+  the spawn, but an iOS app cannot rely on it.
+- Both platforms' `test-fs-rmSync-special-char-additional-error` returned
+  `ENOTEMPTY` rather than `EACCES` when removing a read-only directory. The
+  mobile branch now expects the observed error while retaining every path,
+  syscall, message and cleanup assertion. The unmodified failure and corrected
+  pass were reproduced on Termux's Android filesystem too.
+- iOS `test-internal-webidl-buffer-source` failed before executing JS because
+  `--experimental-wasm-rab-integration` is compiled out of its jitless V8.
+  It is now listed in the existing iOS native-WebAssembly exclusion section;
+  Android and desktop still run it.
+
+Intl, SQLite backup and the filesystem error test also enter the curated gate,
+which now contains 239 cases. An Intl execution regression verifies that both
+mobile branches retain all 19 in-process assertions and launch no child Node,
+while the desktop branch retains both locale-startup probes. The real status
+parser verifies only the iOS WASM case is excluded and the other three tests
+remain runnable on every platform. No runtime/build/ICU input changed, so
+compiled-library cache keys remain identical to the completed build.
+
+The corrected source tree is
+`3264ab4c31529014c7b4c5de198fdada43978027`. The next complete CI run verifies
+these corrections on devices before the preview packages can be produced.
+
 ## Move to the official release
 
 After upstream publishes `v24.22.0`, compare its commit with this baseline,

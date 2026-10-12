@@ -50,6 +50,7 @@
 - **Mobile compatibility:** use upstream's new `V8_ENABLE_WEBASSEMBLY` guard for JSPI and preserve the remaining platform patches.
 - **Tests/builds:** add 26 in-process upstream regressions to the curated gate, triage new child-process/permission cases, and build both iOS flavors on upgrade PRs. Reuse the bounded Android emulator shards already validated on the Node 26 line.
 - **Artifacts:** successful upgrade builds package Android/iOS full/lite previews with source metadata and `SHA256SUMS`. Ordinary builds do not publish a release.
+- **Device regressions:** preserve Intl and SQLite backup in-process coverage while skipping only unsupported child probes; use the observed mobile filesystem error and exclude a native WASM flag test only on iOS. These three runnable regressions also join the curated gate.
 
 This source upgrade does not arm publication.
 

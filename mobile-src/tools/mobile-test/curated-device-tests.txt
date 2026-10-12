@@ -93,6 +93,7 @@ parallel/test-fs-cp-sync-dest-name-prefix-match
 parallel/test-fs-cp-sync-mode-flags
 parallel/test-fs-cp-sync-preserve-timestamps
 parallel/test-fs-glob-no-follow-symlink-globstar
+parallel/test-fs-rmSync-special-char-additional-error
 parallel/test-http
 parallel/test-http-agent-keep-alive-timeout-buffer
 parallel/test-http-bind-twice
@@ -119,6 +120,7 @@ parallel/test-https-client-checkServerIdentity
 parallel/test-https-close
 parallel/test-https-host-headers
 parallel/test-https-unix-socket-self-signed
+parallel/test-intl
 parallel/test-mark-promise-handled
 parallel/test-mobile-credentials
 parallel/test-mobile-fetch
@@ -175,6 +177,7 @@ parallel/test-process-env-windows-error-reset
 parallel/test-process-initgroups
 parallel/test-querystring
 parallel/test-querystring-maxKeys-non-finite
+parallel/test-sqlite-backup
 parallel/test-sqlite-udf-close
 parallel/test-stream-add-abort-signal
 parallel/test-stream-construct
