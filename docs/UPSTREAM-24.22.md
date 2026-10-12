@@ -67,9 +67,14 @@ entries exist, patch ownership is consistent, the generated tree has no
 upstream workflows, and the test-edit audit passed.
 
 A fresh shallow fetch applied all 20 regenerated patches and reconstructed
-`e9f310feee517f58b882095a3cb8637d0a2d7858`; regeneration from that fresh tree
+`b1927713596da90cceebd71afada3a6af42764eb`; regeneration from that fresh tree
 preserved every patch and mobile source byte. Native cross-compilation and
 device execution are verified separately by CI.
+
+All six Android GYP graphs also generated successfully (arm/arm64/x64,
+full/lite), with assertions for the ICU API, WebAssembly, feature omissions
+and Android-only 64-bit lite pointer compression. This configure-only check
+uses Termux Clang and does not substitute for an NDK cross-compile.
 
 ## Move to the official release
 

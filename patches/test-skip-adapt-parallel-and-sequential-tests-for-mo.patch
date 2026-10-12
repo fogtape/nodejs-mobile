@@ -55,7 +55,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  36 files changed, 1825 insertions(+), 47 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..4300ea0f39 100644
+index d13efc8ac1..a637f109ef 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
@@ -100,47 +100,47 @@ index d13efc8ac1..4300ea0f39 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
-+test-debugger-restart-message: SKIP
-+test-debugger-repeat-last: SKIP
-+test-debugger-low-level: SKIP
-+test-debugger-exec: SKIP
-+test-debugger-backtrace: SKIP
-+test-crypto-provider-cache-snapshot: SKIP
-+test-common-wpt-script-modifier: SKIP
-+test-benchmark-compare: SKIP
 +test-assert-builtins-not-read-from-filesystem: SKIP
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
 +test-cluster-*: SKIP
-+test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
++test-common: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
 +test-debugger-address: SKIP
 +test-debugger-auto-resume: SKIP
++test-debugger-backtrace: SKIP
 +test-debugger-break: SKIP
 +test-debugger-breakpoint-exists: SKIP
 +test-debugger-clear-breakpoints: SKIP
 +test-debugger-exceptions: SKIP
 +test-debugger-exec-scope: SKIP
++test-debugger-exec: SKIP
 +test-debugger-extract-function-name: SKIP
 +test-debugger-heap-profiler: SKIP
 +test-debugger-help: SKIP
 +test-debugger-invalid-json: SKIP
 +test-debugger-list: SKIP
++test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
-+test-debugger-profile: SKIP
 +test-debugger-profile-command: SKIP
-+test-debugger-random-port: SKIP
++test-debugger-profile: SKIP
 +test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-random-port: SKIP
++test-debugger-repeat-last: SKIP
++test-debugger-restart-message: SKIP
 +test-debugger-run-after-quit-restart: SKIP
 +test-debugger-sb-before-load: SKIP
 +test-debugger-scripts: SKIP
@@ -202,8 +202,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-internal-util-decorate-error-stack: SKIP
 +test-kill-segfault-freebsd: SKIP
 +test-listen-fd-cluster: SKIP
-+test-listen-fd-detached: SKIP
 +test-listen-fd-detached-inherit: SKIP
++test-listen-fd-detached: SKIP
 +test-listen-fd-server: SKIP
 +test-loaders-unknown-builtin-module: SKIP
 +test-macos-signed-deps: SKIP
@@ -237,31 +237,31 @@ index d13efc8ac1..4300ea0f39 100644
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
 +test-policy-dependencies: SKIP
-+test-policy-integrity: SKIP
 +test-policy-integrity-flag: SKIP
++test-policy-integrity: SKIP
 +test-policy-manifest: SKIP
 +test-policy-parse-integrity: SKIP
 +test-policy-process-binding: SKIP
 +test-policy-scopes: SKIP
-+test-preload: SKIP
 +test-preload-print-process-argv: SKIP
 +test-preload-self-referential: SKIP
 +test-preload-worker: SKIP
++test-preload: SKIP
 +test-process-argv-0: SKIP
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
 +test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
-+test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
++test-process-external-stdio-close: SKIP
 +test-process-getgroups: SKIP
 +test-process-kill-null: SKIP
 +test-process-ppid: SKIP
 +test-process-raw-debug: SKIP
 +test-process-really-exit: SKIP
-+test-process-redirect-warnings: SKIP
 +test-process-redirect-warnings-env: SKIP
++test-process-redirect-warnings: SKIP
 +test-process-remove-all-signal-listeners: SKIP
 +test-process-title: SKIP
 +test-process-uncaught-exception-monitor: SKIP
@@ -281,8 +281,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-repl-require-context: SKIP
 +test-repl-require-self-referential: SKIP
 +test-repl-setprompt: SKIP
-+test-repl-sigint: SKIP
 +test-repl-sigint-nested-eval: SKIP
++test-repl-sigint: SKIP
 +test-repl-strict-mode-previews: SKIP
 +test-repl-syntax-error-handling: SKIP
 +test-repl-tab-complete-nested-repls: SKIP
@@ -318,10 +318,10 @@ index d13efc8ac1..4300ea0f39 100644
 +test-snapshot-basic: SKIP
 +test-snapshot-cjs-main: SKIP
 +test-snapshot-console: SKIP
-+test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-lookup-localhost-promise: SKIP
-+test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
 +test-snapshot-error: SKIP
 +test-snapshot-eval: SKIP
 +test-snapshot-gzip: SKIP
@@ -332,16 +332,16 @@ index d13efc8ac1..4300ea0f39 100644
 +test-snapshot-warning: SKIP
 +test-snapshot-weak-reference: SKIP
 +test-source-map-enable: SKIP
-+test-startup-large-pages: SKIP
-+test-startup-empty-regexp-statics: SKIP
 +test-stack-size-limit: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-startup-large-pages: SKIP
 +test-stdin-child-proc: SKIP
 +test-stdin-from-file: SKIP
 +test-stdin-pipe-large: SKIP
 +test-stdin-pipe-resume: SKIP
 +test-stdin-resume-pause: SKIP
-+test-stdin-script-child: SKIP
 +test-stdin-script-child-option: SKIP
++test-stdin-script-child: SKIP
 +test-stdio-closed: SKIP
 +test-stdio-pipe-redirect: SKIP
 +test-stdio-pipe-stderr: SKIP
@@ -365,12 +365,12 @@ index d13efc8ac1..4300ea0f39 100644
 +test-tls-cipher-list: SKIP
 +test-tls-cli-min-max-conflict: SKIP
 +test-tls-enable-keylog-cli: SKIP
-+test-tls-enable-trace: SKIP
 +test-tls-enable-trace-cli: SKIP
++test-tls-enable-trace: SKIP
 +test-tls-env-bad-extra-ca: SKIP
-+test-tls-env-extra-ca: SKIP
 +test-tls-env-extra-ca-file-load: SKIP
 +test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-env-extra-ca: SKIP
 +test-tls-handshake-exception: SKIP
 +test-tls-ticket-cluster: SKIP
 +test-tls-wrap-econnreset-pipe: SKIP
@@ -382,8 +382,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-trace-events-console: SKIP
 +test-trace-events-environment: SKIP
 +test-trace-events-file-pattern: SKIP
-+test-trace-events-fs-sync: SKIP
 +test-trace-events-fs-async: SKIP
++test-trace-events-fs-sync: SKIP
 +test-trace-events-http: SKIP
 +test-trace-events-metadata: SKIP
 +test-trace-events-net: SKIP
@@ -394,8 +394,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-trace-events-threadpool: SKIP
 +test-trace-events-v8: SKIP
 +test-trace-events-vm: SKIP
-+test-trace-events-worker-metadata: SKIP
 +test-trace-events-worker-metadata-with-name: SKIP
++test-trace-events-worker-metadata: SKIP
 +test-trace-exit: SKIP
 +test-tracing-no-crash: SKIP
 +test-unhandled-exception-rethrow-error: SKIP
@@ -405,13 +405,13 @@ index d13efc8ac1..4300ea0f39 100644
 +test-util-getcallsites-sourcemap: SKIP
 +test-v8-coverage: SKIP
 +test-v8-stop-coverage: SKIP
-+test-v8-take-coverage: SKIP
 +test-v8-take-coverage-noop: SKIP
++test-v8-take-coverage: SKIP
 +test-v8-untrusted-code-mitigations: SKIP
 +test-vm-api-handles-getter-errors: SKIP
 +test-vm-cached-data: SKIP
-+test-vm-sigint: SKIP
 +test-vm-sigint-existing-handler: SKIP
++test-vm-sigint: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
 +test-worker-init-failure: SKIP
@@ -770,23 +770,23 @@ index d13efc8ac1..4300ea0f39 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
-+test-crypto-provider-cache-snapshot: SKIP
-+test-common-wpt-script-modifier: SKIP
-+test-benchmark-compare: SKIP
 +test-assert-builtins-not-read-from-filesystem: SKIP
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
 +test-cluster-*: SKIP
-+test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
++test-common: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -797,8 +797,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-debugger-breakpoint-exists: SKIP
 +test-debugger-clear-breakpoints: SKIP
 +test-debugger-exceptions: SKIP
-+test-debugger-exec: SKIP
 +test-debugger-exec-scope: SKIP
++test-debugger-exec: SKIP
 +test-debugger-extract-function-name: SKIP
 +test-debugger-heap-profiler: SKIP
 +test-debugger-help: SKIP
@@ -807,15 +807,15 @@ index d13efc8ac1..4300ea0f39 100644
 +test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-preserve-breaks: SKIP
-+test-debugger-probe-cond: SKIP
 +test-debugger-probe-cond-invalid: SKIP
 +test-debugger-probe-cond-max-hit: SKIP
 +test-debugger-probe-cond-shared: SKIP
 +test-debugger-probe-cond-throws: SKIP
-+test-debugger-profile: SKIP
++test-debugger-probe-cond: SKIP
 +test-debugger-profile-command: SKIP
-+test-debugger-random-port: SKIP
++test-debugger-profile: SKIP
 +test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-random-port: SKIP
 +test-debugger-repeat-last: SKIP
 +test-debugger-restart-message: SKIP
 +test-debugger-run-after-quit-restart: SKIP
@@ -849,8 +849,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-fs-syncwritestream: SKIP
 +test-fs-write-sigxfsz: SKIP
 +test-fs-write-stream-patch-open: SKIP
-+test-handle-wrap-isrefed: SKIP
 +test-handle-wrap-hasref: SKIP
++test-handle-wrap-isrefed: SKIP
 +test-heap-prof-basic: SKIP
 +test-heap-prof-dir-absolute: SKIP
 +test-heap-prof-dir-name: SKIP
@@ -881,8 +881,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-internal-util-decorate-error-stack: SKIP
 +test-kill-segfault-freebsd: SKIP
 +test-listen-fd-cluster: SKIP
-+test-listen-fd-detached: SKIP
 +test-listen-fd-detached-inherit: SKIP
++test-listen-fd-detached: SKIP
 +test-listen-fd-server: SKIP
 +test-macos-signed-deps: SKIP
 +test-math-random: SKIP
@@ -915,31 +915,31 @@ index d13efc8ac1..4300ea0f39 100644
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
 +test-policy-dependencies: SKIP
-+test-policy-integrity: SKIP
 +test-policy-integrity-flag: SKIP
++test-policy-integrity: SKIP
 +test-policy-manifest: SKIP
 +test-policy-parse-integrity: SKIP
 +test-policy-process-binding: SKIP
 +test-policy-scopes: SKIP
-+test-preload: SKIP
 +test-preload-print-process-argv: SKIP
 +test-preload-self-referential: SKIP
 +test-preload-worker: SKIP
++test-preload: SKIP
 +test-process-argv-0: SKIP
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
 +test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
-+test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
++test-process-external-stdio-close: SKIP
 +test-process-getgroups: SKIP
 +test-process-kill-null: SKIP
 +test-process-ppid: SKIP
 +test-process-raw-debug: SKIP
 +test-process-really-exit: SKIP
-+test-process-redirect-warnings: SKIP
 +test-process-redirect-warnings-env: SKIP
++test-process-redirect-warnings: SKIP
 +test-process-remove-all-signal-listeners: SKIP
 +test-process-title: SKIP
 +test-process-uncaught-exception-monitor: SKIP
@@ -959,8 +959,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-repl-require-context: SKIP
 +test-repl-require-self-referential: SKIP
 +test-repl-setprompt: SKIP
-+test-repl-sigint: SKIP
 +test-repl-sigint-nested-eval: SKIP
++test-repl-sigint: SKIP
 +test-repl-strict-mode-previews: SKIP
 +test-repl-syntax-error-handling: SKIP
 +test-repl-tab-complete-nested-repls: SKIP
@@ -993,10 +993,10 @@ index d13efc8ac1..4300ea0f39 100644
 +test-snapshot-basic: SKIP
 +test-snapshot-cjs-main: SKIP
 +test-snapshot-console: SKIP
-+test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-lookup-localhost-promise: SKIP
-+test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
 +test-snapshot-error: SKIP
 +test-snapshot-eval: SKIP
 +test-snapshot-gzip: SKIP
@@ -1007,16 +1007,16 @@ index d13efc8ac1..4300ea0f39 100644
 +test-snapshot-warning: SKIP
 +test-snapshot-weak-reference: SKIP
 +test-source-map-enable: SKIP
-+test-startup-large-pages: SKIP
-+test-startup-empty-regexp-statics: SKIP
 +test-stack-size-limit: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-startup-large-pages: SKIP
 +test-stdin-child-proc: SKIP
 +test-stdin-from-file: SKIP
 +test-stdin-pipe-large: SKIP
 +test-stdin-pipe-resume: SKIP
 +test-stdin-resume-pause: SKIP
-+test-stdin-script-child: SKIP
 +test-stdin-script-child-option: SKIP
++test-stdin-script-child: SKIP
 +test-stdio-closed: SKIP
 +test-stdio-pipe-redirect: SKIP
 +test-stdio-pipe-stderr: SKIP
@@ -1040,12 +1040,12 @@ index d13efc8ac1..4300ea0f39 100644
 +test-tls-cipher-list: SKIP
 +test-tls-cli-min-max-conflict: SKIP
 +test-tls-enable-keylog-cli: SKIP
-+test-tls-enable-trace: SKIP
 +test-tls-enable-trace-cli: SKIP
++test-tls-enable-trace: SKIP
 +test-tls-env-bad-extra-ca: SKIP
-+test-tls-env-extra-ca: SKIP
 +test-tls-env-extra-ca-file-load: SKIP
 +test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-env-extra-ca: SKIP
 +test-tls-handshake-exception: SKIP
 +test-tls-ticket-cluster: SKIP
 +test-tls-wrap-econnreset-pipe: SKIP
@@ -1057,8 +1057,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-trace-events-console: SKIP
 +test-trace-events-environment: SKIP
 +test-trace-events-file-pattern: SKIP
-+test-trace-events-fs-sync: SKIP
 +test-trace-events-fs-async: SKIP
++test-trace-events-fs-sync: SKIP
 +test-trace-events-http: SKIP
 +test-trace-events-metadata: SKIP
 +test-trace-events-net: SKIP
@@ -1069,8 +1069,8 @@ index d13efc8ac1..4300ea0f39 100644
 +test-trace-events-threadpool: SKIP
 +test-trace-events-v8: SKIP
 +test-trace-events-vm: SKIP
-+test-trace-events-worker-metadata: SKIP
 +test-trace-events-worker-metadata-with-name: SKIP
++test-trace-events-worker-metadata: SKIP
 +test-trace-exit: SKIP
 +test-tracing-no-crash: SKIP
 +test-unhandled-exception-rethrow-error: SKIP
@@ -1079,13 +1079,13 @@ index d13efc8ac1..4300ea0f39 100644
 +test-util-callbackify: SKIP
 +test-v8-coverage: SKIP
 +test-v8-stop-coverage: SKIP
-+test-v8-take-coverage: SKIP
 +test-v8-take-coverage-noop: SKIP
++test-v8-take-coverage: SKIP
 +test-v8-untrusted-code-mitigations: SKIP
 +test-vm-api-handles-getter-errors: SKIP
 +test-vm-cached-data: SKIP
-+test-vm-sigint: SKIP
 +test-vm-sigint-existing-handler: SKIP
++test-vm-sigint: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
 +test-worker-init-failure: SKIP
@@ -2235,7 +2235,7 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 6b5714500b..934887a42d 100644
+index 6b5714500b..9041485ad6 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -43,6 +43,138 @@ test-perf-hooks: SKIP
@@ -2246,8 +2246,6 @@ index 6b5714500b..934887a42d 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
-+test-watch-mode-inspect: SKIP
-+test-watch-mode: SKIP
 +test-child-process-*: SKIP
 +test-cli-syntax-*: SKIP
 +test-cluster-*: SKIP
@@ -2270,6 +2268,8 @@ index 6b5714500b..934887a42d 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++test-watch-mode-inspect: SKIP
++test-watch-mode: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build
@@ -2305,7 +2305,6 @@ index 6b5714500b..934887a42d 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
-+test-watch-mode-inspect: SKIP
 +test-child-process-*: SKIP
 +test-cli-syntax-*: SKIP
 +test-cluster-*: SKIP
@@ -2328,6 +2327,7 @@ index 6b5714500b..934887a42d 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++test-watch-mode-inspect: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build
