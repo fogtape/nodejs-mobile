@@ -33,7 +33,7 @@ runs:
         set -euo pipefail
         UP="$RUNNER_TEMP/upstream-$BASE_TAG"
         if [ ! -d "$UP/.git" ]; then
-          git clone --depth 1 --branch "$BASE_TAG" https://github.com/nodejs/node.git "$UP"
+          scripts/clone-upstream.sh https://github.com/nodejs/node.git "$BASE_TAG" "$UP"
         fi
         # file:// so git treats the shallow cache as a proper transport.
         UPSTREAM_REPO="file://$UP" scripts/prepare.sh "$RUNNER_TEMP/matsrc"

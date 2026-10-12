@@ -159,6 +159,18 @@ This source upgrade does not arm publication.
         self.assertEqual(self.plan('24.21.0-1', 'recipe')['version'], '24.21.0-1')
         self.assertEqual(self.check(ref='refs/heads/recipe', version='24.21.0-1')['release'], 'true')
 
+    def test_snapshot_builds_work_but_release_preparation_requires_an_official_tag(self):
+        self.fixture('24.22.0-0')
+        (self.root / 'upstream-base.txt').write_text('a' * 40 + '\n')
+        self.assertEqual(self.check(operation='build', version='', ref='refs/heads/recipe')['release'],
+                         'false')
+        self.assertEqual(self.check(event='pull_request')['release'], 'false')
+        with self.assertRaisesRegex(CONTROL.ReleaseError, 'unreleased upstream PR commit'):
+            self.plan('24.22.0-0', 'recipe')
+        self.arm('24.22.0-0')
+        with self.assertRaisesRegex(CONTROL.ReleaseError, 'unreleased upstream PR commit'):
+            self.check(ref='refs/heads/recipe', version='24.22.0-0')
+
     def test_only_404_means_missing_ref(self):
         responses = [
             (subprocess.CompletedProcess([], 0, '{}', ''), True),

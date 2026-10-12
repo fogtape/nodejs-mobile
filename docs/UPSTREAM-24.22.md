@@ -1,0 +1,80 @@
+# Node 24.22 LTS upstream PR preview
+
+This recipe previews the official Node.js release proposal
+[#66667](https://github.com/nodejs/node/pull/66667), titled
+`2026-10-14, Version 24.22.0 'Krypton' (LTS)`. On 2026-10-13 it is still a
+draft PR, with no official `v24.22.0` tag.
+
+The reviewed baseline is pinned in `upstream-base.txt`:
+`a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`.
+The upstream header identifies Node 24.22.0 and the mobile header identifies
+24.22.0-0. Those version strings identify the proposed source; they do not
+mean that the upstream release has been published. The immutable commit and
+`expected-tree.txt` identify the build if the proposal branch changes.
+
+## Lite configuration
+
+The upgrade retains the latest [danmu runtime contract](DANMU-LITE.md),
+introduced on this line by PR #6. Both flavors use the full ICU API.
+Lite uses the reviewed `danmu-lite.json` data profile with all Node web
+encoding converters, selected English/Chinese/Cantonese/Japanese/Korean
+locale families, Unicode normalization/IDNA, time zones and segmentation.
+The profile and ICU source data are unchanged by this upstream upgrade.
+
+Lite still omits Amaro, Inspector, SQLite/Web Storage, SEA and native V8
+object-print helpers. Android keeps JIT/native WebAssembly and pointer
+compression on 64-bit targets. Its SDK copy is stripped only after confirming
+the dynamic exports remain identical. iOS keeps jitless V8 and polywasm,
+without pointer compression. Node 26 feature choices and toolchains are
+maintained separately.
+
+## Compatibility and build gates
+
+Upstream now defines `V8_ENABLE_WEBASSEMBLY` for Node targets and guards the
+JSPI flag itself. The equivalent mobile-only guard is retired. Existing
+mobile patches are rebased onto the proposal, and two new upstream workflow
+files are removed from the generated product tree.
+
+Twenty-six new in-process crypto, histogram, filesystem, HTTP/TLS, utility,
+SQLite and compression regressions enter the curated gate. The new
+benchmark, WPT-helper and provider-snapshot tests launch a separate Node
+process and are skipped on both mobile platforms. The new permission test
+cannot write the harness verdict and is also skipped. The new glob test keeps
+its in-process assertions and guards only the separate permission-model
+child on mobile. These decisions follow the test code; the device suites
+must confirm them.
+
+Existing Android debugger CLI tests and sequential watch CLI tests use the
+same unsupported child-process path. Their exclusions carry forward the
+corrections already validated on the Node 26 line. The emulator suite also
+uses that line's 16 deterministic shards, four concurrent jobs, bounded
+Gradle/emulator memory settings and failure-preserving log wrapper. These
+changes preserve complete runnable-test coverage.
+
+The upgrade PR compiles all ten targets: Android arm/arm64/x86_64 and iOS
+arm64 device/simulator, each in full/lite. Boot smokes verify the danmu ICU
+contract. Curated and full device suites run on emulators/simulators.
+Successful builds produce four `*-24.22.0-0-preview.zip` packages with
+`BUILD-INFO.json` and `SHA256SUMS` in the Actions artifacts. This is a CI
+preview and does not create a release tag or GitHub release.
+
+Local verification passed 34 regression tests: immutable clones/cache/CI
+baseline checks (5), flavor/ICU/preview metadata (5), native symbol stripping
+(1), manual release controls (17), and Android shard coverage/failure
+propagation (6). The actual upstream test selector covered all 3,771 runnable
+Android cases exactly once in 16 shards of 235–236 tests. All 236 curated
+entries exist, patch ownership is consistent, the generated tree has no
+upstream workflows, and the test-edit audit passed.
+
+A fresh shallow fetch applied all 20 regenerated patches and reconstructed
+`e9f310feee517f58b882095a3cb8637d0a2d7858`; regeneration from that fresh tree
+preserved every patch and mobile source byte. Native cross-compilation and
+device execution are verified separately by CI.
+
+## Move to the official release
+
+After upstream publishes `v24.22.0`, compare its commit with this baseline,
+review any differences, update `upstream-base.txt`, regenerate the recipe and
+checksum, and rerun platform/device validation. Follow
+[RELEASING.md](RELEASING.md) for reviewed version selection and explicit
+publication. A source upgrade or ordinary build does not publish by itself.

@@ -16,11 +16,12 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1498 +++++++++++++++++
+ test/parallel/parallel.status                 | 1511 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
  test/parallel/test-fs-copyfile.js             |    3 +-
+ ...est-fs-glob-no-follow-symlink-globstar.mjs |    2 +-
  test/parallel/test-fs-lchmod.js               |    4 +-
  test/parallel/test-fs-mkdir.js                |    5 +-
  test/parallel/test-fs-open-flags.js           |    3 +-
@@ -48,16 +49,16 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
- test/sequential/sequential.status             |  129 ++
+ test/sequential/sequential.status             |  132 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1808 insertions(+), 46 deletions(-)
+ 36 files changed, 1825 insertions(+), 47 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..f52cc544b2 100644
+index d13efc8ac1..4300ea0f39 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1504 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -99,6 +100,14 @@ index d13efc8ac1..f52cc544b2 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
++test-debugger-restart-message: SKIP
++test-debugger-repeat-last: SKIP
++test-debugger-low-level: SKIP
++test-debugger-exec: SKIP
++test-debugger-backtrace: SKIP
++test-crypto-provider-cache-snapshot: SKIP
++test-common-wpt-script-modifier: SKIP
++test-benchmark-compare: SKIP
 +test-assert-builtins-not-read-from-filesystem: SKIP
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
@@ -681,6 +690,7 @@ index d13efc8ac1..f52cc544b2 100644
 +test-permission-fs-symlink-target-write: SKIP
 +test-permission-fs-traversal-path: SKIP
 +test-permission-fs-wildcard: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-write-report: SKIP
 +test-permission-inspector: SKIP
@@ -760,6 +770,9 @@ index d13efc8ac1..f52cc544b2 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
++test-crypto-provider-cache-snapshot: SKIP
++test-common-wpt-script-modifier: SKIP
++test-benchmark-compare: SKIP
 +test-assert-builtins-not-read-from-filesystem: SKIP
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
@@ -1257,6 +1270,7 @@ index d13efc8ac1..f52cc544b2 100644
 +test-permission-drop-fs-scope: SKIP
 +test-permission-drop-fs-write: SKIP
 +test-permission-drop-worker: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-windows-path: SKIP
 +#
@@ -1630,6 +1644,19 @@ index 51d7153de0..9b1395f99b 100644
    assert.strictEqual(err.path, src);
    assert.strictEqual(err.dest, dest);
  }
+diff --git a/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs b/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
+index b1b3cda8d0..958b2cb300 100644
+--- a/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
++++ b/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
+@@ -54,7 +54,7 @@ assert.deepStrictEqual(callbackMatches.sort(), expected);
+ 
+ // Under the permission model, `**/*` must not expose entries from a symlink
+ // target that is outside the granted read set.
+-if (common.hasCrypto) {
++if (common.hasCrypto && !common.isAndroid && !common.isIOS) { // nodejs-mobile patch
+   const child = `
+     const assert = require('node:assert');
+     const fs = require('node:fs');
 diff --git a/test/parallel/test-fs-lchmod.js b/test/parallel/test-fs-lchmod.js
 index d439710291..d048680b95 100644
 --- a/test/parallel/test-fs-lchmod.js
@@ -2067,7 +2094,7 @@ index a2df7d580d..eeb6c1de91 100644
 +
 +assert.deepStrictEqual(process.getActiveResourcesInfo(), expected);
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index b670ff37ac..68724daf7f 100644
+index 7f54beeea6..14f222d299 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
 @@ -2,8 +2,15 @@
@@ -2208,10 +2235,10 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 01a021130c..059f682010 100644
+index 6b5714500b..934887a42d 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -39,6 +39,135 @@ test-perf-hooks: SKIP
+@@ -43,6 +43,138 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  
@@ -2219,6 +2246,8 @@ index 01a021130c..059f682010 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
++test-watch-mode-inspect: SKIP
++test-watch-mode: SKIP
 +test-child-process-*: SKIP
 +test-cli-syntax-*: SKIP
 +test-cluster-*: SKIP
@@ -2276,6 +2305,7 @@ index 01a021130c..059f682010 100644
 +#
 +# Tests that require child process that currently is not supported on mobile
 +#
++test-watch-mode-inspect: SKIP
 +test-child-process-*: SKIP
 +test-cli-syntax-*: SKIP
 +test-cluster-*: SKIP
@@ -2348,7 +2378,7 @@ index 01a021130c..059f682010 100644
  # https://github.com/nodejs/node/issues/49933
  test-watch-mode-inspect: SKIP
 diff --git a/test/sequential/test-async-wrap-getasyncid.js b/test/sequential/test-async-wrap-getasyncid.js
-index 5db4a77631..dba092fd3f 100644
+index ef48f457a8..529cc62b12 100644
 --- a/test/sequential/test-async-wrap-getasyncid.js
 +++ b/test/sequential/test-async-wrap-getasyncid.js
 @@ -12,6 +12,8 @@ const providers = { ...internalBinding('async_wrap').Providers };
@@ -2373,7 +2403,7 @@ index 5db4a77631..dba092fd3f 100644
      const objKeys = Object.keys(providers);
      if (objKeys.length > 0)
        process._rawDebug(objKeys);
-@@ -196,7 +204,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -198,7 +206,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
    testInitialized(handle, 'Pipe');
  }
  
@@ -2383,7 +2413,7 @@ index 5db4a77631..dba092fd3f 100644
    tmpdir.refresh();
  
    const server = net.createServer(common.mustCall((socket) => {
-@@ -328,6 +337,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -330,6 +339,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
  // DIRHANDLE
  {
    const dirBinding = internalBinding('fs_dir');

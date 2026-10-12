@@ -23,8 +23,9 @@ unlink "$NODEJS_BASE_DIR/test/fixtures/wasi/subdir/loop2"
 unlink "$NODEJS_BASE_DIR/test/fixtures/wasi/subdir/outside.txt"
 set -e
 
-# Build the Android test app
-( cd "$TEST_APP_BASE_DIR" && ./gradlew assembleDebug )
+# Build once without retaining a Gradle JVM during the emulator test sweep.
+# The daemon can reserve 1.5 GB after APK assembly, alongside QEMU and the app.
+( cd "$TEST_APP_BASE_DIR" && ./gradlew --no-daemon --max-workers=2 assembleDebug )
 
 # Copy the Android proxy to the target directory.
 cp "$SCRIPT_BASE_DIR/node-android-proxy.sh" "$TEST_PROXY_TARGETDIR/node"
