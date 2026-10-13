@@ -43,14 +43,30 @@
 <a id="24.22.0-0"></a>
 ## Unreleased, Version 24.22.0-0 (Current)
 
-### Notable Changes
+This prerelease updates the mobile runtime from Node.js 24.21.0 to the
+Node.js 24.22.0 LTS release proposal [nodejs/node#66667](https://github.com/nodejs/node/pull/66667),
+pinned to `a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`. It is built from an
+upstream proposal snapshot; the final official Node.js release may differ.
 
-- **Engine:** preview Node.js 24.22.0 LTS release proposal [nodejs/node#66667](https://github.com/nodejs/node/pull/66667), pinned to `a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`. This is an upstream proposal snapshot, not an official Node.js release tag.
-- **Lite:** retain the reviewed danmu ICU data profile, feature omissions, Android 64-bit pointer compression and ABI-preserving SDK symbol stripping. Both flavors keep the full ICU API; iOS keeps jitless V8 and polywasm without pointer compression.
-- **Mobile compatibility:** use upstream's new `V8_ENABLE_WEBASSEMBLY` guard for JSPI and preserve the remaining platform patches.
-- **Tests/builds:** add 26 in-process upstream regressions to the curated gate, triage new child-process/permission cases, and build both iOS flavors on upgrade PRs. Reuse the bounded Android emulator shards already validated on the Node 26 line.
-- **Artifacts:** successful upgrade builds package Android/iOS full/lite previews with source metadata and `SHA256SUMS`. Ordinary builds do not publish a release.
-- **Device regressions:** preserve Intl and SQLite backup in-process coverage while skipping only unsupported child probes; use the observed mobile filesystem error and exclude a native WASM flag test only on iOS. These three runnable regressions also join the curated gate.
+### Runtime and flavor changes
+
+- **Full:** embed complete ICU data for locale formatting, collation and legacy text decoding. The previous 24.21.0-0 full release used small-ICU; complete ICU data accounts for most of the increased binary size.
+- **Lite:** retain the reviewed `danmu_api` ICU data profile. Both flavors keep the complete ICU API; lite preserves all Node TextDecoder web encodings (including GBK, GB2312 and Big5), English/Chinese/Cantonese/Japanese/Korean locale families, Unicode normalization, IDNA, time zones and segmentation. Other locale-specific formatting may fall back to a retained locale.
+- **Lite omissions:** omit Amaro TypeScript stripping, Inspector, SQLite/Web Storage, single-executable application support and native V8 object-print helpers. Keep HTTP/HTTPS/TLS, crypto, fetch/Undici, filesystem and module loading, streams, compression and WebAssembly support.
+- **Android:** retain JIT and native WebAssembly. Lite uses V8 pointer compression on 64-bit targets and strips its SDK libraries only after verifying that dynamic exports remain unchanged. Direct V8 native addons must match the selected flavor's ABI.
+- **iOS:** retain jitless V8 and the polywasm WebAssembly implementation, without pointer compression. Both packages include arm64 device and arm64 simulator slices.
+- **Mobile compatibility:** rebase the platform patches onto the proposed LTS source and adopt upstream's `V8_ENABLE_WEBASSEMBLY` guard.
+
+### Validation and downloads
+
+- Build Android arm64-v8a, armeabi-v7a and x86_64 libraries and iOS device/simulator frameworks in both full and lite flavors.
+- Require host checks, boot and native-addon smokes, full/lite ICU checks, curated device tests and complete runnable Android/iOS suites in the publication workflow. Runtime validation uses Android emulators and iOS simulators; this release does not claim physical-device validation.
+- Fix Android launch failures before Node starts and improve iOS smoke launch and verdict collection. Preserve in-process Intl and SQLite regression coverage while skipping unsupported mobile child-process probes.
+- Provide four SDK archives with headers: `nodejs-mobile-android-24.22.0-0.zip`, `nodejs-mobile-android-lite-24.22.0-0.zip`, `nodejs-mobile-ios-24.22.0-0.zip` and `nodejs-mobile-ios-lite-24.22.0-0.zip`, plus `SHA256SUMS`.
+
+For `danmu_api`, use the lite package when its retained feature and locale
+profile matches your application. Verify the selected archive against
+`SHA256SUMS` before integration.
 
 This source upgrade does not arm publication.
 
