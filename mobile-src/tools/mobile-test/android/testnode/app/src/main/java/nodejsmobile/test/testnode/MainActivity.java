@@ -110,6 +110,14 @@ public class MainActivity extends Activity {
                 } catch (IOException ignored) {}
             }
         });
+        // The proxy may retry a failed launch only if this per-token marker
+        // is absent after force-stop. Persist it before any Node code can run,
+        // so a JS failure, native crash or hang is never retried as transport.
+        try {
+            new File(testFolderPath + "/started-" + runToken + ".txt").createNewFile();
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot acknowledge Node test startup", e);
+        }
         mainNodeThread.start();
     }
 

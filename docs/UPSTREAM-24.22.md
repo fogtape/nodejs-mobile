@@ -168,6 +168,33 @@ exercise PASS, immediate FAIL, recovery after no verdict and exhausted retries.
 No Node runtime, ICU or compilation input changed. The test harness update is
 included in source tree `7dd2d6b6eaf7937b6a050e715754920dcbe4c8c3`.
 
+## Android per-test launch acknowledgement
+
+[Build run 38337972601](https://github.com/fogtape/nodejs-mobile/actions/runs/38337972601)
+passed all ten builds, both platforms' full/lite boot smokes and curated gates,
+all four iOS full-suite shards and fifteen Android shards. Android shard 15
+reported 234 passes and one timeout in `test-https-simple`. Its output contained
+messages from an earlier TLS renegotiation test and an `am start` failure,
+without a verdict from the requested test. The previous proxy ignored errors
+when force-stopping the old activity, clearing logs and launching its replacement,
+and discarded the launch command's diagnostic output.
+
+The proxy now bounds each ADB call, requires the old process to be stopped and
+logs to be cleared before launch, and retains failed-launch diagnostics.
+MainActivity writes a per-token startup acknowledgement before starting Node.
+A launch may be retried only when a successful force-stop, process query and
+sandbox query prove that Node never started. Missing/failed queries cannot
+authorize a retry. An acknowledged JS failure, hang or native crash is never
+retried; PASS still requires the authoritative per-token verdict file.
+
+Ten regressions exercise device targeting/output, failed force-stop, stale
+activities, failed log clearing, recovery before Node starts, a lost launch
+reply after Node starts, real FAIL/hang/crash, exhausted attempts and an unknown
+or late startup acknowledgement. The full runnable suite and all its tests are
+retained. The runtime, ICU profile and full/lite build configuration are unchanged.
+The updated harness is included in source tree
+`786da7b5d33a6cabb31668f3089731b3c0a62713`.
+
 ## Move to the official release
 
 After upstream publishes `v24.22.0`, compare its commit with this baseline,
