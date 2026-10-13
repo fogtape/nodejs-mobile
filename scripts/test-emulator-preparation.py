@@ -136,6 +136,14 @@ else:
                         found += 1
         self.assertEqual(found, 3)
 
+    def test_emulator_runtime_dependency_is_installed_before_binary_validation(self):
+        import yaml
+        action = yaml.load((ACTION / 'action.yml').read_text(), Loader=yaml.BaseLoader)
+        steps = action['runs']['steps']
+        installer = next(i for i, step in enumerate(steps) if 'install.sh' in step.get('run', ''))
+        self.assertTrue(any('apt-get install -y libpulse0' in step.get('run', '')
+                            for step in steps[:installer]))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -141,10 +141,15 @@ including their failure exit codes. The fixed archive is cached by its build
 and digest, and a corrupt cache is rejected. Real test failures are not retried
 or ignored.
 
-Six local regressions cover a verified cache, corrupt downloads, exhausted
+Seven local regressions cover a verified cache, corrupt downloads, exhausted
 retries, unchanged SDK arguments/failures, repeated preparation, broken emulator
 binaries and all three workflow entry points. This is a CI-only change: the
 reviewed product tree, compiled-library keys and danmu lite recipe are unchanged.
+
+The preparation action explicitly installs `libpulse0` before validating the
+emulator binary. Hosted runner images differ in their installed libraries;
+the first CI validation found `libpulse.so.0` missing even though the pinned
+archive's size, digest, ZIP contents and package metadata were correct.
 
 ## Move to the official release
 

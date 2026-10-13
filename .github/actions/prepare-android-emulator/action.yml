@@ -5,6 +5,11 @@ description: >
 runs:
   using: composite
   steps:
+    - name: Install emulator runtime dependency
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpulse0
     - name: Read emulator archive pin
       id: pin
       shell: bash
