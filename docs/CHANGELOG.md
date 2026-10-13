@@ -6,7 +6,7 @@
 </tr>
 <tr>
 <td>
-<a href="#24.22.0-0">24.22.0-0 (preview)</a><br/>
+<a href="#24.22.0-0">24.22.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
 <a href="#24.19.0-2">24.19.0-2</a><br/>
@@ -41,7 +41,7 @@
 </table>
 
 <a id="24.22.0-0"></a>
-## Unreleased, Version 24.22.0-0 (Current)
+## 2026-10-13, Version 24.22.0-0 (Current)
 
 This prerelease updates the mobile runtime from Node.js 24.21.0 to the
 Node.js 24.22.0 LTS release proposal [nodejs/node#66667](https://github.com/nodejs/node/pull/66667),
@@ -67,8 +67,6 @@ upstream proposal snapshot; the final official Node.js release may differ.
 For `danmu_api`, use the lite package when its retained feature and locale
 profile matches your application. Verify the selected archive against
 `SHA256SUMS` before integration.
-
-This source upgrade does not arm publication.
 
 <a id="24.21.0-0"></a>
 ## 2026-09-14, Version 24.21.0-0
