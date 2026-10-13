@@ -9,15 +9,18 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 24** (`v24.21.0`). `process.version` reports the
+Current line: **Node.js 24 LTS**, previewing the `v24.22.0` release proposal
+[#66667](https://github.com/nodejs/node/pull/66667) at a fixed commit. The
+official upstream tag is not published yet. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (e.g. `"24.21.0-0"`).
+mobile build is identified by `process.versions.mobile` (`"24.22.0-0"`).
+See [the 24.22 preview notes](docs/UPSTREAM-24.22.md) for source provenance.
 
 ## Maintained version lines
 
 | Branch | Node.js base | Purpose |
 | --- | --- | --- |
-| [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe) | 24.21.0 | Stable Node 24 maintenance and releases |
+| [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe) | 24.22.0 proposal | Node 24 LTS maintenance and CI previews |
 | [`recipe-v26`](https://github.com/fogtape/nodejs-mobile/tree/recipe-v26) | 26.1.0 | Independent Node 26 port and CI previews |
 
 Each branch owns its upstream tag, patches, source-tree checksum and toolchain.
@@ -55,7 +58,7 @@ for building one — about 1.5 MB instead of a 1 GB fork:
 
 | | |
 |---|---|
-| `upstream-base.txt` | the pinned upstream release tag (`v24.21.0`) |
+| `upstream-base.txt` | the pinned upstream release tag or full proposal commit SHA |
 | `patches/` | per-concern patches to upstream files, plus `series` (apply order) and `files.map` (which patch owns which file) |
 | `mobile-src/` | files that have no upstream counterpart — build scripts, the iOS framework project, test apps and harness |
 | `expected-tree.txt` | the git tree hash the reconstruction must produce |

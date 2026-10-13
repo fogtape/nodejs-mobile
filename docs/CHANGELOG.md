@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.22.0-0">24.22.0-0 (preview)</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
 <a href="#24.19.0-2">24.19.0-2</a><br/>
@@ -39,8 +40,22 @@
 </tr>
 </table>
 
+<a id="24.22.0-0"></a>
+## Unreleased, Version 24.22.0-0 (Current)
+
+### Notable Changes
+
+- **Engine:** preview Node.js 24.22.0 LTS release proposal [nodejs/node#66667](https://github.com/nodejs/node/pull/66667), pinned to `a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`. This is an upstream proposal snapshot, not an official Node.js release tag.
+- **Lite:** retain the reviewed danmu ICU data profile, feature omissions, Android 64-bit pointer compression and ABI-preserving SDK symbol stripping. Both flavors keep the full ICU API; iOS keeps jitless V8 and polywasm without pointer compression.
+- **Mobile compatibility:** use upstream's new `V8_ENABLE_WEBASSEMBLY` guard for JSPI and preserve the remaining platform patches.
+- **Tests/builds:** add 26 in-process upstream regressions to the curated gate, triage new child-process/permission cases, and build both iOS flavors on upgrade PRs. Reuse the bounded Android emulator shards already validated on the Node 26 line.
+- **Artifacts:** successful upgrade builds package Android/iOS full/lite previews with source metadata and `SHA256SUMS`. Ordinary builds do not publish a release.
+- **Device regressions:** preserve Intl and SQLite backup in-process coverage while skipping only unsupported child probes; use the observed mobile filesystem error and exclude a native WASM flag test only on iOS. These three runnable regressions also join the curated gate.
+
+This source upgrade does not arm publication.
+
 <a id="24.21.0-0"></a>
-## 2026-09-14, Version 24.21.0-0 (Current)
+## 2026-09-14, Version 24.21.0-0
 
 ### Notable Changes
 

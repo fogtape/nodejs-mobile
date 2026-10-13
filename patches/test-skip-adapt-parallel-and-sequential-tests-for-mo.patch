@@ -16,11 +16,12 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1498 +++++++++++++++++
+ test/parallel/parallel.status                 | 1511 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
  test/parallel/test-fs-copyfile.js             |    3 +-
+ ...est-fs-glob-no-follow-symlink-globstar.mjs |    2 +-
  test/parallel/test-fs-lchmod.js               |    4 +-
  test/parallel/test-fs-mkdir.js                |    5 +-
  test/parallel/test-fs-open-flags.js           |    3 +-
@@ -30,12 +31,14 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-fs-readdir-ucs2.js         |    2 +-
  test/parallel/test-fs-realpath-native.js      |    7 +
  test/parallel/test-fs-realpath.js             |    8 +-
+ ...fs-rmSync-special-char-additional-error.js |    3 +-
  test/parallel/test-fs-rmdir-recursive.js      |    6 +
  test/parallel/test-fs-stat.js                 |    7 +
  test/parallel/test-fs-watch.js                |   10 +-
  test/parallel/test-fs-watchfile.js            |    4 +-
  .../parallel/test-http-response-setheaders.js |    6 +
  .../test-http2-respond-file-error-dir.js      |    7 +
+ test/parallel/test-intl.js                    |    4 +-
  test/parallel/test-net-connect-options-fd.js  |    2 +-
  test/parallel/test-os.js                      |   25 +-
  test/parallel/test-parse-args.mjs             |    2 +
@@ -47,17 +50,18 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/parallel/test-repl-options.js            |    6 +-
  test/parallel/test-runner-concurrency.js      |    3 +
  test/parallel/test-signal-handler.js          |   12 +-
+ test/parallel/test-sqlite-backup.mjs          |    6 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
- test/sequential/sequential.status             |  129 ++
+ test/sequential/sequential.status             |  132 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 35 files changed, 1808 insertions(+), 46 deletions(-)
+ 39 files changed, 1834 insertions(+), 51 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..f52cc544b2 100644
+index d13efc8ac1..fccf6d71a2 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1504 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -103,35 +107,43 @@ index d13efc8ac1..f52cc544b2 100644
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
 +test-cluster-*: SKIP
-+test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
++test-common: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
 +test-debugger-address: SKIP
 +test-debugger-auto-resume: SKIP
++test-debugger-backtrace: SKIP
 +test-debugger-break: SKIP
 +test-debugger-breakpoint-exists: SKIP
 +test-debugger-clear-breakpoints: SKIP
 +test-debugger-exceptions: SKIP
 +test-debugger-exec-scope: SKIP
++test-debugger-exec: SKIP
 +test-debugger-extract-function-name: SKIP
 +test-debugger-heap-profiler: SKIP
 +test-debugger-help: SKIP
 +test-debugger-invalid-json: SKIP
 +test-debugger-list: SKIP
++test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
-+test-debugger-profile: SKIP
 +test-debugger-profile-command: SKIP
-+test-debugger-random-port: SKIP
++test-debugger-profile: SKIP
 +test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-random-port: SKIP
++test-debugger-repeat-last: SKIP
++test-debugger-restart-message: SKIP
 +test-debugger-run-after-quit-restart: SKIP
 +test-debugger-sb-before-load: SKIP
 +test-debugger-scripts: SKIP
@@ -193,8 +205,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-internal-util-decorate-error-stack: SKIP
 +test-kill-segfault-freebsd: SKIP
 +test-listen-fd-cluster: SKIP
-+test-listen-fd-detached: SKIP
 +test-listen-fd-detached-inherit: SKIP
++test-listen-fd-detached: SKIP
 +test-listen-fd-server: SKIP
 +test-loaders-unknown-builtin-module: SKIP
 +test-macos-signed-deps: SKIP
@@ -228,31 +240,31 @@ index d13efc8ac1..f52cc544b2 100644
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
 +test-policy-dependencies: SKIP
-+test-policy-integrity: SKIP
 +test-policy-integrity-flag: SKIP
++test-policy-integrity: SKIP
 +test-policy-manifest: SKIP
 +test-policy-parse-integrity: SKIP
 +test-policy-process-binding: SKIP
 +test-policy-scopes: SKIP
-+test-preload: SKIP
 +test-preload-print-process-argv: SKIP
 +test-preload-self-referential: SKIP
 +test-preload-worker: SKIP
++test-preload: SKIP
 +test-process-argv-0: SKIP
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
 +test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
-+test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
++test-process-external-stdio-close: SKIP
 +test-process-getgroups: SKIP
 +test-process-kill-null: SKIP
 +test-process-ppid: SKIP
 +test-process-raw-debug: SKIP
 +test-process-really-exit: SKIP
-+test-process-redirect-warnings: SKIP
 +test-process-redirect-warnings-env: SKIP
++test-process-redirect-warnings: SKIP
 +test-process-remove-all-signal-listeners: SKIP
 +test-process-title: SKIP
 +test-process-uncaught-exception-monitor: SKIP
@@ -272,8 +284,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-repl-require-context: SKIP
 +test-repl-require-self-referential: SKIP
 +test-repl-setprompt: SKIP
-+test-repl-sigint: SKIP
 +test-repl-sigint-nested-eval: SKIP
++test-repl-sigint: SKIP
 +test-repl-strict-mode-previews: SKIP
 +test-repl-syntax-error-handling: SKIP
 +test-repl-tab-complete-nested-repls: SKIP
@@ -309,10 +321,10 @@ index d13efc8ac1..f52cc544b2 100644
 +test-snapshot-basic: SKIP
 +test-snapshot-cjs-main: SKIP
 +test-snapshot-console: SKIP
-+test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-lookup-localhost-promise: SKIP
-+test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
 +test-snapshot-error: SKIP
 +test-snapshot-eval: SKIP
 +test-snapshot-gzip: SKIP
@@ -323,16 +335,16 @@ index d13efc8ac1..f52cc544b2 100644
 +test-snapshot-warning: SKIP
 +test-snapshot-weak-reference: SKIP
 +test-source-map-enable: SKIP
-+test-startup-large-pages: SKIP
-+test-startup-empty-regexp-statics: SKIP
 +test-stack-size-limit: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-startup-large-pages: SKIP
 +test-stdin-child-proc: SKIP
 +test-stdin-from-file: SKIP
 +test-stdin-pipe-large: SKIP
 +test-stdin-pipe-resume: SKIP
 +test-stdin-resume-pause: SKIP
-+test-stdin-script-child: SKIP
 +test-stdin-script-child-option: SKIP
++test-stdin-script-child: SKIP
 +test-stdio-closed: SKIP
 +test-stdio-pipe-redirect: SKIP
 +test-stdio-pipe-stderr: SKIP
@@ -356,12 +368,12 @@ index d13efc8ac1..f52cc544b2 100644
 +test-tls-cipher-list: SKIP
 +test-tls-cli-min-max-conflict: SKIP
 +test-tls-enable-keylog-cli: SKIP
-+test-tls-enable-trace: SKIP
 +test-tls-enable-trace-cli: SKIP
++test-tls-enable-trace: SKIP
 +test-tls-env-bad-extra-ca: SKIP
-+test-tls-env-extra-ca: SKIP
 +test-tls-env-extra-ca-file-load: SKIP
 +test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-env-extra-ca: SKIP
 +test-tls-handshake-exception: SKIP
 +test-tls-ticket-cluster: SKIP
 +test-tls-wrap-econnreset-pipe: SKIP
@@ -373,8 +385,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-trace-events-console: SKIP
 +test-trace-events-environment: SKIP
 +test-trace-events-file-pattern: SKIP
-+test-trace-events-fs-sync: SKIP
 +test-trace-events-fs-async: SKIP
++test-trace-events-fs-sync: SKIP
 +test-trace-events-http: SKIP
 +test-trace-events-metadata: SKIP
 +test-trace-events-net: SKIP
@@ -385,8 +397,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-trace-events-threadpool: SKIP
 +test-trace-events-v8: SKIP
 +test-trace-events-vm: SKIP
-+test-trace-events-worker-metadata: SKIP
 +test-trace-events-worker-metadata-with-name: SKIP
++test-trace-events-worker-metadata: SKIP
 +test-trace-exit: SKIP
 +test-tracing-no-crash: SKIP
 +test-unhandled-exception-rethrow-error: SKIP
@@ -396,13 +408,13 @@ index d13efc8ac1..f52cc544b2 100644
 +test-util-getcallsites-sourcemap: SKIP
 +test-v8-coverage: SKIP
 +test-v8-stop-coverage: SKIP
-+test-v8-take-coverage: SKIP
 +test-v8-take-coverage-noop: SKIP
++test-v8-take-coverage: SKIP
 +test-v8-untrusted-code-mitigations: SKIP
 +test-vm-api-handles-getter-errors: SKIP
 +test-vm-cached-data: SKIP
-+test-vm-sigint: SKIP
 +test-vm-sigint-existing-handler: SKIP
++test-vm-sigint: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
 +test-worker-init-failure: SKIP
@@ -681,6 +693,7 @@ index d13efc8ac1..f52cc544b2 100644
 +test-permission-fs-symlink-target-write: SKIP
 +test-permission-fs-traversal-path: SKIP
 +test-permission-fs-wildcard: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-write-report: SKIP
 +test-permission-inspector: SKIP
@@ -764,16 +777,19 @@ index d13efc8ac1..f52cc544b2 100644
 +test-async-hooks-fatal-error: SKIP
 +test-async-wrap-pop-id-during-load: SKIP
 +test-bash-completion: SKIP
++test-benchmark-compare: SKIP
 +test-buffer-constructor-node-modules-paths: SKIP
 +test-child-process-*: SKIP
 +test-cli-*: SKIP
 +test-cluster-*: SKIP
-+test-common: SKIP
 +test-common-countdown: SKIP
 +test-common-expect-warning: SKIP
++test-common-wpt-script-modifier: SKIP
++test-common: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
++test-crypto-provider-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -784,8 +800,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-debugger-breakpoint-exists: SKIP
 +test-debugger-clear-breakpoints: SKIP
 +test-debugger-exceptions: SKIP
-+test-debugger-exec: SKIP
 +test-debugger-exec-scope: SKIP
++test-debugger-exec: SKIP
 +test-debugger-extract-function-name: SKIP
 +test-debugger-heap-profiler: SKIP
 +test-debugger-help: SKIP
@@ -794,15 +810,15 @@ index d13efc8ac1..f52cc544b2 100644
 +test-debugger-low-level: SKIP
 +test-debugger-object-type-remote-object: SKIP
 +test-debugger-preserve-breaks: SKIP
-+test-debugger-probe-cond: SKIP
 +test-debugger-probe-cond-invalid: SKIP
 +test-debugger-probe-cond-max-hit: SKIP
 +test-debugger-probe-cond-shared: SKIP
 +test-debugger-probe-cond-throws: SKIP
-+test-debugger-profile: SKIP
++test-debugger-probe-cond: SKIP
 +test-debugger-profile-command: SKIP
-+test-debugger-random-port: SKIP
++test-debugger-profile: SKIP
 +test-debugger-random-port-with-inspect-port: SKIP
++test-debugger-random-port: SKIP
 +test-debugger-repeat-last: SKIP
 +test-debugger-restart-message: SKIP
 +test-debugger-run-after-quit-restart: SKIP
@@ -836,8 +852,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-fs-syncwritestream: SKIP
 +test-fs-write-sigxfsz: SKIP
 +test-fs-write-stream-patch-open: SKIP
-+test-handle-wrap-isrefed: SKIP
 +test-handle-wrap-hasref: SKIP
++test-handle-wrap-isrefed: SKIP
 +test-heap-prof-basic: SKIP
 +test-heap-prof-dir-absolute: SKIP
 +test-heap-prof-dir-name: SKIP
@@ -868,8 +884,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-internal-util-decorate-error-stack: SKIP
 +test-kill-segfault-freebsd: SKIP
 +test-listen-fd-cluster: SKIP
-+test-listen-fd-detached: SKIP
 +test-listen-fd-detached-inherit: SKIP
++test-listen-fd-detached: SKIP
 +test-listen-fd-server: SKIP
 +test-macos-signed-deps: SKIP
 +test-math-random: SKIP
@@ -902,31 +918,31 @@ index d13efc8ac1..f52cc544b2 100644
 +test-pipe-unref: SKIP
 +test-policy-crypto-default-encoding: SKIP
 +test-policy-dependencies: SKIP
-+test-policy-integrity: SKIP
 +test-policy-integrity-flag: SKIP
++test-policy-integrity: SKIP
 +test-policy-manifest: SKIP
 +test-policy-parse-integrity: SKIP
 +test-policy-process-binding: SKIP
 +test-policy-scopes: SKIP
-+test-preload: SKIP
 +test-preload-print-process-argv: SKIP
 +test-preload-self-referential: SKIP
 +test-preload-worker: SKIP
++test-preload: SKIP
 +test-process-argv-0: SKIP
 +test-process-env: SKIP
 +test-process-exec-argv: SKIP
 +test-process-execpath: SKIP
 +test-process-exit-after-fetch-throw: SKIP
 +test-process-exit-code: SKIP
-+test-process-external-stdio-close: SKIP
 +test-process-external-stdio-close-spawn: SKIP
++test-process-external-stdio-close: SKIP
 +test-process-getgroups: SKIP
 +test-process-kill-null: SKIP
 +test-process-ppid: SKIP
 +test-process-raw-debug: SKIP
 +test-process-really-exit: SKIP
-+test-process-redirect-warnings: SKIP
 +test-process-redirect-warnings-env: SKIP
++test-process-redirect-warnings: SKIP
 +test-process-remove-all-signal-listeners: SKIP
 +test-process-title: SKIP
 +test-process-uncaught-exception-monitor: SKIP
@@ -946,8 +962,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-repl-require-context: SKIP
 +test-repl-require-self-referential: SKIP
 +test-repl-setprompt: SKIP
-+test-repl-sigint: SKIP
 +test-repl-sigint-nested-eval: SKIP
++test-repl-sigint: SKIP
 +test-repl-strict-mode-previews: SKIP
 +test-repl-syntax-error-handling: SKIP
 +test-repl-tab-complete-nested-repls: SKIP
@@ -980,10 +996,10 @@ index d13efc8ac1..f52cc544b2 100644
 +test-snapshot-basic: SKIP
 +test-snapshot-cjs-main: SKIP
 +test-snapshot-console: SKIP
-+test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-lookup-localhost-promise: SKIP
-+test-snapshot-dns-resolve-localhost: SKIP
++test-snapshot-dns-lookup-localhost: SKIP
 +test-snapshot-dns-resolve-localhost-promise: SKIP
++test-snapshot-dns-resolve-localhost: SKIP
 +test-snapshot-error: SKIP
 +test-snapshot-eval: SKIP
 +test-snapshot-gzip: SKIP
@@ -994,16 +1010,16 @@ index d13efc8ac1..f52cc544b2 100644
 +test-snapshot-warning: SKIP
 +test-snapshot-weak-reference: SKIP
 +test-source-map-enable: SKIP
-+test-startup-large-pages: SKIP
-+test-startup-empty-regexp-statics: SKIP
 +test-stack-size-limit: SKIP
++test-startup-empty-regexp-statics: SKIP
++test-startup-large-pages: SKIP
 +test-stdin-child-proc: SKIP
 +test-stdin-from-file: SKIP
 +test-stdin-pipe-large: SKIP
 +test-stdin-pipe-resume: SKIP
 +test-stdin-resume-pause: SKIP
-+test-stdin-script-child: SKIP
 +test-stdin-script-child-option: SKIP
++test-stdin-script-child: SKIP
 +test-stdio-closed: SKIP
 +test-stdio-pipe-redirect: SKIP
 +test-stdio-pipe-stderr: SKIP
@@ -1027,12 +1043,12 @@ index d13efc8ac1..f52cc544b2 100644
 +test-tls-cipher-list: SKIP
 +test-tls-cli-min-max-conflict: SKIP
 +test-tls-enable-keylog-cli: SKIP
-+test-tls-enable-trace: SKIP
 +test-tls-enable-trace-cli: SKIP
++test-tls-enable-trace: SKIP
 +test-tls-env-bad-extra-ca: SKIP
-+test-tls-env-extra-ca: SKIP
 +test-tls-env-extra-ca-file-load: SKIP
 +test-tls-env-extra-ca-no-crypto: SKIP
++test-tls-env-extra-ca: SKIP
 +test-tls-handshake-exception: SKIP
 +test-tls-ticket-cluster: SKIP
 +test-tls-wrap-econnreset-pipe: SKIP
@@ -1044,8 +1060,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-trace-events-console: SKIP
 +test-trace-events-environment: SKIP
 +test-trace-events-file-pattern: SKIP
-+test-trace-events-fs-sync: SKIP
 +test-trace-events-fs-async: SKIP
++test-trace-events-fs-sync: SKIP
 +test-trace-events-http: SKIP
 +test-trace-events-metadata: SKIP
 +test-trace-events-net: SKIP
@@ -1056,8 +1072,8 @@ index d13efc8ac1..f52cc544b2 100644
 +test-trace-events-threadpool: SKIP
 +test-trace-events-v8: SKIP
 +test-trace-events-vm: SKIP
-+test-trace-events-worker-metadata: SKIP
 +test-trace-events-worker-metadata-with-name: SKIP
++test-trace-events-worker-metadata: SKIP
 +test-trace-exit: SKIP
 +test-tracing-no-crash: SKIP
 +test-unhandled-exception-rethrow-error: SKIP
@@ -1066,13 +1082,13 @@ index d13efc8ac1..f52cc544b2 100644
 +test-util-callbackify: SKIP
 +test-v8-coverage: SKIP
 +test-v8-stop-coverage: SKIP
-+test-v8-take-coverage: SKIP
 +test-v8-take-coverage-noop: SKIP
++test-v8-take-coverage: SKIP
 +test-v8-untrusted-code-mitigations: SKIP
 +test-vm-api-handles-getter-errors: SKIP
 +test-vm-cached-data: SKIP
-+test-vm-sigint: SKIP
 +test-vm-sigint-existing-handler: SKIP
++test-vm-sigint: SKIP
 +test-vm-syntax-error-message: SKIP
 +test-vm-syntax-error-stderr: SKIP
 +test-worker-init-failure: SKIP
@@ -1132,6 +1148,7 @@ index d13efc8ac1..f52cc544b2 100644
 +# jitless configuration on the host instead (host-smoke workflow).
 +#
 +test-fetch-disabled: SKIP
++test-internal-webidl-buffer-source: SKIP
 +test-vm-codegen: SKIP
 +test-wasm: SKIP
 +test-wasm-simple: SKIP
@@ -1257,6 +1274,7 @@ index d13efc8ac1..f52cc544b2 100644
 +test-permission-drop-fs-scope: SKIP
 +test-permission-drop-fs-write: SKIP
 +test-permission-drop-worker: SKIP
++test-permission-fs-filehandle-sync: SKIP
 +test-permission-fs-write: SKIP
 +test-permission-fs-windows-path: SKIP
 +#
@@ -1442,7 +1460,6 @@ index d13efc8ac1..f52cc544b2 100644
 +test-http-server-drop-connections-in-cluster: SKIP
 +test-http2-respond-file-with-pipe: SKIP
 +test-http2-respond-with-file-connection-abort: SKIP
-+test-intl: SKIP
 +test-is-internal-thread: SKIP
 +test-macos-app-sandbox: SKIP
 +test-module-loading-error: SKIP
@@ -1630,6 +1647,19 @@ index 51d7153de0..9b1395f99b 100644
    assert.strictEqual(err.path, src);
    assert.strictEqual(err.dest, dest);
  }
+diff --git a/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs b/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
+index b1b3cda8d0..958b2cb300 100644
+--- a/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
++++ b/test/parallel/test-fs-glob-no-follow-symlink-globstar.mjs
+@@ -54,7 +54,7 @@ assert.deepStrictEqual(callbackMatches.sort(), expected);
+ 
+ // Under the permission model, `**/*` must not expose entries from a symlink
+ // target that is outside the granted read set.
+-if (common.hasCrypto) {
++if (common.hasCrypto && !common.isAndroid && !common.isIOS) { // nodejs-mobile patch
+   const child = `
+     const assert = require('node:assert');
+     const fs = require('node:fs');
 diff --git a/test/parallel/test-fs-lchmod.js b/test/parallel/test-fs-lchmod.js
 index d439710291..d048680b95 100644
 --- a/test/parallel/test-fs-lchmod.js
@@ -1787,6 +1817,20 @@ index 6ad074397e..c27aee2759 100644
    try { fs.unlinkSync(link); } catch {
      // Continue regardless of error.
    }
+diff --git a/test/parallel/test-fs-rmSync-special-char-additional-error.js b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+index 9b4de3c84d..7b2ebf1290 100644
+--- a/test/parallel/test-fs-rmSync-special-char-additional-error.js
++++ b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+@@ -43,7 +43,8 @@ try {
+   }, (err) => {
+     // Verify that the error is due to permission restrictions
+     let expectedCode = 'EACCES';
+-    if (common.isMacOS) {
++    // nodejs-mobile patch: both device suites return ENOTEMPTY for this case.
++    if (common.isMacOS || common.isAndroid || common.isIOS) {
+       expectedCode = 'ENOTEMPTY';
+     } else if (common.isWindows) {
+       expectedCode = 'EPERM';
 diff --git a/test/parallel/test-fs-rmdir-recursive.js b/test/parallel/test-fs-rmdir-recursive.js
 index 77c205794b..4c52904b43 100644
 --- a/test/parallel/test-fs-rmdir-recursive.js
@@ -1929,6 +1973,28 @@ index e5d0cfe880..ff428d3db2 100644
  
  const server = http2.createServer();
  server.on('stream', (stream) => {
+diff --git a/test/parallel/test-intl.js b/test/parallel/test-intl.js
+index 7d1742f2c7..28df1d924a 100644
+--- a/test/parallel/test-intl.js
++++ b/test/parallel/test-intl.js
+@@ -140,7 +140,7 @@ if (!common.hasIntl) {
+   // `ffi` ligature (contraction)
+   assert.strictEqual(coll.compare('\ufb03', 'ffi'), 0);
+ 
+-  {
++  if (!common.isAndroid && !common.isIOS) { // nodejs-mobile patch: child Node is unavailable.
+     // Regression test for https://github.com/nodejs/node/issues/27379
+     const env = { ...process.env, LC_ALL: 'ja' };
+     execFile(
+@@ -150,7 +150,7 @@ if (!common.hasIntl) {
+     );
+   }
+ 
+-  {
++  if (!common.isAndroid && !common.isIOS) { // nodejs-mobile patch: child Node is unavailable.
+     // Regression test for https://github.com/nodejs/node/issues/27418
+     const env = { ...process.env, LC_ALL: 'fr@EURO' };
+     execFile(
 diff --git a/test/parallel/test-net-connect-options-fd.js b/test/parallel/test-net-connect-options-fd.js
 index bd761cf072..c913299ef7 100644
 --- a/test/parallel/test-net-connect-options-fd.js
@@ -2067,7 +2133,7 @@ index a2df7d580d..eeb6c1de91 100644
 +
 +assert.deepStrictEqual(process.getActiveResourcesInfo(), expected);
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index b670ff37ac..68724daf7f 100644
+index 7f54beeea6..14f222d299 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
 @@ -2,8 +2,15 @@
@@ -2188,6 +2254,29 @@ index b84d2063a2..4411854e0b 100644
    }
  }, 1);
  
+diff --git a/test/parallel/test-sqlite-backup.mjs b/test/parallel/test-sqlite-backup.mjs
+index ee5f54fd90..cad9dc5e90 100644
+--- a/test/parallel/test-sqlite-backup.mjs
++++ b/test/parallel/test-sqlite-backup.mjs
+@@ -1,5 +1,7 @@
+ // Flags: --expose-gc
+ import {
++  isAndroid,
++  isIOS,
+   isWindows,
+   skipIfSQLiteMissing,
+   spawnPromisified,
+@@ -380,7 +382,9 @@ test('source database is kept alive while a backup is in flight', async (t) => {
+   t.assert.strictEqual(rows.n, 500);
+ });
+ 
+-test('backup promise settles when the backup is the last active request', async (t) => {
++test('backup promise settles when the backup is the last active request', {
++  skip: isAndroid || isIOS, // nodejs-mobile patch: requires a separate Node process.
++}, async (t) => {
+   const { code, signal, stderr } = await spawnPromisified(process.execPath, [
+     fixtures.path('sqlite', 'backup-last-request.mjs'),
+     nextDb(),
 diff --git a/test/parallel/test-watch-mode-files_watcher.mjs b/test/parallel/test-watch-mode-files_watcher.mjs
 index e1595350cd..f5d84f7480 100644
 --- a/test/parallel/test-watch-mode-files_watcher.mjs
@@ -2208,10 +2297,10 @@ index e1595350cd..f5d84f7480 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 01a021130c..059f682010 100644
+index 6b5714500b..9041485ad6 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -39,6 +39,135 @@ test-perf-hooks: SKIP
+@@ -43,6 +43,138 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  
@@ -2241,6 +2330,8 @@ index 01a021130c..059f682010 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++test-watch-mode-inspect: SKIP
++test-watch-mode: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build
@@ -2298,6 +2389,7 @@ index 01a021130c..059f682010 100644
 +test-stream2-stderr-sync: SKIP
 +test-util-debug: SKIP
 +test-vm-timeout-rethrow: SKIP
++test-watch-mode-inspect: SKIP
 +test-worker-prof: SKIP
 +#
 +# Tests that require the inspector, not included in the build
@@ -2348,7 +2440,7 @@ index 01a021130c..059f682010 100644
  # https://github.com/nodejs/node/issues/49933
  test-watch-mode-inspect: SKIP
 diff --git a/test/sequential/test-async-wrap-getasyncid.js b/test/sequential/test-async-wrap-getasyncid.js
-index 5db4a77631..dba092fd3f 100644
+index ef48f457a8..529cc62b12 100644
 --- a/test/sequential/test-async-wrap-getasyncid.js
 +++ b/test/sequential/test-async-wrap-getasyncid.js
 @@ -12,6 +12,8 @@ const providers = { ...internalBinding('async_wrap').Providers };
@@ -2373,7 +2465,7 @@ index 5db4a77631..dba092fd3f 100644
      const objKeys = Object.keys(providers);
      if (objKeys.length > 0)
        process._rawDebug(objKeys);
-@@ -196,7 +204,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -198,7 +206,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
    testInitialized(handle, 'Pipe');
  }
  
@@ -2383,7 +2475,7 @@ index 5db4a77631..dba092fd3f 100644
    tmpdir.refresh();
  
    const server = net.createServer(common.mustCall((socket) => {
-@@ -328,6 +337,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
+@@ -330,6 +339,8 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
  // DIRHANDLE
  {
    const dirBinding = internalBinding('fs_dir');

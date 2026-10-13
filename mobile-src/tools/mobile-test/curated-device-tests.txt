@@ -27,6 +27,9 @@ parallel/test-compression-decompression-stream
 parallel/test-crypto
 parallel/test-crypto-argon2-unsupported
 parallel/test-crypto-boringssl-evp-list
+parallel/test-crypto-cipherbase-options-fast-path
+parallel/test-crypto-cipheriv-cbc-cts
+parallel/test-crypto-cipheriv-xts
 parallel/test-crypto-default-shake-lengths
 parallel/test-crypto-dh-constructor
 parallel/test-crypto-dh-group-setters
@@ -35,7 +38,18 @@ parallel/test-crypto-domain
 parallel/test-crypto-eddsa-variants
 parallel/test-crypto-gcm-explicit-short-tag
 parallel/test-crypto-hash-stream-pipe
+parallel/test-crypto-jwk-raw-validation
+parallel/test-crypto-key-encoding-provider-cipher
+parallel/test-crypto-key-objects-ec-jwk-private
 parallel/test-crypto-key-objects-messageport
+parallel/test-crypto-keygen-ec-group-names
+parallel/test-crypto-mac
+parallel/test-crypto-mac-errors
+parallel/test-crypto-mac-vectors
+parallel/test-crypto-pkcs12
+parallel/test-crypto-rsa-oaep-mgf1
+parallel/test-crypto-rsa-pss-parameters
+parallel/test-crypto-x509-clone-transfer
 parallel/test-dgram-abort-closed
 parallel/test-dgram-bind-default-address
 parallel/test-dgram-bind-socket-close-before-lookup
@@ -78,9 +92,12 @@ parallel/test-fs-cp-sync-copy-symlink-over-file-error
 parallel/test-fs-cp-sync-dest-name-prefix-match
 parallel/test-fs-cp-sync-mode-flags
 parallel/test-fs-cp-sync-preserve-timestamps
+parallel/test-fs-glob-no-follow-symlink-globstar
+parallel/test-fs-rmSync-special-char-additional-error
 parallel/test-http
 parallel/test-http-agent-keep-alive-timeout-buffer
 parallel/test-http-bind-twice
+parallel/test-http-client-abort-completed-keepalive
 parallel/test-http-client-abort-keep-alive-queued-unix-socket
 parallel/test-http-client-abort-unix-socket
 parallel/test-http-client-agent
@@ -90,6 +107,7 @@ parallel/test-http-conn-reset
 parallel/test-http-unix-socket
 parallel/test-http-unix-socket-keep-alive
 parallel/test-http2-allow-http1
+parallel/test-http2-bidirectional-write-deadlock
 parallel/test-http2-client-port-80
 parallel/test-http2-client-upload-reject
 parallel/test-http2-compat-serverrequest-trailers
@@ -102,6 +120,8 @@ parallel/test-https-client-checkServerIdentity
 parallel/test-https-close
 parallel/test-https-host-headers
 parallel/test-https-unix-socket-self-signed
+parallel/test-intl
+parallel/test-mark-promise-handled
 parallel/test-mobile-credentials
 parallel/test-mobile-fetch
 parallel/test-mobile-node-path
@@ -137,6 +157,8 @@ parallel/test-os-process-priority
 parallel/test-path
 parallel/test-path-glob
 parallel/test-path-normalize
+parallel/test-perf-hooks-histogram-qrde
+parallel/test-perf-hooks-sliding-window-histogram
 parallel/test-pipe-address
 parallel/test-pipe-stream
 parallel/test-pipe-writev
@@ -155,6 +177,8 @@ parallel/test-process-env-windows-error-reset
 parallel/test-process-initgroups
 parallel/test-querystring
 parallel/test-querystring-maxKeys-non-finite
+parallel/test-sqlite-backup
+parallel/test-sqlite-udf-close
 parallel/test-stream-add-abort-signal
 parallel/test-stream-construct
 parallel/test-stream-duplex-readable-end
@@ -162,6 +186,7 @@ parallel/test-stream-finished
 parallel/test-stream-pipe-await-drain
 parallel/test-stream-pipe-manual-resume
 parallel/test-stream-pipe-unpipe-streams
+parallel/test-stream-readable-unobserved-eof-readable
 parallel/test-string-decoder
 parallel/test-string-decoder-end
 parallel/test-timers
@@ -188,12 +213,15 @@ parallel/test-tls-destroy-stream
 parallel/test-tls-error-servername
 parallel/test-tls-generic-stream
 parallel/test-tls-getcipher
+parallel/test-tls-peer-certificate-repeated-reads
 parallel/test-url-domain-ascii-unicode
 parallel/test-url-format-invalid-input
 parallel/test-url-is-url-internal
 parallel/test-util
+parallel/test-util-debounce
 parallel/test-util-getcallsites-preparestacktrace
 parallel/test-util-inspect-proxy
+parallel/test-util-throttle
 parallel/test-vm-access-process-env
 parallel/test-vm-create-and-run-in-context
 parallel/test-vm-deleting-property
@@ -220,3 +248,4 @@ parallel/test-zlib-convenience-methods
 parallel/test-zlib-destroy-pipe
 parallel/test-zlib-flush-drain
 parallel/test-zlib-invalid-arg-value-brotli-compress
+parallel/test-zlib-zstd-reset

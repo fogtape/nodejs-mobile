@@ -1,0 +1,46 @@
+name: Upload diagnostic test logs
+description: >
+  Upload test logs with one retry for transient artifact-service failures.
+  Logs are best effort; the test step remains the required pass/fail gate.
+inputs:
+  name:
+    description: Artifact name
+    required: true
+  path:
+    description: Log paths, one per line
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Upload logs
+      id: upload
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ignore
+
+    - name: Wait before retrying the artifact service
+      if: always() && steps.upload.outcome == 'failure'
+      shell: bash
+      run: sleep 15
+
+    - name: Retry log upload
+      id: retry
+      if: always() && steps.upload.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/upload-artifact@v7
+      with:
+        # A failed response can still leave an artifact on the service. A
+        # distinct name avoids conflicts without deleting the first upload.
+        name: ${{ inputs.name }}-retry
+        path: ${{ inputs.path }}
+        if-no-files-found: ignore
+
+    - name: Report unavailable log artifact
+      if: always() && steps.upload.outcome == 'failure' && steps.retry.outcome == 'failure'
+      shell: bash
+      run: |
+        echo '::warning::Test log upload failed twice; use the live job log and test summary. The test verdict is unchanged.'
+        echo 'Test log artifact unavailable after two upload attempts. See the live job log and the test summary above.' >> "$GITHUB_STEP_SUMMARY"

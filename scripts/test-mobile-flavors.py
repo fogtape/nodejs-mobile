@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Check flavor flags, iOS archive selection and danmu_api ICU regressions."""
+import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / 'out'
 if len(sys.argv) > 1:
     del sys.argv[1]
-MAJOR = int(next(line.strip().lstrip('v').split('.')[0]
-                 for line in (ROOT / 'upstream-base.txt').read_text().splitlines()
-                 if line.strip() and not line.startswith('#')))
+MAJOR = int(re.search(r'^#define NODE_MAJOR_VERSION (\d+)$',
+                     (SOURCE / 'src/node_version.h').read_text(), re.M)[1])
 # android_configure supports Linux/macOS build hosts; simulate Linux so this
 # configure-only test also runs on Termux's Python (which reports Android).
 ANDROID_WRAPPER = [sys.executable, '-c',
@@ -104,6 +106,46 @@ for archive in "${outputs_arm64[@]}"; do printf 'LIB:%s\n' "$archive"; done
                     if MAJOR >= 26:
                         for archive in ('libffi.a', 'libnode_crates.a'):
                             self.assertEqual(archive in archives, flavor == 'full')
+
+    def test_preview_metadata_matches_flavors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            source, output = folder / 'input', folder / 'output'
+            for platform in ('android', 'ios'):
+                for flavor in ('full', 'lite'):
+                    suffix = '-lite' if flavor == 'lite' else ''
+                    artifact = source / f'nodejs-mobile-{platform}{suffix}'
+                    required = ['include/node/node_version.h']
+                    if platform == 'android':
+                        required += [f'bin/{abi}/libnode.so'
+                                     for abi in ('arm64-v8a', 'armeabi-v7a', 'x86_64')]
+                    else:
+                        required += ['NodeMobile.xcframework/Info.plist']
+                    for name in required:
+                        path = artifact / name
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_bytes(b'fixture')
+            subprocess.run([sys.executable, str(ROOT / 'scripts/package-preview.py'),
+                            str(source), str(output)], cwd=ROOT,
+                           env=dict(os.environ, GITHUB_REPOSITORY='fogtape/nodejs-mobile',
+                                    GITHUB_RUN_ID='1'), check=True,
+                           capture_output=True, text=True)
+            for package in output.glob('*.zip'):
+                with zipfile.ZipFile(package) as archive:
+                    info = json.loads(archive.read('BUILD-INFO.json'))
+                lite = info['flavor'] == 'lite'
+                self.assertEqual(info['icu_api_mode'], 'full-icu')
+                self.assertEqual(info['icu_data_profile'], 'danmu-lite' if lite else 'complete')
+                self.assertEqual('full-icu' in info['enabled_features'], not lite)
+                self.assertEqual('danmu-icu-profile' in info['enabled_features'], lite)
+                for feature in ('node:ffi', 'Temporal'):
+                    self.assertEqual(feature in info['enabled_features'], not lite and MAJOR >= 26)
+                    self.assertEqual(feature in info['disabled_features'], lite and MAJOR >= 26)
+            lines = (output / 'SHA256SUMS').read_text().splitlines()
+            self.assertEqual(len(lines), 4)
+            for line in lines:
+                digest, name = line.split()
+                self.assertEqual(hashlib.sha256((output / name).read_bytes()).hexdigest(), digest)
 
     def test_icu_profile_required_resources_exist_in_pinned_data(self):
         # A version upgrade must fail loudly if renamed ICU data invalidates the

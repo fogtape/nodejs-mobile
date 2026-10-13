@@ -1,4 +1,4 @@
-# The upstream nodejs/node release the patch series applies to.
-# First non-comment line is the tag (or SHA); update it as part of every
-# upstream bump (see README.md).
-v24.21.0
+# Node.js 24.22.0 LTS release proposal; the official tag is not published yet.
+# https://github.com/nodejs/node/pull/66667 (v24.22.0-proposal)
+# Pin the reviewed PR commit rather than following the moving proposal branch.
+a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c

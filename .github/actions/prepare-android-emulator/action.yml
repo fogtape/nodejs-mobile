@@ -1,0 +1,26 @@
+name: Prepare the verified Android Emulator
+description: >
+  Install a fixed, checksum-verified Google emulator archive and avoid redundant
+  stable updates. All other SDK installs still use the original SDK Manager.
+runs:
+  using: composite
+  steps:
+    - name: Install emulator runtime dependency
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libpulse0
+    - name: Read emulator archive pin
+      id: pin
+      shell: bash
+      run: |
+        source "$GITHUB_ACTION_PATH/pin.sh"
+        echo "archive=$RUNNER_TEMP/emulator-linux_x64-${EMULATOR_BUILD_ID}.zip" >> "$GITHUB_OUTPUT"
+        echo "key=android-emulator-linux-${EMULATOR_BUILD_ID}-${EMULATOR_SHA256}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v6
+      with:
+        path: ${{ steps.pin.outputs.archive }}
+        key: ${{ steps.pin.outputs.key }}
+    - name: Install verified emulator and prepare SDK Manager
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/install.sh"
