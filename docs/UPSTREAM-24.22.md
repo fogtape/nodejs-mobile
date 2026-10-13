@@ -115,6 +115,37 @@ The corrected source tree is
 `3264ab4c31529014c7b4c5de198fdada43978027`. The next complete CI run verifies
 these corrections on devices before the preview packages can be produced.
 
+## Emulator workflow preparation
+
+[Build run 38321165710](https://github.com/fogtape/nodejs-mobile/actions/runs/38321165710)
+passed all ten builds, host checks, platform/flavor boot smokes, every curated
+suite, all four iOS full-suite shards and 15 of the 16 Android shards. The
+previous device-test failures were eliminated. Android shard 8 failed before
+running any test: SDK Manager could not unpack its Emulator update
+(`Error on ZipFile unknown archive`). Retrying that job reproduced the same
+package-install failure, so the remaining red gates were infrastructure failures.
+
+All three Android emulator entry points now use
+`.github/actions/prepare-android-emulator`. It installs the exact successful
+Emulator 37.2.12 build 16428233 archive from Google's repository. The reviewed
+archive size (349,654,171 bytes) and SHA-1 were verified against Google's
+`repository2-3.xml`; SHA-256 is pinned alongside the build ID. Cached and newly
+downloaded archives must match the size/digest and pass ZIP validation before
+installation. Transfer/verification retries are bounded. The extracted binary
+must report the pinned version/build before the test action can start.
+
+A narrowly scoped SDK Manager wrapper bypasses only the emulator action's
+redundant `--install emulator --channel=0` call. Licenses, system images,
+build/platform tools, NDK and other install requests are forwarded unchanged,
+including their failure exit codes. The fixed archive is cached by its build
+and digest, and a corrupt cache is rejected. Real test failures are not retried
+or ignored.
+
+Six local regressions cover a verified cache, corrupt downloads, exhausted
+retries, unchanged SDK arguments/failures, repeated preparation, broken emulator
+binaries and all three workflow entry points. This is a CI-only change: the
+reviewed product tree, compiled-library keys and danmu lite recipe are unchanged.
+
 ## Move to the official release
 
 After upstream publishes `v24.22.0`, compare its commit with this baseline,

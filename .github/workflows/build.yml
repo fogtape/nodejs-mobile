@@ -631,6 +631,8 @@ jobs:
           cp "$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so" \
             "$PWD/libc++_shared.so"
 
+      - uses: ./.github/actions/prepare-android-emulator
+
       - name: Run smoke on emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:

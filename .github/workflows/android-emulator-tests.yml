@@ -129,6 +129,8 @@ jobs:
       # Boot the emulator, build + install + prime the testnode app, then run the
       # curated subset through the proxy. Everything runs in one emulator-runner
       # script so the device stays alive for the whole session.
+      - uses: ./.github/actions/prepare-android-emulator
+
       - name: Run curated JS subset on emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
