@@ -16,6 +16,10 @@ on:
         type: string
         default: auto
         required: true
+      upstream_snapshot:
+        description: Optional full upstream SHA; explicitly prepare an unreleased proposal prerelease
+        type: string
+        default: ''
       operation:
         description: Preview the plan, or open a release review PR
         type: choice
@@ -52,9 +56,11 @@ jobs:
         env:
           RELEASE_LINE: ${{ inputs.release_line }}
           REQUESTED_VERSION: ${{ inputs.version }}
+          UPSTREAM_SNAPSHOT: ${{ inputs.upstream_snapshot }}
         run: |
           python3 scripts/release-control.py plan --root release-source \
             --line "$RELEASE_LINE" --version "$REQUESTED_VERSION" \
+            --upstream-snapshot "$UPSTREAM_SNAPSHOT" \
             --out "$RUNNER_TEMP/release-plan.json"
           python3 - <<'PY'
           import json, os, subprocess
@@ -69,6 +75,7 @@ jobs:
                             f"- Line: `{data['line']}`\n"
                             f"- Source: `{data['source_commit']}`\n"
                             f"- Upstream: `{data['upstream']}`\n"
+                            f"- Unreleased upstream snapshot: `{data['upstream_snapshot'] or 'none'}`\n"
                             f"- Tag: `{data['tag']}`\n"
                             "- GitHub prerelease: **yes**, latest: **no**\n\n"
                             "Plan only: no tag, release or source mutation. "
@@ -103,17 +110,20 @@ jobs:
           RELEASE_LINE: ${{ steps.v.outputs.line }}
           RELEASE_BRANCH: ${{ steps.v.outputs.release_branch }}
           V: ${{ steps.v.outputs.version }}
+          UPSTREAM_SNAPSHOT: ${{ steps.v.outputs.upstream_snapshot }}
         run: |
           set -euo pipefail
           git config user.name "nodejs-mobile-bot"
           git config user.email "bot@users.noreply.github.com"
           git checkout -b "$RELEASE_BRANCH"
-          git add mobile-src/src/node_mobile_version.h docs/CHANGELOG.md expected-tree.txt release-ready.txt
+          git add mobile-src/src/node_mobile_version.h docs/CHANGELOG.md expected-tree.txt release-ready.txt release-upstream-snapshot.txt
           git commit -m "release: prepare nodejs-mobile ${V} prerelease"
           # No force push; existing release branches are reserved in plan.
           git push origin "$RELEASE_BRANCH"
           cat > "$RUNNER_TEMP/release-pr.md" <<EOF
           Prepare **nodejs-mobile ${V}** on **${RELEASE_LINE}** for manual prerelease publication.
+
+          Unreleased upstream snapshot: **${UPSTREAM_SNAPSHOT:-none}**.
 
           - [x] The chosen version matches this line's upstream source.
           - [x] The tag/revision and release branch are unused.
@@ -123,6 +133,7 @@ jobs:
           Existing notes for this version are preserved; fill any TODO before publication.
           Merge this PR, then run **Build** on **${RELEASE_LINE}**, choose
           **prerelease** (or **prerelease-dryrun**) and version **${V}**.
+          For a snapshot, also supply this exact **upstream_snapshot** SHA again.
           A merge alone does not publish. Every build and device gate must pass;
           the release is a GitHub prerelease with latest=false. This mirror does
           not claim physical-device validation. See docs/RELEASING.md.

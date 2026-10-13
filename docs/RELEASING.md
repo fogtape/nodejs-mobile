@@ -86,6 +86,22 @@ have FFI and no ICU; the older 26.1 release disables both features.
 iOS uses jitless V8 and the bundled WebAssembly polyfill. See
 [VERSION-LINES.md](VERSION-LINES.md) for compatibility limits.
 
+## Upstream proposal snapshot prereleases
+
+An unreleased upstream proposal can be published as a GitHub prerelease only
+with explicit `upstream_snapshot` input in both manual workflows. Supply the
+full SHA already pinned in `upstream-base.txt`; it cannot select a different
+commit. The controller reads `src/node_version.h` from official `nodejs/node`
+to verify the selected version and line.
+
+Cut release records both the version and exact snapshot SHA in the reviewed
+release PR. After merging it, dispatch Build on the same maintained line with
+`operation=prerelease`, that exact version, and the same `upstream_snapshot`.
+All ordinary build and release gates still apply. The release title and English
+body identify the upstream proposal snapshot and link the immutable commit.
+The final official upstream release may differ. This does not alter the other
+maintained Node major line.
+
 ## Source tags and provenance
 
 Tags point at full-source snapshot commits whose tree matches
