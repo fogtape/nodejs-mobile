@@ -151,6 +151,23 @@ emulator binary. Hosted runner images differ in their installed libraries;
 the first CI validation found `libpulse.so.0` missing even though the pinned
 archive's size, digest, ZIP contents and package metadata were correct.
 
+## iOS smoke launch transport
+
+[Build run 38334766961](https://github.com/fogtape/nodejs-mobile/actions/runs/38334766961)
+passed all sixteen Android full-suite shards, both Android boot smokes and
+curated flavors with the verified emulator preparation. The remaining iOS full
+smoke wrote no output or verdict on three attempts using `simctl --console`;
+iOS lite smoke and the same full framework's curated device suite passed.
+The full iOS sweep was skipped because its smoke prerequisite failed.
+
+The smoke launcher now follows the already validated curated proxy: launch
+without a console FIFO, read the app PID, poll the per-token verdict and read
+stdout from the app's sandbox file. A real `FAIL` still fails immediately;
+a missing verdict never passes and retries remain bounded. Four host regressions
+exercise PASS, immediate FAIL, recovery after no verdict and exhausted retries.
+No Node runtime, ICU or compilation input changed. The test harness update is
+included in source tree `7dd2d6b6eaf7937b6a050e715754920dcbe4c8c3`.
+
 ## Move to the official release
 
 After upstream publishes `v24.22.0`, compare its commit with this baseline,

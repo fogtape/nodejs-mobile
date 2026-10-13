@@ -116,6 +116,9 @@ jobs:
           python3 -m pip install PyYAML
           python3 scripts/test-emulator-preparation.py
 
+      - name: Check iOS smoke launches and verdict failure propagation
+        run: python3 scripts/test-ios-smoke.py
+
       # The curated device-test list is the functional gate; validate it against
       # the materialized tree so an upstream bump can't silently shrink it.
       # tools/test.py ignores a path that matches nothing, so a deleted or
