@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.11.1-0">26.11.1-0</a><br/>
 <a href="#26.11.0-0">26.11.0-0</a><br/>
 <a href="#26.10.0-0">26.10.0-0</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
@@ -41,6 +42,18 @@
 </td>
 </tr>
 </table>
+
+<a id="26.11.1-0"></a>
+## 2026-10-14, Version 26.11.1-0 (Current)
+
+- Rebase onto the official Node.js `v26.11.1` release tag
+  (`364593d0631def13e3043dd84f77ebca2c767ce5`); the regenerated series
+  changes only the upstream-workflow removal patch.
+- Android links a prebuilt static OpenSSL 4.0.3 tree built by
+  `tools/android_openssl.sh` (`--shared-openssl`, SHA-256-verified release
+  asset) instead of the bundled 3.5.x line — the library prerequisite for
+  future ECH work. iOS and the bundled-OpenSSL fallback are unchanged;
+  `node:quic` remains disabled and no ECH API is enabled by this change.
 
 <a id="26.11.0-0"></a>
 ## 2026-10-07, Version 26.11.0-0 (Current)
