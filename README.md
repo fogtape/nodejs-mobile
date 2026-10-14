@@ -9,16 +9,17 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 26** (`v26.11.0`, upstream PR preview).
-This checkout pins [official release proposal #66546](https://github.com/nodejs/node/pull/66546)
-at `49072a0be4c7410982557aebf5b5c924fe7db597`, before its merge/tag.
-Builds are CI previews; [provenance and validation](docs/UPSTREAM-26.11.md)
-record how to move to the official tag after release.
+Current line: **Node.js 26** (`v26.11.1`, official release).
+This checkout pins the official tag `v26.11.1` at commit
+`364593d0631def13e3043dd84f77ebca2c767ce5`; it rebases the reviewed
+[proposal #66546](https://github.com/nodejs/node/pull/66546) snapshot to
+the patch release upstream published afterwards. [Provenance and
+validation](docs/UPSTREAM-26.11.md) record the rebase.
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
 See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
 build instructions and download locations. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (e.g. `"26.11.0-0"`).
+mobile build is identified by `process.versions.mobile` (e.g. `"26.11.1-0"`).
 
 ## Get it
 

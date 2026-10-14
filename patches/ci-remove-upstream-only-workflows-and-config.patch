@@ -27,7 +27,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/auto-start-ci.yml           |  93 -----
  .github/workflows/benchmark.yml               | 271 -------------
  .github/workflows/build-shared.yml            |  93 -----
- .github/workflows/build-tarball.yml           | 137 -------
+ .github/workflows/build-tarball.yml           | 132 -------
  .github/workflows/close-stalled.yml           |  36 --
  .github/workflows/codeql.yml                  |  44 ---
  .github/workflows/comment-labeled.yml         |  57 ---
@@ -69,7 +69,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/update-openssl.yml          |  69 ----
  .github/workflows/update-v8.yml               |  57 ---
  .github/workflows/update-wpt.yml              |  95 -----
- 49 files changed, 4758 deletions(-)
+ 49 files changed, 4753 deletions(-)
  delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
  delete mode 100644 .github/SUPPORT.md
  delete mode 100644 .github/label-pr-config.yml
@@ -946,10 +946,10 @@ index 73f7ec6afb..0000000000
 -            ' "$TAR_DIR/tools/nix/ci-shell.nix"
 diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
 deleted file mode 100644
-index 53e625ef88..0000000000
+index bfc8f92dd0..0000000000
 --- a/.github/workflows/build-tarball.yml
 +++ /dev/null
-@@ -1,137 +0,0 @@
+@@ -1,132 +0,0 @@
 -name: Build from tarball
 -
 -on:
@@ -1019,7 +1019,6 @@ index 53e625ef88..0000000000
 -  PYTHON_VERSION: '3.14'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
--  NODE_VERSION: lts/*
 -
 -permissions:
 -  contents: read
@@ -1037,10 +1036,6 @@ index 53e625ef88..0000000000
 -        with:
 -          python-version: ${{ env.PYTHON_VERSION }}
 -          allow-prereleases: true
--      - name: Use Node.js ${{ env.NODE_VERSION }}
--        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
--        with:
--          node-version: ${{ env.NODE_VERSION }}
 -      - name: Make tarball
 -        run: |
 -          export DISTTYPE=nightly

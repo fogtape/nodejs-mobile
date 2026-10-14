@@ -7,12 +7,13 @@ versioned together on that branch.
 | Branch | Upstream base | Purpose | Outputs |
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
-| `recipe-v26` | Node.js 26.11.0 proposal at a pinned SHA | Independent Node 26 maintenance and explicit upstream snapshot prereleases | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.11.1 (official tag) | Independent Node 26 maintenance and releases | Android and iOS, full and lite |
 
-For Node 26.11, clone `recipe-v26`; the reviewed upgrade is merged and pins
-an immutable commit. Snapshot publication requires an explicit full-SHA
-input in both manual workflows and its reviewed release marker; default
-releases require an official upstream tag. See [26.11 provenance](UPSTREAM-26.11.md).
+For Node 26.11, clone `recipe-v26`; the line now pins the official
+`v26.11.1` tag. The earlier 26.11.0 proposal snapshot — and the explicit
+full-SHA input its publication required — stays documented in
+[26.11 provenance](UPSTREAM-26.11.md). Default releases require an
+official upstream tag and a reviewed release marker.
 
 The authoritative base is always `upstream-base.txt` on the selected branch.
 Updating Node 26 does not change the Node 24 recipe or replace its published
@@ -94,7 +95,7 @@ run URL with the downloaded files; do not mix platform slices or flavors
 from different runs. Versioned preview packages additionally contain
 `BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
 
-This preview reports `process.version` as `v26.11.0`; `process.versions.mobile` identifies
+The line reports `process.version` as `v26.11.1`; `process.versions.mobile` identifies
 the mobile build revision. A CI preview is not a published release. **Cut release** also supports
 `recipe-v26`; its reviewed PR arms a specific version; after merge, manually run **Build**
 with `operation=prerelease` and that exact mobile version. Push/PR builds do

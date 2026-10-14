@@ -1,4 +1,13 @@
-# Node 26.11 upstream PR preview
+# Node 26.11 upstream line
+
+`upstream-base.txt` pins the official tag `v26.11.1`
+(`364593d0631def13e3043dd84f77ebca2c767ce5`), the patch release that
+followed the reviewed 26.11.0 proposal snapshot described below. The rebase
+re-emitted 21 of the 22 patches byte-identically; the workflow removal
+patch absorbed upstream's edits to `.github/workflows/build-tarball.yml`
+(`modify/delete`, resolved as deletion per that patch's intent). The mobile
+version is `26.11.1-0`, and `expected-tree.txt` records the new
+source-tree checksum.
 
 This recipe previews official Node.js release proposal
 [#66546](https://github.com/nodejs/node/pull/66546), titled
@@ -167,7 +176,9 @@ proposal, and the source tag records the SHA. See [RELEASING.md](RELEASING.md).
 
 ## Move to the official release
 
-After upstream publishes `v26.11.0`, compare its commit against this pin,
+This branch performed the move: it pins `v26.11.1`, the patch release that
+followed the snapshot. The procedure, retained for the record: after
+upstream publishes a release, compare its commit against this pin,
 review any additional changes, update `upstream-base.txt` to the official tag,
 regenerate the recipe and checksum, and rerun the platform/device gates.
 Default Cut release and publication still reject SHA baselines. After the
