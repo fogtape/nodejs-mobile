@@ -26,12 +26,12 @@ Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- android_configure.py | 113 +++++++++++++++++++++++++++++++++++++------
+ android_configure.py | 120 +++++++++++++++++++++++++++++++++++++------
  configure.py         |   8 +++
- 2 files changed, 106 insertions(+), 15 deletions(-)
+ 2 files changed, 113 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..c27572e7b9 100644
+index 5cea0393f4..db77bdf89d 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,16 @@
@@ -73,7 +73,7 @@ index 5cea0393f4..c27572e7b9 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +56,105 @@ elif platform.system() == "Linux":
+@@ -65,13 +56,112 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -171,14 +171,21 @@ index 5cea0393f4..c27572e7b9 100644
 +        # Belt and braces: drop any -lcrypto/-lssl that pkg-config may have
 +        # added to the global libraries (see the host-tool note above), so
 +        # node.gypi's target-scoped block is the only link path to OpenSSL.
++        # config.gypi is a "do not edit" banner followed by JSON; keep the
++        # banner and the layout configure.py itself writes.
 +        with open("config.gypi") as handle:
-+            mobile_config = json.load(handle)
++            config_text = handle.read()
++        json_start = config_text.find("{")
++        if json_start < 0:
++            print("\033[91mError: \033[0m" + "config.gypi has no JSON body")
++            sys.exit(1)
++        mobile_config = json.loads(config_text[json_start:])
 +        libraries = mobile_config.get("libraries", [])
 +        kept = [lib for lib in libraries if lib not in ("-lcrypto", "-lssl")]
 +        if kept != libraries:
 +            mobile_config["libraries"] = kept
 +            with open("config.gypi", "w") as handle:
-+                json.dump(mobile_config, handle, indent=2)
++                handle.write(config_text[:json_start] + json.dumps(mobile_config, indent=2) + "\n")
 +    sys.exit(configure_status)
 diff --git a/configure.py b/configure.py
 index acda6a16c9..c44509883d 100755
