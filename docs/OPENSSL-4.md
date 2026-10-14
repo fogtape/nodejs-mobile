@@ -25,10 +25,14 @@ ngtcp2/nghttp3 side to be provided and is not part of this change.
   `OPENSSL4_ROOT`).
 - `tools/android_build.sh` builds that tree per ABI and exports
   `NODEJS_MOBILE_ANDROID_OPENSSL_DIR`.
-- `android_configure.py` then passes
-  `--shared-openssl --shared-openssl-includes=… --shared-openssl-libpath=…`
-  to Node's configure and drops `--openssl-no-asm` (incompatible with
-  `--shared-openssl`).
+- `android_configure.py` passes `--shared-openssl --shared-openssl-includes=…`
+  to Node's configure (and drops `--openssl-no-asm`, incompatible with
+  `--shared-openssl`), and exports the library directory through
+  `GYP_DEFINES`. `node.gypi` adds `-L… -lssl -lcrypto` for the node/libnode
+  targets only: a global `--shared-openssl-libpath` would also land on the
+  host tools' link lines (node_js2c links first), where the Android archives
+  cannot be used. A post-configure step drops any stray `-lcrypto`/`-lssl`
+  that pkg-config may have added to the global libraries.
 - The archives are linked into `libnode.so`; no new runtime `.so` files
   ship with the app.
 
