@@ -47,6 +47,9 @@ partition and expected source-tree checksum.
 
 The Node 26 line uses Android NDK r29 (`29.0.14206865`) and Clang 19 for
 Linux host tools. Node 24 keeps its existing NDK r27d configuration.
+Android also links a prebuilt static OpenSSL 4.0.3 tree instead of the
+bundled 3.5.x line ([OPENSSL-4.md](OPENSSL-4.md)); `node:quic` stays
+disabled and no ECH API is enabled by that change alone.
 
 This Node 26.11 preview’s full builds enable V8 Temporal and the experimental `node:ffi`
 module on Android and iOS, with complete ICU data (`--with-intl=full-icu`)

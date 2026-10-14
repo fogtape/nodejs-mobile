@@ -193,6 +193,7 @@ jobs:
           # binary, so they must change the key.
           H=$( { git rev-parse "HEAD:src" "HEAD:deps" "HEAD:lib" "HEAD:tools/v8_gypfiles" "HEAD:tools/gyp" "HEAD:tools/icu"; \
                  git hash-object node.gyp node.gypi common.gypi configure configure.py android-configure android_configure.py tools/android_build.sh tools/copy_libnode_headers.sh; \
+                 if [ -f tools/android_openssl.sh ]; then git hash-object tools/android_openssl.sh; else echo no-android-openssl; fi; \
                  printf '%s\n' "$ANDROID_LDFLAGS" "$ANDROID_TARGET_SDK_VERSION"; \
                } | git hash-object --stdin )
           echo "key=rust${NODEJS_MOBILE_RUST_TOOLCHAIN}-libnode-android-${TARGET_ARCH}${FLAVOR_SUFFIX}-ndk${ANDROID_NDK_VERSION}-${H}" >> "$GITHUB_OUTPUT"
@@ -247,6 +248,18 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ steps.rel.outputs.cold != 'true' && secrets.R2_SECRET_ACCESS_KEY || '' }}
         run: |
           ./tools/android_build.sh $MY_ANDROID_NDK_HOME $ANDROID_TARGET_SDK_VERSION $TARGET_ARCH
+
+      # The Android build links a prebuilt static OpenSSL 4.x tree through
+      # --shared-openssl (docs/OPENSSL-4.md). Prove the shipped library carries
+      # it. Runs on cache hits too, where out_android is restored.
+      - name: Verify OpenSSL 4.x linkage
+        run: |
+          case "$TARGET_ARCH" in
+            arm) abi=armeabi-v7a ;;
+            arm64) abi=arm64-v8a ;;
+            x86_64) abi=x86_64 ;;
+          esac
+          grep -a -o -m1 'OpenSSL 4\.0\.[0-9]*' "out_android/$abi/libnode.so"
 
       # NAPI/addon headers are static src/ + deps/ files (no build output, no
       # toolchain), so stage them unconditionally — this survives a libnode cache

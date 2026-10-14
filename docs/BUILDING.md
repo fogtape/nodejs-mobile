@@ -120,6 +120,17 @@ make
 # -> out/Release/lib.target/libnode.so
 ```
 
+### Android OpenSSL 4.x
+
+Android builds link a prebuilt static OpenSSL 4.x tree instead of the
+bundled 3.5.x line. `tools/android_build.sh` fetches and builds the pinned
+release asset per ABI (`tools/android_openssl.sh`, OpenSSL 4.0.3, SHA-256
+verified) and passes it to configure through
+`NODEJS_MOBILE_ANDROID_OPENSSL_DIR`; the linked `libnode.so` is checked for
+the embedded version string. Set `NODEJS_MOBILE_ANDROID_OPENSSL=0` to build
+against the bundled line instead. iOS is unaffected. Details, rationale and
+maintenance: [OPENSSL-4.md](OPENSSL-4.md).
+
 ---
 
 ## iOS — build on macOS

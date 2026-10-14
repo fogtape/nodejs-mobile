@@ -9,6 +9,10 @@ patch absorbed upstream's edits to `.github/workflows/build-tarball.yml`
 version is `26.11.1-0`, and `expected-tree.txt` records the new
 source-tree checksum.
 
+On top of this rebase, Android links a prebuilt OpenSSL 4.0.3 static tree
+([OPENSSL-4.md](OPENSSL-4.md)); iOS and the bundled-OpenSSL fallback are
+unchanged.
+
 This recipe previews official Node.js release proposal
 [#66546](https://github.com/nodejs/node/pull/66546), titled
 `2026-10-07, Version 26.11.0 (Current)`. At preparation time on 2026-10-06,

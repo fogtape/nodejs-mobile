@@ -15,6 +15,8 @@ This checkout pins the official tag `v26.11.1` at commit
 [proposal #66546](https://github.com/nodejs/node/pull/66546) snapshot to
 the patch release upstream published afterwards. [Provenance and
 validation](docs/UPSTREAM-26.11.md) record the rebase.
+Android builds link a prebuilt static OpenSSL 4.0.3 tree instead of the
+bundled 3.5.x line; see [Android OpenSSL 4.x](docs/OPENSSL-4.md).
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
 See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
 build instructions and download locations. `process.version` reports the

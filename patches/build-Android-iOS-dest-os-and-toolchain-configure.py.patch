@@ -26,15 +26,15 @@ Co-authored-by: Vincent Breitmoser <look@my.amazin.horse>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- android_configure.py | 76 +++++++++++++++++++++++++++++++++++---------
- configure.py         |  8 +++++
- 2 files changed, 69 insertions(+), 15 deletions(-)
+ android_configure.py | 93 +++++++++++++++++++++++++++++++++++++-------
+ configure.py         |  8 ++++
+ 2 files changed, 86 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..c76ec94c8f 100644
+index 5cea0393f4..2cf132d8a0 100644
 --- a/android_configure.py
 +++ b/android_configure.py
-@@ -1,25 +1,14 @@
+@@ -1,25 +1,15 @@
  import platform
  import sys
  import os
@@ -46,6 +46,7 @@ index 5cea0393f4..c76ec94c8f 100644
 -    if platform.system() == "Linux":
 -        os.system('patch -f ./deps/v8/src/trap-handler/trap-handler.h < ./android-patches/trap-handler.h.patch')
 -    print("\033[92mInfo: \033[0m" + "Tried to patch.")
++import shlex
 +import shutil
  
  if platform.system() != "Linux" and platform.system() != "Darwin":
@@ -62,7 +63,7 @@ index 5cea0393f4..c76ec94c8f 100644
      sys.exit(1)
  
  if not os.path.exists(sys.argv[1]) or not os.listdir(sys.argv[1]):
-@@ -55,7 +44,7 @@ else:
+@@ -55,7 +45,7 @@ else:
  print("\033[92mInfo: \033[0m" + "Configuring for " + DEST_CPU + "...")
  
  if platform.system() == "Darwin":
@@ -71,7 +72,7 @@ index 5cea0393f4..c76ec94c8f 100644
      toolchain_path = android_ndk_path + "/toolchains/llvm/prebuilt/darwin-x86_64"
  
  elif platform.system() == "Linux":
-@@ -65,13 +54,70 @@ elif platform.system() == "Linux":
+@@ -65,13 +55,86 @@ elif platform.system() == "Linux":
  os.environ['PATH'] += os.pathsep + toolchain_path + "/bin"
  os.environ['CC'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" +  "clang"
  os.environ['CXX'] = toolchain_path + "/bin/" + TOOLCHAIN_PREFIX + android_sdk_version + "-" + "clang++"
@@ -140,9 +141,25 @@ index 5cea0393f4..c76ec94c8f 100644
 +
  os.environ['GYP_DEFINES'] = GYP_DEFINES
  
++# Android OpenSSL line selection:
++#  - default: the bundled OpenSSL tree (3.5.x) with --openssl-no-asm, as before.
++#  - NODEJS_MOBILE_ANDROID_OPENSSL_DIR set (tools/android_build.sh builds the
++#    tree via tools/android_openssl.sh): link the prebuilt static OpenSSL 4.x
++#    tree with --shared-openssl. --openssl-no-asm is a bundled-tree option and
++#    is incompatible with --shared-openssl, so it is dropped on this path.
++openssl_flags = " --openssl-no-asm"
++openssl_dir = os.environ.get("NODEJS_MOBILE_ANDROID_OPENSSL_DIR", "").strip()
++if openssl_dir:
++    if not os.path.isdir(openssl_dir):
++        print("\033[91mError: \033[0m" + "NODEJS_MOBILE_ANDROID_OPENSSL_DIR is not a directory: " + openssl_dir)
++        sys.exit(1)
++    openssl_flags = (" --shared-openssl"
++                     " --shared-openssl-includes=" + shlex.quote(openssl_dir + "/include") +
++                     " --shared-openssl-libpath=" + shlex.quote(openssl_dir + "/lib"))
++
  if os.path.exists("./configure"):
 -    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --cross-compiling")
-+    sys.exit(os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --with-intl=" + intl + extra_flags + " --cross-compiling --shared") >> 8)
++    sys.exit(os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --with-intl=" + intl + extra_flags + openssl_flags + " --cross-compiling --shared") >> 8)
 diff --git a/configure.py b/configure.py
 index acda6a16c9..c44509883d 100755
 --- a/configure.py
