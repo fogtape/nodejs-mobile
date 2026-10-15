@@ -4,14 +4,30 @@ Android builds on this line link a prebuilt, statically linked OpenSSL 4.0.3
 tree instead of Node's bundled 3.5.x. iOS and the fallback path keep the
 bundled line unchanged.
 
-Why: OpenSSL 4.0 is the first release with Encrypted Client Hello (ECH,
-RFC 9849). Upstream Node still bundles 3.5.x and exposes no ECH API yet
-([nodejs/node#64280](https://github.com/nodejs/node/issues/64280) is an open
-tracking issue), so this change buys the *library* capability only —
-node:tls / node:quic wiring is a separate, later step. `node:quic` stays
-disabled exactly as before this change (`--experimental-quic` is not
-passed); enabling it against a shared OpenSSL additionally needs the
-ngtcp2/nghttp3 side to be provided and is not part of this change.
+OpenSSL 4 is connected to the client APIs on this branch. Android external-OpenSSL
+builds enable experimental QUIC and use Node's vendored ngtcp2 OpenSSL adapter
+and nghttp3; no external QUIC library or Go process is needed. iOS and the
+bundled fallback still build without ECH.
+
+## Client API (fork extension)
+
+- `require('node:tls').ECH_SUPPORTED` reports compile-time ECH support.
+- `tls.connect({ servername, echConfigList, ... })` accepts a binary
+  ECHConfigList (`Buffer` or another ArrayBufferView). A supplied config is
+  mandatory: certificate verification and TLS 1.3 are enforced inside OpenSSL,
+  and an unaccepted ECH handshake cannot become a successful JS connection.
+  `socket.echAccepted` and `socket.getECHStatus()` expose the outcome.
+- `node:quic.connect(address, { servername, echConfigList, verifyPeer:'strict' })`
+  applies the same policy. `await session.opened` includes `echAccepted`.
+  ECH disables session-ticket 0-RTT and prevents stream creation until its
+  handshake succeeds. Load the module with `--experimental-quic`.
+- ECH configuration discovery/TTL, protocol selection and safe retries belong
+  to the caller. No automatic plaintext-SNI fallback is implemented.
+
+`test-mobile-ech` covers input validation, unsupported bundled builds, and
+rejection without application-data leakage to an ordinary TLS server.
+Implementation validation is recorded separately from the earlier build below;
+that build predates these APIs and does not validate ECH/H3.
 
 ## How it is built
 

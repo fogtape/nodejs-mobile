@@ -23,8 +23,8 @@ Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
  node.gyp  | 23 ++++++++++++++++++++---
- node.gypi | 38 ++++++++++++++++++++++++++++++++++----
- 2 files changed, 54 insertions(+), 7 deletions(-)
+ node.gypi | 40 +++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 55 insertions(+), 8 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
 index 587df5cace..7fa1892d2d 100644
@@ -89,7 +89,7 @@ index 587df5cace..7fa1892d2d 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 9eb972adc4..177472fd09 100644
+index 9eb972adc4..42015a4773 100644
 --- a/node.gypi
 +++ b/node.gypi
 @@ -280,6 +280,11 @@
@@ -155,6 +155,15 @@ index 9eb972adc4..177472fd09 100644
          }],
        ]
      }, {
+@@ -472,7 +497,7 @@
+     }],
+     [ 'node_use_quic=="true"', {
+       'conditions': [
+-        [ 'node_shared_openssl=="false"', {
++        [ 'node_shared_openssl=="false" or (OS=="android" and nodejs_mobile_openssl_libpath!="")', {
+           'dependencies': [
+             './deps/ngtcp2/ngtcp2.gyp:ngtcp2',
+             './deps/ngtcp2/ngtcp2.gyp:nghttp3',
 @@ -484,5 +509,10 @@
          }],
        ],

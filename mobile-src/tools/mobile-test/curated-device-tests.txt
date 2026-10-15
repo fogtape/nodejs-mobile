@@ -231,3 +231,5 @@ parallel/test-zlib-decode-strings
 parallel/test-zlib-reset-incomplete-output
 parallel/test-zlib-brotli-reset
 parallel/test-zlib-zstd-reset-incomplete-frame
+
+parallel/test-mobile-ech

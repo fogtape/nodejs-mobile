@@ -1,0 +1,381 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: fogtape <lilixu3210@gmail.com>
+Date: Thu, 15 Oct 2026 12:00:00 +0800
+Subject: [PATCH] src: expose required ECH for TLS and QUIC clients
+
+Expose echConfigList and authenticated acceptance without plaintext-SNI
+fallback. Use OpenSSL native peer verification for ECH, suppress QUIC
+0-RTT, and build the vendored QUIC adapter with Android external OpenSSL.
+
+Assisted-by: Codex
+---
+ deps/ngtcp2/ngtcp2.gyp    |  2 +-
+ lib/internal/quic/quic.js | 15 ++++++++++++---
+ lib/internal/tls/wrap.js  | 29 +++++++++++++++++++++++++++++
+ lib/tls.js                |  3 +++
+ src/crypto/crypto_tls.cc  | 27 +++++++++++++++++++++++++++
+ src/crypto/crypto_tls.h   |  2 ++
+ src/quic/bindingdata.h    |  1 +
+ src/quic/session.cc       |  8 +++++++-
+ src/quic/tlscontext.cc    | 26 +++++++++++++++++++++++++-
+ src/quic/tlscontext.h     |  4 ++++
+ 10 files changed, 111 insertions(+), 6 deletions(-)
+
+diff --git a/deps/ngtcp2/ngtcp2.gyp b/deps/ngtcp2/ngtcp2.gyp
+index 7ae6279248..3dcd7278a1 100644
+--- a/deps/ngtcp2/ngtcp2.gyp
++++ b/deps/ngtcp2/ngtcp2.gyp
+@@ -169,7 +169,7 @@
+         # here then we can use that adapter and also set the
+         # QUIC_NGTCP2_USE_BORINGSSL define (the guard in quic/guard.h
+         # would need to be updated to check for this define).
+-        ['node_shared_openssl=="false" and openssl_version >= 0x3050001f', {
++        ['(node_shared_openssl=="false" or (OS=="android" and nodejs_mobile_openssl_libpath!="")) and openssl_version >= 0x3050001f', {
+           'sources': [
+             '<@(ngtcp2_sources_ossl)',
+           ],
+diff --git a/lib/internal/quic/quic.js b/lib/internal/quic/quic.js
+index 4922ce5627..9ae28a6f48 100644
+--- a/lib/internal/quic/quic.js
++++ b/lib/internal/quic/quic.js
+@@ -822,13 +822,13 @@ setCallbacks({
+                      validationErrorReason,
+                      validationErrorCode,
+                      earlyDataAttempted,
+-                     earlyDataAccepted) {
++                     earlyDataAccepted, echAccepted) {
+     debug('session handshake callback', servername, protocol, cipher, cipherVersion,
+           validationErrorReason, validationErrorCode,
+           earlyDataAttempted, earlyDataAccepted);
+     this[kOwner][kHandshake](servername, protocol, cipher, cipherVersion,
+                              validationErrorReason, validationErrorCode,
+-                             earlyDataAttempted, earlyDataAccepted);
++                             earlyDataAttempted, earlyDataAccepted, echAccepted);
+   },
+ 
+   /**
+@@ -4209,7 +4209,7 @@ class QuicSession {
+    * @param {number} validationErrorCode
+    */
+   [kHandshake](servername, protocol, cipher, cipherVersion, validationErrorReason,
+-               validationErrorCode, earlyDataAttempted, earlyDataAccepted) {
++               validationErrorCode, earlyDataAttempted, earlyDataAccepted, echAccepted) {
+     const inner = this.#inner;
+     if (this.destroyed || !inner.pendingOpen.resolve) return;
+ 
+@@ -4228,6 +4228,7 @@ class QuicSession {
+       cipherVersion,
+       validationErrorReason,
+       validationErrorCode,
++      echAccepted,
+       earlyDataAttempted,
+       earlyDataAccepted,
+     };
+@@ -5231,6 +5232,7 @@ function processIdentityOptions(identity, label) {
+ function processTlsOptions(tls, forServer) {
+   const {
+     servername,
++    echConfigList,
+     alpn,
+     ciphers = DEFAULT_CIPHERS,
+     groups = DEFAULT_GROUPS,
+@@ -5252,6 +5254,12 @@ function processTlsOptions(tls, forServer) {
+   if (servername !== undefined) {
+     validateString(servername, 'options.servername');
+   }
++  if (echConfigList !== undefined) {
++    if (!isArrayBufferView(echConfigList))
++      throw new ERR_INVALID_ARG_TYPE('options.echConfigList', 'ArrayBufferView', echConfigList);
++    if (forServer || !servername || echConfigList.byteLength === 0 || tls.verifyPeer === 'manual')
++      throw new ERR_INVALID_ARG_VALUE('options.echConfigList', undefined, 'ECH requires a client servername and certificate verification');
++  }
+   if (ciphers !== undefined) {
+     validateString(ciphers, 'options.ciphers');
+   }
+@@ -5364,6 +5372,7 @@ function processTlsOptions(tls, forServer) {
+   const shared = {
+     __proto__: null,
+     servername,
++    echConfigList,
+     alpn: encodedAlpn,
+     ciphers,
+     groups,
+diff --git a/lib/internal/tls/wrap.js b/lib/internal/tls/wrap.js
+index 60c1634b02..fdad8a9821 100644
+--- a/lib/internal/tls/wrap.js
++++ b/lib/internal/tls/wrap.js
+@@ -1770,6 +1770,16 @@ function normalizeConnectArgs(listArgs) {
+   return cb ? [options, cb] : [options];
+ }
+ 
++TLSSocket.prototype.getECHStatus = function() {
++  return this._handle?.getECHStatus();
++};
++
++ObjectDefineProperty(TLSSocket.prototype, 'echAccepted', {
++  configurable: true,
++  enumerable: true,
++  get() { return this.getECHStatus() === 1; },
++});
++
+ function onConnectSecure() {
+   const options = this[kConnectOptions];
+ 
+@@ -1819,6 +1829,10 @@ function onConnectSecure() {
+     this.authorized = true;
+     debug('client emit secureConnect. authorized:', this.authorized);
+   }
++  if (options.echConfigList !== undefined && !this.echAccepted) {
++    this.destroy(new ERR_TLS_INVALID_STATE('ECH was not accepted'));
++    return;
++  }
+   this.secureConnecting = false;
+   this.emit('secureConnect');
+ 
+@@ -1868,6 +1882,15 @@ exports.connect = function connect(...args) {
+   validateFunction(options.checkServerIdentity, 'options.checkServerIdentity');
+   validateNumber(options.minDHSize, 'options.minDHSize', 1);
+ 
++  if (options.echConfigList !== undefined) {
++    if (!isArrayBufferView(options.echConfigList))
++      throw new ERR_INVALID_ARG_TYPE('options.echConfigList', 'ArrayBufferView', options.echConfigList);
++    if (!tls.ECH_SUPPORTED || options.echConfigList.byteLength === 0)
++      throw new ERR_INVALID_ARG_VALUE('options.echConfigList', undefined, 'ECH requires OpenSSL 4 and a nonempty ECHConfigList');
++    if (!options.servername || options.rejectUnauthorized === false)
++      throw new ERR_INVALID_ARG_VALUE('options.echConfigList', undefined, 'ECH requires servername and certificate verification');
++  }
++
+   const context = options.secureContext || tls.createSecureContext(options);
+ 
+   if (options.servername && net.isIP(options.servername)) {
+@@ -1918,6 +1941,12 @@ exports.connect = function connect(...args) {
+   if (options.servername)
+     tlssock.setServername(options.servername);
+ 
++  if (options.echConfigList !== undefined &&
++      !tlssock._handle.setECHConfigList(options.echConfigList)) {
++    tlssock.destroy();
++    throw new ERR_INVALID_ARG_VALUE('options.echConfigList', undefined, 'Invalid ECHConfigList');
++  }
++
+   if (!options.socket) {
+     // If user provided the socket, it's their responsibility to manage its
+     // connectivity. If we created one internally, we connect it.
+diff --git a/lib/tls.js b/lib/tls.js
+index a1d978c50f..bcc83eec30 100644
+--- a/lib/tls.js
++++ b/lib/tls.js
+@@ -21,6 +21,9 @@
+ 
+ 'use strict';
+ 
++// Fork API: library support, independent of any server's ECH policy.
++exports.ECH_SUPPORTED = !!internalBinding('tls_wrap').NODE_HAVE_ECH;
++
+ const {
+   Array,
+   ArrayIsArray,
+diff --git a/src/crypto/crypto_tls.cc b/src/crypto/crypto_tls.cc
+index fbc5fc8c39..c1633ee186 100644
+--- a/src/crypto/crypto_tls.cc
++++ b/src/crypto/crypto_tls.cc
+@@ -25,6 +25,7 @@
+ #include "crypto/crypto_bio.h"
+ #include "crypto/crypto_client_hello.h"
+ #include "crypto/crypto_common.h"
++#include "crypto/crypto_ech.h"
+ #include "crypto/crypto_context.h"
+ #include "crypto/crypto_util.h"
+ #include "debug_utils-inl.h"
+@@ -1511,6 +1512,27 @@ void TLSWrap::GetServername(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
++void TLSWrap::SetECHConfigList(const FunctionCallbackInfo<Value>& args) {
++  TLSWrap* wrap;
++  ASSIGN_OR_RETURN_UNWRAP(&wrap, args.This());
++  CHECK_EQ(args.Length(), 1);
++  CHECK(args[0]->IsArrayBufferView());
++  CHECK(!wrap->flags_.started);
++  CHECK(wrap->is_client());
++  CHECK(wrap->ssl_);
++  ArrayBufferViewContents<uint8_t> config(args[0]);
++  args.GetReturnValue().Set(crypto::ConfigureECH(
++      wrap->ssl_.get(), config.data(), config.length()));
++}
++
++void TLSWrap::GetECHStatus(const FunctionCallbackInfo<Value>& args) {
++  TLSWrap* wrap;
++  ASSIGN_OR_RETURN_UNWRAP(&wrap, args.This());
++  if (wrap->ssl_) {
++    args.GetReturnValue().Set(crypto::GetECHStatus(wrap->ssl_.get()));
++  }
++}
++
+ void TLSWrap::SetServername(const FunctionCallbackInfo<Value>& args) {
+   TLSWrap* wrap;
+   ASSIGN_OR_RETURN_UNWRAP(&wrap, args.This());
+@@ -2346,6 +2368,7 @@ void TLSWrap::Initialize(
+   SetMethod(context, target, "wrap", TLSWrap::Wrap);
+ 
+   NODE_DEFINE_CONSTANT(target, HAVE_SSL_TRACE);
++  NODE_DEFINE_CONSTANT(target, NODE_HAVE_ECH);
+ 
+   Local<FunctionTemplate> t = AsyncWrap::MakeLazilyInitializedJSTemplate(env);
+   Local<String> tlsWrapString =
+@@ -2384,6 +2407,8 @@ void TLSWrap::Initialize(
+   SetProtoMethod(isolate, t, "setKeyCert", SetKeyCert);
+   SetProtoMethod(isolate, t, "setOCSPResponse", SetOCSPResponse);
+   SetProtoMethod(isolate, t, "setServername", SetServername);
++  SetProtoMethod(isolate, t, "setECHConfigList", SetECHConfigList);
++  SetProtoMethod(isolate, t, "getECHStatus", GetECHStatus);
+   SetProtoMethod(isolate, t, "setSession", SetSession);
+   SetProtoMethod(isolate, t, "setVerifyMode", SetVerifyMode);
+   SetProtoMethod(isolate, t, "start", Start);
+@@ -2456,6 +2481,8 @@ void TLSWrap::RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+   registry->Register(SetALPNProtocols);
+   registry->Register(SetOCSPResponse);
+   registry->Register(SetServername);
++  registry->Register(SetECHConfigList);
++  registry->Register(GetECHStatus);
+   registry->Register(SetSession);
+   registry->Register(SetVerifyMode);
+   registry->Register(Start);
+diff --git a/src/crypto/crypto_tls.h b/src/crypto/crypto_tls.h
+index ab60240188..23b80c2154 100644
+--- a/src/crypto/crypto_tls.h
++++ b/src/crypto/crypto_tls.h
+@@ -277,6 +277,8 @@ class TLSWrap : public AsyncWrap,
+   static void SetKeyCert(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetOCSPResponse(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetServername(const v8::FunctionCallbackInfo<v8::Value>& args);
++  static void SetECHConfigList(const v8::FunctionCallbackInfo<v8::Value>& args);
++  static void GetECHStatus(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetSession(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void SetVerifyMode(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Start(const v8::FunctionCallbackInfo<v8::Value>& args);
+diff --git a/src/quic/bindingdata.h b/src/quic/bindingdata.h
+index 2ef9f76853..037bb56e8a 100644
+--- a/src/quic/bindingdata.h
++++ b/src/quic/bindingdata.h
+@@ -90,6 +90,7 @@ class SessionManager;
+   V(disable_stateless_reset, "disableStatelessReset")                          \
+   V(draining_period_multiplier, "drainingPeriodMultiplier")                    \
+   V(enable_connect_protocol, "enableConnectProtocol")                          \
++  V(ech_config_list, "echConfigList")                                          \
+   V(enable_early_data, "enableEarlyData")                                      \
+   V(enable_datagrams, "enableDatagrams")                                       \
+   V(enable_tls_trace, "tlsTrace")                                              \
+diff --git a/src/quic/session.cc b/src/quic/session.cc
+index d83c1cbb89..e3257e40aa 100644
+--- a/src/quic/session.cc
++++ b/src/quic/session.cc
+@@ -3845,6 +3845,11 @@ bool Session::HandshakeCompleted() {
+   DCHECK(!is_destroyed());
+   DCHECK(!impl_->state()->handshake_completed);
+ 
++  if (!is_server() && tls_session().context().options().ech_config_list &&
++      !tls_session().ech_accepted()) {
++    return false;
++  }
++
+   Debug(this, "Session handshake completed");
+   impl_->state()->handshake_completed = 1;
+   // This implies fully completing a handshake without setting hello_processed
+@@ -4127,7 +4132,8 @@ void Session::EmitHandshakeComplete() {
+       Undefined(isolate),  // Validation error reason
+       Undefined(isolate),  // Validation error code
+       Boolean::New(isolate, tls_session().early_data_was_attempted()),
+-      Boolean::New(isolate, tls_session().early_data_was_accepted())};
++      Boolean::New(isolate, tls_session().early_data_was_accepted()),
++      Boolean::New(isolate, tls_session().ech_accepted())};
+ 
+   auto& tls = tls_session();
+   auto peerVerifyError = tls.VerifyPeerIdentity(env());
+diff --git a/src/quic/tlscontext.cc b/src/quic/tlscontext.cc
+index b5106d27e1..82a5d40946 100644
+--- a/src/quic/tlscontext.cc
++++ b/src/quic/tlscontext.cc
+@@ -3,6 +3,7 @@
+ #include <async_wrap-inl.h>
+ #include <base_object-inl.h>
+ #include <crypto/crypto_tls_certificates.h>
++#include <crypto/crypto_ech.h>
+ #include <crypto/crypto_util.h>
+ #include <debug_utils-inl.h>
+ #include <env-inl.h>
+@@ -791,6 +792,14 @@ Maybe<TLSContext::Options> TLSContext::Options::From(Environment* env,
+     return Nothing<Options>();
+   }
+ 
++  Local<Value> ech;
++  if (!params->Get(env->context(), state.ech_config_list_string()).ToLocal(&ech))
++    return Nothing<Options>();
++  if (!ech->IsUndefined()) {
++    if (!ech->IsArrayBufferView() ||
++        !Store::From(ech.As<ArrayBufferView>()).To(&options.ech_config_list))
++      return Nothing<Options>();
++  }
+   return Just<Options>(options);
+ }
+ 
+@@ -831,6 +840,7 @@ void TLSContext::Options::MemoryInfo(MemoryTracker* tracker) const {
+   tracker->TrackField("certs", certs);
+   tracker->TrackField("ca", ca);
+   tracker->TrackField("crl", crl);
++  tracker->TrackField("ech_config_list", ech_config_list);
+ }
+ 
+ const TLSContext::Options TLSContext::Options::kDefault = {};
+@@ -932,7 +942,17 @@ void TLSSession::Initialize(
+         }
+       }
+ 
+-      if (maybeSessionTicket.has_value()) {
++      if (options.ech_config_list) {
++        const ngtcp2_vec config = options.ech_config_list;
++        if (!crypto::ConfigureECH(ossl_context_, config.base, config.len)) {
++          validation_error_ = "ECH requires OpenSSL 4 and a valid ECHConfigList";
++          ossl_context_.reset();
++          return;
++        }
++      }
++
++      // ECH must be authenticated before application data, including 0-RTT.
++      if (!options.ech_config_list && maybeSessionTicket.has_value()) {
+         const auto& sessionTicket = *maybeSessionTicket;
+         uv_buf_t buf = sessionTicket.ticket();
+         SSLSessionPointer ticket = crypto::GetTLSSession(
+@@ -1003,6 +1023,10 @@ TLSSession::VerifyPeerIdentity(Environment* env) {
+   return PeerIdentityValidationError{reason, code};
+ }
+ 
++bool TLSSession::ech_accepted() const {
++  return crypto::GetECHStatus(ossl_context_) == 1;
++}
++
+ MaybeLocal<Object> TLSSession::cert(Environment* env) const {
+   SSLPointerRef ssl(ossl_context_);
+   return crypto::X509Certificate::GetCert(env, ssl);
+diff --git a/src/quic/tlscontext.h b/src/quic/tlscontext.h
+index 8209eda12d..902afa0564 100644
+--- a/src/quic/tlscontext.h
++++ b/src/quic/tlscontext.h
+@@ -110,6 +110,7 @@ class TLSSession final : public MemoryRetainer {
+   // accepted by the TLS session. This will assert if the handshake has
+   // not been completed.
+   bool early_data_was_accepted() const;
++  bool ech_accepted() const;
+   bool early_data_was_rejected() const;
+   bool early_data_was_attempted() const;
+ 
+@@ -241,6 +242,9 @@ class TLSContext final : public MemoryRetainer,
+     // When true, enables keylog output for the session.
+     bool keylog = false;
+ 
++    // Client-only, copied ECHConfigList. Configured ECH is mandatory.
++    Store ech_config_list;
++
+     // When true, the peer certificate is verified against the list of supplied
+     // CA. If verification fails, the connection will be refused. When set,
+     // instructs the server session to request a client auth certificate. This

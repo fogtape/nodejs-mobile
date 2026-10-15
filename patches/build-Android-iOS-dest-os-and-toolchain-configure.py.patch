@@ -31,7 +31,7 @@ Assisted-by: Codex
  2 files changed, 99 insertions(+), 15 deletions(-)
 
 diff --git a/android_configure.py b/android_configure.py
-index 5cea0393f4..fe0f9fd462 100644
+index 5cea0393f4..b1a1c6f827 100644
 --- a/android_configure.py
 +++ b/android_configure.py
 @@ -1,25 +1,15 @@
@@ -157,7 +157,7 @@ index 5cea0393f4..fe0f9fd462 100644
 +        print("\033[91mError: \033[0m" + "NODEJS_MOBILE_ANDROID_OPENSSL_DIR is not a directory: " + openssl_dir)
 +        sys.exit(1)
 +    GYP_DEFINES += " nodejs_mobile_openssl_libpath=" + openssl_dir + "/lib"
-+    openssl_flags = (" --shared-openssl"
++    openssl_flags = (" --experimental-quic --shared-openssl"
 +                     " --shared-openssl-includes=" + shlex.quote(openssl_dir + "/include"))
 +
  os.environ['GYP_DEFINES'] = GYP_DEFINES

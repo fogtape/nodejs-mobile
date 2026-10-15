@@ -138,3 +138,13 @@ build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	deps/icu-small/source/t
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/danmu-lite.json
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/icu-generic.gyp
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/prepare-mobile-icu.py
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	deps/ngtcp2/ngtcp2.gyp
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/internal/quic/quic.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/internal/tls/wrap.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/tls.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/crypto/crypto_tls.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/crypto/crypto_tls.h
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/bindingdata.h
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/session.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.h
