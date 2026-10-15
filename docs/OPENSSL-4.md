@@ -44,6 +44,18 @@ ngtcp2/nghttp3 side to be provided and is not part of this change.
   The Build workflow repeats this after restore, so cache hits are covered.
 - On device, `process.versions.openssl` reports `4.0.3`.
 
+## Validation record
+
+[Build run 38581872268](https://github.com/fogtape/nodejs-mobile/actions/runs/38581872268)
+(2026-10-14, tree `d41435800d43f8de4c6775704f8b477e371f93ee`) passed all six
+Android legs (full/lite × arm/arm64/x86_64) and all four iOS legs, both
+Android boot smokes and both Android curated suites. The full device suites
+are skipped on manual dispatches, so this is a preview gate, not a release
+run. Every Android job re-verified the embedded version string, and a
+downloaded `nodejs-mobile-android-lite` artifact carries `OpenSSL 4.0.3` in
+all three ABIs. `node:quic` remains disabled on this line; wiring ECH into
+node:tls / node:quic is the follow-up.
+
 ## Fall back to the bundled line
 
 ```sh

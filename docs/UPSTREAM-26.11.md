@@ -11,7 +11,8 @@ source-tree checksum.
 
 On top of this rebase, Android links a prebuilt OpenSSL 4.0.3 static tree
 ([OPENSSL-4.md](OPENSSL-4.md)); iOS and the bundled-OpenSSL fallback are
-unchanged.
+unchanged. Build run 38581872268 validated the combination (details in
+[OPENSSL-4.md](OPENSSL-4.md)).
 
 This recipe previews official Node.js release proposal
 [#66546](https://github.com/nodejs/node/pull/66546), titled
