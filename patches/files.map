@@ -148,3 +148,4 @@ src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/bindingdata.h
 src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/session.cc
 src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.cc
 src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.h
+src-fix-QUIC-receive-time-after-session-creation.patch	src/quic/endpoint.cc

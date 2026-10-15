@@ -69,8 +69,8 @@ Android boot smokes and both Android curated suites. The full device suites
 are skipped on manual dispatches, so this is a preview gate, not a release
 run. Every Android job re-verified the embedded version string, and a
 downloaded `nodejs-mobile-android-lite` artifact carries `OpenSSL 4.0.3` in
-all three ABIs. `node:quic` remains disabled on this line; wiring ECH into
-node:tls / node:quic is the follow-up.
+all three ABIs. That older run had QUIC disabled and did not contain the
+ECH client APIs described above.
 
 ## Fall back to the bundled line
 

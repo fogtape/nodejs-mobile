@@ -11,7 +11,7 @@ assert.strictEqual(typeof tls.ECH_SUPPORTED, 'boolean');
 assert.strictEqual(typeof tls.TLSSocket.prototype.getECHStatus, 'function');
 if (process.platform === 'android' && /^4\./.test(process.versions.openssl)) {
   assert.strictEqual(tls.ECH_SUPPORTED, true);
-  assert.strictEqual(process.features.quic, true);
+  assert.strictEqual(String(process.config.variables.node_use_quic), 'true');
 }
 assert.throws(() => tls.connect({ echConfigList: 'invalid' }),
               { code: 'ERR_INVALID_ARG_TYPE' });

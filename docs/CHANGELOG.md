@@ -51,9 +51,11 @@
   changes only the upstream-workflow removal patch.
 - Android links a prebuilt static OpenSSL 4.0.3 tree built by
   `tools/android_openssl.sh` (`--shared-openssl`, SHA-256-verified release
-  asset) instead of the bundled 3.5.x line — the library prerequisite for
-  future ECH work. iOS and the bundled-OpenSSL fallback are unchanged;
-  `node:quic` remains disabled and no ECH API is enabled by this change.
+  asset) instead of the bundled 3.5.x line. Android enables native QUIC/H3
+  with the vendored ngtcp2/nghttp3 libraries. TLS and QUIC client options
+  accept a mandatory ECHConfigList and expose authenticated acceptance;
+  rejected ECH cannot fall back to plaintext SNI. iOS and the bundled
+  OpenSSL fallback retain their previous library and no ECH support.
 
 <a id="26.11.0-0"></a>
 ## 2026-10-07, Version 26.11.0-0 (Current)

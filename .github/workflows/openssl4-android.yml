@@ -1,0 +1,132 @@
+name: OpenSSL 4 Android client
+
+on:
+  push:
+    branches: [openssl4/node26.11.1]
+    paths: [patches/**, mobile-src/**, expected-tree.txt, .github/workflows/openssl4-android.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openssl4-android-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODEJS_MOBILE_FLAVOR: lite
+  SCCACHE_IDLE_TIMEOUT: '0'
+  SCCACHE_LOG: warn
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, arm, x86_64]
+    env:
+      LDFLAGS: -Wl,-z,max-page-size=16384
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/materialize
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib clang-19
+          echo CC_host=clang-19 >> "$GITHUB_ENV"
+          echo CXX_host=clang++-19 >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install setuptools packaging
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        id: ndk
+        with:
+          ndk-version: r29
+          add-to-path: false
+      - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
+      - uses: ./.github/actions/restore-compiler-cache
+        id: objects
+        with:
+          lane: android-${{ matrix.arch }}-lite-ndkr29
+      # This development workflow only uses the local cache. No R2 credentials,
+      # tags, releases or publication permissions enter this job.
+      - name: Build OpenSSL 4 and native QUIC
+        env:
+          NODEJS_MOBILE_SCCACHE: '1'
+          NDK: ${{ steps.ndk.outputs.ndk-path }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          ./tools/android_build.sh "$NDK" 24 "$ARCH"
+          ./tools/copy_libnode_headers.sh android
+          python tools/strip-android-runtime.py --ndk "$NDK" out_android
+      - name: Flush compiler objects
+        if: always() && steps.objects.outcome == 'success'
+        run: sccache --stop-server || true
+      - uses: actions/cache/save@v6
+        if: always() && steps.objects.outcome == 'success'
+        with:
+          path: ${{ runner.temp }}/nodejs-mobile-sccache
+          key: ${{ steps.objects.outputs.key }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: openssl4-${{ matrix.arch }}
+          path: out_android
+          retention-days: 30
+  package:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: openssl4-*
+          merge-multiple: true
+          path: out_android
+      - name: Package the verified ABI set
+        run: |
+          mkdir -p artifacts/bin artifacts/include
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            test -s "out_android/$abi/libnode.so"
+            grep -a -o -m1 'OpenSSL 4\.0\.3' "out_android/$abi/libnode.so"
+            cp -R "out_android/$abi" artifacts/bin/
+          done
+          cp -R out_android/libnode/include/* artifacts/include/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nodejs-mobile-android-lite
+          path: artifacts
+          retention-days: 90
+  smoke:
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/materialize
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        id: ndk
+        with:
+          ndk-version: r29
+          add-to-path: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: nodejs-mobile-android-lite
+          path: artifacts
+      - name: Enable KVM and build embedder
+        env:
+          NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ./tools/mobile-test/smoke/build-android-embedder.sh "$NDK" x86_64 "$PWD/artifacts/bin/x86_64" "$PWD/node_smoke"
+          cp "$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so" "$PWD/libc++_shared.so"
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 30
+          arch: x86_64
+          target: default
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: ./tools/mobile-test/smoke/run-android-smoke.sh "$PWD/node_smoke" "$PWD/artifacts/bin/x86_64/libnode.so" "$PWD/libc++_shared.so" && ./tools/mobile-test/smoke/run-android-quic-smoke.sh "$PWD/node_smoke" "$PWD/artifacts/bin/x86_64/libnode.so" "$PWD/libc++_shared.so"

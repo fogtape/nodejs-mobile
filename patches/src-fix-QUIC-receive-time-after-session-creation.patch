@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: fogtape <lilixu3210@gmail.com>
+Date: Thu, 15 Oct 2026 10:40:00 +0800
+Subject: [PATCH] src: fix QUIC receive time after session creation
+
+A server Initial packet creates an ngtcp2 connection after Endpoint::Receive
+caches its clock. Passing that earlier timestamp to the first read violates
+ngtcp2 monotonicity and aborts the process. Resolve read time inside
+Session::ReadPacket, after connection creation, while retaining receive
+batching and deferred writes.
+
+Assisted-by: Codex
+---
+ src/quic/endpoint.cc | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/quic/endpoint.cc b/src/quic/endpoint.cc
+index 13ca955fa2..e12efd5f51 100644
+--- a/src/quic/endpoint.cc
++++ b/src/quic/endpoint.cc
+@@ -1392,13 +1392,15 @@ void Endpoint::Receive(const uint8_t* data,
+     // received in the same I/O burst are processed before any responses
+     // are generated. The deferred flush via BindingData's uv_check
+     // callback calls SendPendingData once per dirty session after all
+-    // packets in the burst have been read.
++    // packets in the burst have been read. Let ReadPacket sample its own
++    // timestamp: accepting an Initial packet constructs a session after the
++    // endpoint's cached `now`, and ngtcp2 requires read timestamps to be at
++    // least settings.initial_ts. Reusing `now` aborts the first server read.
+     if (session->ReadPacket(pkt_data,
+                             pkt_len,
+                             local_address,
+                             remote_address,
+-                            PacketInfo(),
+-                            now)) {
++                            PacketInfo())) {
+       STAT_INCREMENT_N(Stats, bytes_received, pkt_len);
+       STAT_INCREMENT(Stats, packets_received);
+     }
