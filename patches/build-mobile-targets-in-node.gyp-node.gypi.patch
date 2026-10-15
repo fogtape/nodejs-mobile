@@ -23,8 +23,8 @@ Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
  node.gyp  | 23 ++++++++++++++++++++---
- node.gypi | 40 +++++++++++++++++++++++++++++++++++-----
- 2 files changed, 55 insertions(+), 8 deletions(-)
+ node.gypi | 51 +++++++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 63 insertions(+), 11 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
 index 587df5cace..7fa1892d2d 100644
@@ -89,7 +89,7 @@ index 587df5cace..7fa1892d2d 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 9eb972adc4..42015a4773 100644
+index 9eb972adc4..56a8f45516 100644
 --- a/node.gypi
 +++ b/node.gypi
 @@ -280,6 +280,11 @@
@@ -155,7 +155,7 @@ index 9eb972adc4..42015a4773 100644
          }],
        ]
      }, {
-@@ -472,7 +497,7 @@
+@@ -472,17 +497,27 @@
      }],
      [ 'node_use_quic=="true"', {
        'conditions': [
@@ -164,7 +164,19 @@ index 9eb972adc4..42015a4773 100644
            'dependencies': [
              './deps/ngtcp2/ngtcp2.gyp:ngtcp2',
              './deps/ngtcp2/ngtcp2.gyp:nghttp3',
-@@ -484,5 +509,10 @@
+ 
+-            # For tests
+-            './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_server',
+-            './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_client',
++          ],
++          'conditions': [
++            [ 'OS not in "android ios"', {
++              'dependencies': [
++                './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_server',
++                './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_client',
++              ],
++            }],
+           ],
          }],
        ],
      }],
