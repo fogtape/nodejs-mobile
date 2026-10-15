@@ -26,7 +26,7 @@ jobs:
       matrix:
         arch: [arm64, arm, x86_64]
     env:
-      LDFLAGS: -Wl,-z,max-page-size=16384
+      LDFLAGS: -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/materialize

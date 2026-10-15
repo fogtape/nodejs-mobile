@@ -22,6 +22,10 @@ ANDROID_NDK_PATH=${PWD}
 cd "$SCRIPT_DIR"
 cd ../
 
+# Keep RELRO padding and load segments compatible with 16 KB devices, including
+# local builds that do not inherit the CI job's linker flags.
+export LDFLAGS="${LDFLAGS:-} -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
+
 BUILD_ARCH() {
   # Clean previous compilation
   make clean
@@ -69,6 +73,7 @@ BUILD_ARCH() {
     python3 tools/strip-android-runtime.py --ndk "$ANDROID_NDK_PATH" \
       "out_android/$TARGET_ARCH_FOLDER/libnode.so"
   fi
+  python3 tools/check-android-elf.py "out_android/$TARGET_ARCH_FOLDER/libnode.so"
 }
 
 if [ $# -eq 2 ]; then

@@ -59,6 +59,11 @@ that build predates these APIs and does not validate ECH/H3.
   `grep -a -o -m1 'OpenSSL 4\.0\.[0-9]*' out_android/<abi>/libnode.so`.
   The Build workflow repeats this after restore, so cache hits are covered.
 - On device, `process.versions.openssl` reports `4.0.3`.
+- Android builds set both `max-page-size=16384` and `common-page-size=16384`.
+  `tools/check-android-elf.py` rejects a library unless every LOAD segment
+  has 16 KB alignment and congruent file/virtual offsets, and every GNU_RELRO
+  segment ends at a 16 KB boundary. Checking only LOAD alignment misses
+  libraries whose RELRO padding still uses 4 KB pages.
 
 ## Validation record
 

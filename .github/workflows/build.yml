@@ -135,7 +135,7 @@ jobs:
       # change to these flags must invalidate the cached libnode. Never in
       # workflow env: it would leak into the iOS link, which Apple's ld
       # rejects ("ld: unknown options: -z").
-      ANDROID_LDFLAGS: "-Wl,-z,max-page-size=16384"
+      ANDROID_LDFLAGS: "-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
 
     steps:
       - uses: actions/checkout@v7
