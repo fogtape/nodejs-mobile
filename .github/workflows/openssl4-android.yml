@@ -2,7 +2,7 @@ name: OpenSSL 4 Android client
 
 on:
   push:
-    branches: [openssl4/node26.11.1]
+    branches: [openssl4/node26.12.0]
     paths: [patches/**, mobile-src/**, expected-tree.txt, .github/workflows/openssl4-android.yml]
   workflow_dispatch:
 

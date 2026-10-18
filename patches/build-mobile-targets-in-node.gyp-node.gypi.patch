@@ -27,10 +27,10 @@ Assisted-by: Codex
  2 files changed, 63 insertions(+), 11 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 587df5cace..7fa1892d2d 100644
+index 5334b8a746..ca26defa34 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -28,6 +28,11 @@
+@@ -29,6 +29,11 @@
      'node_shared_nbytes%': 'false',
      'node_shared_nghttp2%': 'false',
      'node_shared_openssl%': 'false',
@@ -42,7 +42,7 @@ index 587df5cace..7fa1892d2d 100644
      'node_shared_perfetto%': 'false',
      'node_shared_sqlite%': 'false',
      'node_shared_ffi%': 'false',
-@@ -77,6 +82,11 @@
+@@ -78,6 +83,11 @@
        'deps/acorn/acorn/dist/acorn.js',
        'deps/acorn/acorn-walk/dist/walk.js',
        'deps/minimatch/index.js',
@@ -54,7 +54,7 @@ index 587df5cace..7fa1892d2d 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -580,6 +590,11 @@
+@@ -581,6 +591,11 @@
        ['OS=="linux" and clang==1', {
          'libraries': ['-latomic'],
        }],
@@ -66,7 +66,7 @@ index 587df5cace..7fa1892d2d 100644
      ],
    },
  
-@@ -1427,8 +1442,9 @@
+@@ -1428,8 +1443,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -78,7 +78,7 @@ index 587df5cace..7fa1892d2d 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1652,7 +1668,8 @@
+@@ -1653,7 +1669,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],

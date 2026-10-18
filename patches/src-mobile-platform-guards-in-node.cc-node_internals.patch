@@ -39,10 +39,10 @@ index 163070b501..468b5d2c2c 100644
  #endif  // __POSIX__
  }
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 1c4da8e2d2..3dc190f0a0 100644
+index bb45d73e90..3d6deb6625 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -326,7 +326,7 @@ class ThreadPoolWork {
+@@ -327,7 +327,7 @@ class ThreadPoolWork {
  
  // Functions defined in node.cc that are exposed via the bootstrapper object
  

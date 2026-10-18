@@ -166,7 +166,7 @@ index 5cea0393f4..b1a1c6f827 100644
 -    os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --openssl-no-asm --cross-compiling")
 +    sys.exit(os.system("./configure --dest-cpu=" + DEST_CPU + " --dest-os=android --with-intl=" + intl + extra_flags + openssl_flags + " --cross-compiling --shared") >> 8)
 diff --git a/configure.py b/configure.py
-index acda6a16c9..5ad9c1e81d 100755
+index a3769ff2d8..c052538d46 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1304,6 +1304,11 @@ parser.add_argument('-C',
@@ -191,8 +191,8 @@ index acda6a16c9..5ad9c1e81d 100755
    if options.dest_os == 'android':
      o['variables']['OS'] = 'android'
    o['variables']['node_enable_experimentals'] = b(options.enable_all_experimentals)
-@@ -2200,6 +2208,14 @@ def configure_library(lib, output, pkgname=None):
-   output['variables']['node_' + shared_lib] = b(getattr(options, shared_lib))
+@@ -2201,6 +2209,14 @@ def configure_library(lib, output, pkgname=None, libraries_key='libraries'):
+   libraries = output[libraries_key]
  
    if getattr(options, shared_lib):
 +    # nodejs-mobile: the Android build links the external OpenSSL tree from

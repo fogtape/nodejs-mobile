@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.12.0-0">26.12.0-0</a><br/>
 <a href="#26.11.1-0">26.11.1-0</a><br/>
 <a href="#26.11.0-0">26.11.0-0</a><br/>
 <a href="#26.10.0-0">26.10.0-0</a><br/>
@@ -42,6 +43,25 @@
 </td>
 </tr>
 </table>
+
+<a id="26.12.0-0"></a>
+## 2026-10-18, Version 26.12.0-0 (Current)
+
+- Rebase the mobile patch series onto the official Node.js `v26.12.0` tag
+  (`26e72d85a611e222e3f06025de8a3c496923bacd`). All 24 patches apply; the
+  OpenSSL 4 ECH/H3 and QUIC changes carry forward unchanged, and the
+  upstream-workflow removal patch absorbs 16 upstream workflow edits.
+- 26.12.0 is a regular Current minor release with no security designation:
+  V8, libuv, npm and OpenSSL versions are unchanged from 26.11.1. Relevant
+  mobile changes are upstream HTTP/stream/ESM fixes and the new
+  `http.websocketMask()` / `websocketUnmask()` helpers.
+- Keep the danmu lite feature contract unchanged: complete ICU API with the
+  reviewed data profile, web encodings, Chinese collation and normalization;
+  omit Temporal, FFI, Inspector, SQLite/Web Storage, Amaro and SEA. Android
+  retains JIT/native WASM, JNI/ECH/H3 and 16 KB page alignment.
+- This source upgrade does not itself switch `danmu-api-android` to 26.12.
+  A new runtime archive, checksum update and device validation are separate,
+  reviewed steps.
 
 <a id="26.11.1-0"></a>
 ## 2026-10-14, Version 26.11.1-0 (Current)

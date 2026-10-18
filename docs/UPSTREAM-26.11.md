@@ -1,17 +1,25 @@
-# Node 26.11 upstream line
+# Node 26 upstream line
 
-`upstream-base.txt` pins the official tag `v26.11.1`
-(`364593d0631def13e3043dd84f77ebca2c767ce5`), the patch release that
-followed the reviewed 26.11.0 proposal snapshot described below. The rebase
-re-emitted 21 of the 22 patches byte-identically; the workflow removal
-patch absorbed upstream's edits to `.github/workflows/build-tarball.yml`
-(`modify/delete`, resolved as deletion per that patch's intent). The mobile
-version is `26.11.1-0`, and `expected-tree.txt` records the new
-source-tree checksum.
+`upstream-base.txt` pins the official tag `v26.12.0`
+(`26e72d85a611e222e3f06025de8a3c496923bacd`), which follows the reviewed
+26.11.1 line described below. The rebase re-emitted the same 24 patches;
+only context/line-number changes and the workflow-removal patch's updated
+upstream file contents differ. The mobile version is `26.12.0-0`, and
+`expected-tree.txt` records the new source-tree checksum.
 
-On top of this rebase, Android links a prebuilt OpenSSL 4.0.3 static tree
+On top of this line, Android links a prebuilt OpenSSL 4.0.3 static tree
 ([OPENSSL-4.md](OPENSSL-4.md)); iOS and the bundled-OpenSSL fallback are
-unchanged. Build run 38581872268 validated the combination (details in
+unchanged. The OpenSSL 4 ECH/H3 APIs and QUIC patches apply unchanged to
+26.12.0; rebuild and device validation remain required before switching an
+app to this runtime.
+
+## Previous 26.11 line
+
+The 26.11.1 base was `364593d0631def13e3043dd84f77ebca2c767ce5`. The
+rebase from the 26.11.0 proposal snapshot re-emitted 21 of 22 patches
+byte-identically; the workflow removal patch absorbed upstream's
+`modify/delete` edits and kept the deletion. Build run 38581872268
+validated the OpenSSL 4 combination (details in
 [OPENSSL-4.md](OPENSSL-4.md)).
 
 This recipe previews official Node.js release proposal

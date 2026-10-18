@@ -1,8 +1,8 @@
 # Build Instructions
 
 These instructions describe the Node 26 line. This checkout is the pinned
-26.11 upstream PR preview on `upgrade/node26.11-mobile-lite`;
-see [provenance](UPSTREAM-26.11.md). For Node 24,
+26.12 upstream line on `openssl4/node26.12.0`; see
+[provenance](UPSTREAM-26.11.md). For Node 24,
 use the `recipe` branch and its toolchain instructions. See
 [VERSION-LINES.md](VERSION-LINES.md) for the maintenance policy and the
 Node 26 FFI/Temporal configuration.
@@ -88,7 +88,7 @@ sdkmanager "ndk;29.0.14206865"
 This repository holds the recipe, not the source. Generate a tree from it:
 
 ```sh
-git clone -b upgrade/node26.11-mobile-lite https://github.com/fogtape/nodejs-mobile
+git clone -b openssl4/node26.12.0 https://github.com/fogtape/nodejs-mobile
 cd nodejs-mobile && scripts/prepare.sh && cd out
 ```
 

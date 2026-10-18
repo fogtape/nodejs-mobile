@@ -7,10 +7,10 @@ versioned together on that branch.
 | Branch | Upstream base | Purpose | Outputs |
 | --- | --- | --- | --- |
 | `recipe` | Node.js 24.21.0 | Stable Node 24 maintenance and releases | Android and iOS, full and lite |
-| `recipe-v26` | Node.js 26.11.1 (official tag) | Independent Node 26 maintenance and releases | Android and iOS, full and lite |
+| `recipe-v26` | Node.js 26.12.0 (official tag) | Independent Node 26 maintenance and releases | Android and iOS, full and lite |
 
-For Node 26.11, clone `recipe-v26`; the line now pins the official
-`v26.11.1` tag. The earlier 26.11.0 proposal snapshot — and the explicit
+For Node 26, clone `recipe-v26`; the line now pins the official
+`v26.12.0` tag. The earlier 26.11.0 proposal snapshot — and the explicit
 full-SHA input its publication required — stays documented in
 [26.11 provenance](UPSTREAM-26.11.md). Default releases require an
 official upstream tag and a reviewed release marker.
@@ -52,7 +52,7 @@ bundled 3.5.x line. The fork also exposes mandatory `echConfigList` client
 options in TLS and QUIC and enables Android native H3; see
 [OPENSSL-4.md](OPENSSL-4.md) for the API and validation record.
 
-This Node 26.11 preview’s full builds enable V8 Temporal and the experimental `node:ffi`
+This Node 26 line’s full builds enable V8 Temporal and the experimental `node:ffi`
 module on Android and iOS, with complete ICU data (`--with-intl=full-icu`)
 for named time zones. small-ICU cannot load Temporal timezone information
 in this upstream version. The build requires Rust **1.86.0** and its standard
@@ -99,7 +99,7 @@ run URL with the downloaded files; do not mix platform slices or flavors
 from different runs. Versioned preview packages additionally contain
 `BUILD-INFO.json` and are accompanied by `SHA256SUMS`.
 
-The line reports `process.version` as `v26.11.1`; `process.versions.mobile` identifies
+The line reports `process.version` as `v26.12.0`; `process.versions.mobile` identifies
 the mobile build revision. A CI preview is not a published release. **Cut release** also supports
 `recipe-v26`; its reviewed PR arms a specific version; after merge, manually run **Build**
 with `operation=prerelease` and that exact mobile version. Push/PR builds do

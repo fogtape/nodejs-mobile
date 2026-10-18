@@ -35,10 +35,10 @@ index 7ae6279248..3dcd7278a1 100644
              '<@(ngtcp2_sources_ossl)',
            ],
 diff --git a/lib/internal/quic/quic.js b/lib/internal/quic/quic.js
-index 4922ce5627..9ae28a6f48 100644
+index d163311dc1..e3e5d0f1fc 100644
 --- a/lib/internal/quic/quic.js
 +++ b/lib/internal/quic/quic.js
-@@ -822,13 +822,13 @@ setCallbacks({
+@@ -823,13 +823,13 @@ setCallbacks({
                       validationErrorReason,
                       validationErrorCode,
                       earlyDataAttempted,
@@ -54,7 +54,7 @@ index 4922ce5627..9ae28a6f48 100644
    },
  
    /**
-@@ -4209,7 +4209,7 @@ class QuicSession {
+@@ -4217,7 +4217,7 @@ class QuicSession {
     * @param {number} validationErrorCode
     */
    [kHandshake](servername, protocol, cipher, cipherVersion, validationErrorReason,
@@ -63,7 +63,7 @@ index 4922ce5627..9ae28a6f48 100644
      const inner = this.#inner;
      if (this.destroyed || !inner.pendingOpen.resolve) return;
  
-@@ -4228,6 +4228,7 @@ class QuicSession {
+@@ -4236,6 +4236,7 @@ class QuicSession {
        cipherVersion,
        validationErrorReason,
        validationErrorCode,
@@ -71,7 +71,7 @@ index 4922ce5627..9ae28a6f48 100644
        earlyDataAttempted,
        earlyDataAccepted,
      };
-@@ -5231,6 +5232,7 @@ function processIdentityOptions(identity, label) {
+@@ -5239,6 +5240,7 @@ function processIdentityOptions(identity, label) {
  function processTlsOptions(tls, forServer) {
    const {
      servername,
@@ -79,7 +79,7 @@ index 4922ce5627..9ae28a6f48 100644
      alpn,
      ciphers = DEFAULT_CIPHERS,
      groups = DEFAULT_GROUPS,
-@@ -5252,6 +5254,12 @@ function processTlsOptions(tls, forServer) {
+@@ -5260,6 +5262,12 @@ function processTlsOptions(tls, forServer) {
    if (servername !== undefined) {
      validateString(servername, 'options.servername');
    }
@@ -92,7 +92,7 @@ index 4922ce5627..9ae28a6f48 100644
    if (ciphers !== undefined) {
      validateString(ciphers, 'options.ciphers');
    }
-@@ -5364,6 +5372,7 @@ function processTlsOptions(tls, forServer) {
+@@ -5372,6 +5380,7 @@ function processTlsOptions(tls, forServer) {
    const shared = {
      __proto__: null,
      servername,
@@ -255,10 +255,10 @@ index ab60240188..23b80c2154 100644
    static void SetVerifyMode(const v8::FunctionCallbackInfo<v8::Value>& args);
    static void Start(const v8::FunctionCallbackInfo<v8::Value>& args);
 diff --git a/src/quic/bindingdata.h b/src/quic/bindingdata.h
-index 2ef9f76853..037bb56e8a 100644
+index 7d424b9bf6..21e55af1f0 100644
 --- a/src/quic/bindingdata.h
 +++ b/src/quic/bindingdata.h
-@@ -90,6 +90,7 @@ class SessionManager;
+@@ -91,6 +91,7 @@ struct QuicAllocState;
    V(disable_stateless_reset, "disableStatelessReset")                          \
    V(draining_period_multiplier, "drainingPeriodMultiplier")                    \
    V(enable_connect_protocol, "enableConnectProtocol")                          \

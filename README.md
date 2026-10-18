@@ -9,19 +9,19 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 26** (`v26.11.1`, official release).
-This checkout pins the official tag `v26.11.1` at commit
-`364593d0631def13e3043dd84f77ebca2c767ce5`; it rebases the reviewed
-[proposal #66546](https://github.com/nodejs/node/pull/66546) snapshot to
-the patch release upstream published afterwards. [Provenance and
-validation](docs/UPSTREAM-26.11.md) record the rebase.
+Current line: **Node.js 26** (`v26.12.0`, official release).
+This checkout pins the official tag `v26.12.0` at commit
+`26e72d85a611e222e3f06025de8a3c496923bacd`. The patch series moves forward
+from the reviewed 26.11 line with no mobile-code changes beyond upstream
+context updates. [Provenance and validation](docs/UPSTREAM-26.11.md) record
+the rebase.
 Android builds link a prebuilt static OpenSSL 4.0.3 tree instead of the
 bundled 3.5.x line; see [Android OpenSSL 4.x](docs/OPENSSL-4.md).
 The stable Node 24 line continues independently on [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe).
 See [maintained version lines](docs/VERSION-LINES.md) for branch selection,
 build instructions and download locations. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (e.g. `"26.11.1-0"`).
+mobile build is identified by `process.versions.mobile` (e.g. `"26.12.0-0"`).
 
 ## Get it
 
@@ -60,7 +60,7 @@ for building one — about 1.5 MB instead of a 1 GB fork:
 
 | | |
 |---|---|
-| `upstream-base.txt` | the pinned upstream PR commit (see [26.11 provenance](docs/UPSTREAM-26.11.md)) |
+| `upstream-base.txt` | the pinned upstream release tag (see [26.11 provenance](docs/UPSTREAM-26.11.md)) |
 | `patches/` | per-concern patches to upstream files, plus `series` (apply order) and `files.map` (which patch owns which file) |
 | `mobile-src/` | files that have no upstream counterpart — build scripts, the iOS framework project, test apps and harness |
 | `expected-tree.txt` | the git tree hash the reconstruction must produce |

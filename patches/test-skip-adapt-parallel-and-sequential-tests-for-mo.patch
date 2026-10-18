@@ -1745,7 +1745,7 @@ index 0fe217d4e4..4578a1cf97 100644
  # https://github.com/nodejs/node/issues/51662
  test-http-correct-hostname: SKIP
 diff --git a/test/parallel/test-bench-stream.js b/test/parallel/test-bench-stream.js
-index dbb68f8be9..5347abd707 100644
+index 59d544400d..e0aaa1f0cb 100644
 --- a/test/parallel/test-bench-stream.js
 +++ b/test/parallel/test-bench-stream.js
 @@ -412,5 +412,6 @@ function testOperatorsWithoutStreamModule() {
