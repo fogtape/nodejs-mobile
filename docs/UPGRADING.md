@@ -22,7 +22,7 @@ The upgrade builds both Android/iOS flavors, runs the full device gates and
 packages versioned CI previews. Cut release and publication require an
 official upstream tag on this line. Once the tag exists, compare it against
 the pinned proposal, update the pin, regenerate and rerun the gates.
-See [the Node 24.22 proposal](UPSTREAM-24.22.md) and the current
+See [the Node 24.22 line notes](UPSTREAM-24.22.md) and the current
 [manual release procedure](RELEASING.md).
 
 ## Re-base the series

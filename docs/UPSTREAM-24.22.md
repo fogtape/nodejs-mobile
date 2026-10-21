@@ -1,16 +1,27 @@
-# Node 24.22 LTS upstream PR preview
+# Node 24.22 LTS upstream line
 
-This recipe previews the official Node.js release proposal
-[#66667](https://github.com/nodejs/node/pull/66667), titled
-`2026-10-14, Version 24.22.0 'Krypton' (LTS)`. On 2026-10-13 it is still a
-draft PR, with no official `v24.22.0` tag.
+`upstream-base.txt` pins the official tag `v24.22.1`
+(`ce7aaf1cee78b8cf0ce17364260535c418d3ed26`), upstream's security release
+for this line. It replaces the reviewed release-proposal snapshot of
+[#66667](https://github.com/nodejs/node/pull/66667), pinned at
+`a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`. That proposal was published as
+`v24.22.0` on 2026-10-14, and its commit differs from the reviewed snapshot
+only in `doc/changelogs/CHANGELOG_V24.md`.
 
-The reviewed baseline is pinned in `upstream-base.txt`:
-`a5d0eb95dd03b90986ad1a7c0cd3f2de1a0f383c`.
-The upstream header identifies Node 24.22.0 and the mobile header identifies
-24.22.0-0. Those version strings identify the proposed source; they do not
-mean that the upstream release has been published. The immutable commit and
-`expected-tree.txt` identify the build if the proposal branch changes.
+The mobile header now reports `24.22.1-0`, and `expected-tree.txt` records
+the rebuilt product tree. The rebase re-emitted 20 patches; only two changed
+and only in context/line numbers — `common.gypi` (`v8_embedder_string`) and
+the mobile adjustment in `src/crypto/crypto_context.cc`, whose upstream
+X.509 hardening lands ahead of the mobile hunks. The mobile hunks themselves
+are unchanged.
+
+The release carries upstream's security fixes for the line: seven CVEs
+covering tls IP normalization and non-canonical IP addresses, dns resolve
+null bytes, the http agent data guard, the permission model in
+`realpathSync`, crypto snapshot random caches and brotli block-switch
+decoding. It also updates OpenSSL to 3.5.9, c-ares to 1.34.9, undici to
+7.30.1, tzdata to 2026e and the root certificates to NSS 3.131.1, and
+rejects certificate chains containing blocked public keys.
 
 ## Lite configuration
 
@@ -197,8 +208,16 @@ The updated harness is included in source tree
 
 ## Move to the official release
 
-After upstream publishes `v24.22.0`, compare its commit with this baseline,
-review any differences, update `upstream-base.txt`, regenerate the recipe and
-checksum, and rerun platform/device validation. Follow
-[RELEASING.md](RELEASING.md) for reviewed version selection and explicit
-publication. A source upgrade or ordinary build does not publish by itself.
+This branch performed the move: it pins `v24.22.1`, the security release
+that followed the reviewed proposal. The proposal commit was compared with
+the published `v24.22.0` tag first — the two trees differ only in
+`doc/changelogs/CHANGELOG_V24.md` — and the recipe was then rebased onto
+`v24.22.1`, regenerated and re-verified.
+
+The procedure, retained for the record: after upstream publishes a release,
+compare its commit with the pin, review any differences, update
+`upstream-base.txt` to the official tag, regenerate the recipe and checksum,
+and rerun platform/device validation. Default Cut release and publication
+reject SHA baselines; follow [RELEASING.md](RELEASING.md) for reviewed
+version selection and explicit publication. A source upgrade or ordinary
+build does not publish by itself.

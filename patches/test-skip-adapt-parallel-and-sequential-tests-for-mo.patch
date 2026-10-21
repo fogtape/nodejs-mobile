@@ -16,7 +16,7 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1511 +++++++++++++++++
+ test/parallel/parallel.status                 | 1519 +++++++++++++++++
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -55,13 +55,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  132 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 39 files changed, 1834 insertions(+), 51 deletions(-)
+ 39 files changed, 1842 insertions(+), 51 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..fccf6d71a2 100644
+index d13efc8ac1..61a2c70d1f 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1525 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -119,6 +119,10 @@ index d13efc8ac1..fccf6d71a2 100644
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-provider-cache-snapshot: SKIP
++# Added by the v24.22.1 security rebase: the new snapshot regression builds
++# and runs snapshots through common/snapshot, which spawns child Node
++# executables (the same limitation as the entry above).
++test-crypto-random-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -790,6 +794,10 @@ index d13efc8ac1..fccf6d71a2 100644
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
 +test-crypto-provider-cache-snapshot: SKIP
++# Added by the v24.22.1 security rebase: the new snapshot regression builds
++# and runs snapshots through common/snapshot, which spawns child Node
++# executables (the same limitation as the entry above).
++test-crypto-random-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP

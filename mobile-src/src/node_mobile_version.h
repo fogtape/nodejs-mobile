@@ -5,7 +5,7 @@
 
 #define NODE_MOBILE_MAJOR_VERSION 24
 #define NODE_MOBILE_MINOR_VERSION 22
-#define NODE_MOBILE_PATCH_VERSION 0
+#define NODE_MOBILE_PATCH_VERSION 1
 
 // Mobile rebuild revision of the same upstream Node version: the -R in the
 // vX.Y.Z-R release tag. Computed and bumped by the Cut release workflow
