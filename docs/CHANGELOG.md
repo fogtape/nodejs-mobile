@@ -63,6 +63,13 @@
   (tls non-canonical IP and SPKI blocklist, dns null bytes, http agent
   pending read, X.509 name conversion) stay runnable; the full device suite
   confirms them.
+- Run `test-crypto-x509`'s malformed-certificate legacy conversion in-process
+  on Android and iOS instead of in a child Node. Upstream added the child to
+  report a native regression as a signal; an app cannot spawn one (Android's
+  `process.execPath` is `app_process`, which aborts with "Error changing
+  dalvik-cache ownership : Permission denied"). The same conversion and
+  assertions run in-process, and a native abort still fails the run through
+  the harness crash verdict.
 - Runtime and flavor configuration is unchanged: complete ICU API, the
   reviewed danmu lite data profile, Android JIT/native WebAssembly and
   pointer compression, iOS jitless V8 with polywasm.

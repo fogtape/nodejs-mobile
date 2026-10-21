@@ -33,6 +33,7 @@ test-mobile-test-harness.patch	test/message/message.status
 test-mobile-test-harness.patch	test/message/testcfg.py
 test-mobile-test-harness.patch	tools/test.py
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/parallel.status
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-crypto-x509.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-bind-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
