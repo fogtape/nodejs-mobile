@@ -14,4 +14,4 @@
 # run prepare.sh (or regenerate-patches.py, which prints the hash) and
 # update the value below in the same commit. If you forget, CI fails and
 # prints the hash it got.
-c6b944fa7886345dbf461cc078475f35469959e5
+55cfa433c72e43f99a49b8ad83ebe62d02cfaffc

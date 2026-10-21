@@ -70,7 +70,22 @@
   spawns child Node executables. The remaining new in-process regressions
   (tls non-canonical IP and SPKI blocklist, dns null bytes, http agent
   pending read, X.509 name conversion, permission audit `realpathSync`) stay
-  runnable; the full device suite confirms them.
+  runnable.
+- Triage the rest of the full device suite. `test-crypto-x509` runs its
+  malformed-certificate legacy conversion in-process on both platforms
+  instead of in a child, and `test-fastutf8stream-flush-mocks` keeps every
+  in-process case while guarding only the one that needs a child with a
+  regular-file stdout. `test-bench-cli-ack`, `test-bench-run-exit-code`,
+  `test-common-wpt-allowed-rejections`, `test-permission-allow-fs-vfs-flags`
+  and `sequential/test-benchmark-node-bench-tools` are excluded because they
+  spawn child Node executables, and `test-sqlite-statement` because its
+  oversized-string cases outgrow the app heap.
+- Android QUIC key-update and H3 regressions are excluded with their reason
+  recorded: seven tests abort inside ngtcp2 with
+  `conn->state == NGTCP2_CS_POST_HANDSHAKE` in `conn_initiate_key_update`.
+  They are unchanged by 26.12, so this belongs to the OpenSSL 4 QUIC line and
+  is carried as a follow-up rather than a regression of this upgrade; the
+  other 261 QUIC tests still run on Android.
 - This source upgrade does not itself switch `danmu-api-android` to 26.12.1.
   A new runtime archive, checksum update and device validation are separate,
   reviewed steps.

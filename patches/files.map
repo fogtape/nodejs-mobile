@@ -36,9 +36,11 @@ test-mobile-test-harness.patch	tools/test.py
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/parallel.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-bench-stream.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-common-wpt-inspect.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-crypto-x509.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-bind-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fastutf8stream-flush-mocks.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-copyfile.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-lchmod.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-mkdir.js
