@@ -19,7 +19,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- test/parallel/parallel.status                 | 1667 +++++++++++++++++
+ test/parallel/parallel.status                 | 1673 +++++++++++++++++
  test/parallel/test-bench-stream.js            |    3 +-
  test/parallel/test-common-wpt-inspect.js      |   10 +-
  test/parallel/test-dgram-bind-fd.js           |    2 +-
@@ -64,13 +64,13 @@ Assisted-by: Codex
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
  ...test-vm-timeout-escape-promise-module-2.js |    6 +-
- 45 files changed, 2047 insertions(+), 66 deletions(-)
+ 45 files changed, 2053 insertions(+), 66 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 0fe217d4e4..4578a1cf97 100644
+index 0fe217d4e4..ee46e18085 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -138,6 +138,1673 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -138,6 +138,1679 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -93,6 +93,9 @@ index 0fe217d4e4..4578a1cf97 100644
 +# confirms that process.execPath launches an app host instead.
 +test-crypto-provider-cache-snapshot: SKIP
 +test-snapshot-reproducible: SKIP
++# Node 26.12 security-release addition: snapshot creation spawns child Node
++# executables (common/snapshot), the same limitation as the entries above.
++test-crypto-random-cache-snapshot: SKIP
 +# OpenSSL startup variants also require independent child Node processes.
 +test-crypto-no-algorithm: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
@@ -842,6 +845,9 @@ index 0fe217d4e4..4578a1cf97 100644
 +# confirms that process.execPath launches an app host instead.
 +test-crypto-provider-cache-snapshot: SKIP
 +test-snapshot-reproducible: SKIP
++# Node 26.12 security-release addition: snapshot creation spawns child Node
++# executables (common/snapshot), the same limitation as the entries above.
++test-crypto-random-cache-snapshot: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
 +# These tests launch child Node processes or external command-line tools.
 +test-bench-auto-run: SKIP

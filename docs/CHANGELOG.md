@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#26.12.1-0">26.12.1-0</a><br/>
 <a href="#26.12.0-0">26.12.0-0</a><br/>
 <a href="#26.11.1-0">26.11.1-0</a><br/>
 <a href="#26.11.0-0">26.11.0-0</a><br/>
@@ -43,6 +44,36 @@
 </td>
 </tr>
 </table>
+
+<a id="26.12.1-0"></a>
+## 2026-10-21, Version 26.12.1-0 (Current)
+
+- Rebase onto the official Node.js `v26.12.1` security release
+  (`bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1`); the regenerated series
+  changes only patch context and line numbers, and the mobile hunks in the
+  two upstream files it touches (`common.gypi`,
+  `src/crypto/crypto_context.cc`) are unchanged.
+- Pick up upstream's ten CVE fixes (four High): tls non-canonical IP
+  addresses and IP normalization, dns resolve null bytes, the http agent
+  data guard, brotli block-switch decoding, zlib ZIP local headers,
+  permission-model wildcard/`realpathSync` checks and crypto snapshot
+  random caches. Also carry c-ares 1.34.9, undici 8.12.2, root certificates
+  NSS 3.131.1 and the "synchronously load most ES modules" revert.
+- Android keeps the prebuilt static OpenSSL 4.0.3 tree with native ECH/H3,
+  so this release's bundled-OpenSSL 3.5.9 update does not apply to the
+  Android runtime. iOS and the bundled fallback keep their existing line.
+- Keep the danmu lite feature contract unchanged: complete ICU API with the
+  reviewed data profile, web encodings, Chinese collation and normalization;
+  omit Temporal, FFI, Inspector, SQLite/Web Storage, Amaro and SEA.
+- Exclude the new `test-crypto-random-cache-snapshot` regression on Android
+  and iOS: it builds and runs snapshots through `common/snapshot`, which
+  spawns child Node executables. The remaining new in-process regressions
+  (tls non-canonical IP and SPKI blocklist, dns null bytes, http agent
+  pending read, X.509 name conversion, permission audit `realpathSync`) stay
+  runnable; the full device suite confirms them.
+- This source upgrade does not itself switch `danmu-api-android` to 26.12.1.
+  A new runtime archive, checksum update and device validation are separate,
+  reviewed steps.
 
 <a id="26.12.0-0"></a>
 ## 2026-10-18, Version 26.12.0-0 (Current)

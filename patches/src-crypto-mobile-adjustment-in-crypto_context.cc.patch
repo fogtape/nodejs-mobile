@@ -19,10 +19,10 @@ Co-authored-by: Julia Samól <j.samol@papers.ch>
  1 file changed, 17 insertions(+)
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index d314d15cc5..ce6b92561e 100644
+index 64be71541f..9f8be60740 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -318,6 +318,9 @@ bool isSelfIssued(X509* cert) {
+@@ -323,6 +323,9 @@ bool isSelfIssued(X509* cert) {
  #ifdef __APPLE__
  TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
                                                bool is_self_issued) {
@@ -32,7 +32,7 @@ index d314d15cc5..ce6b92561e 100644
    // Trust settings may be scoped to a single application
    // skip as this is not supported
    if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsApplication)) {
-@@ -409,6 +412,10 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+@@ -414,6 +417,10 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
    return (trust_settings_result == kSecTrustSettingsResultTrustAsRoot)
               ? TrustStatus::TRUSTED
               : TrustStatus::UNSPECIFIED;
@@ -43,7 +43,7 @@ index d314d15cc5..ce6b92561e 100644
  }
  
  TrustStatus IsTrustSettingsTrustedForPolicy(CFArrayRef trust_settings,
-@@ -480,6 +487,8 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+@@ -485,6 +492,8 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
    bool trust_evaluated = false;
    bool is_self_issued = isSelfIssued(cert);
  
@@ -52,7 +52,7 @@ index d314d15cc5..ce6b92561e 100644
    // Evaluate user trust domain, then admin. User settings can override
    // admin (and both override the system domain, but we don't check that).
    for (const auto& trust_domain :
-@@ -518,6 +527,14 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+@@ -523,6 +532,14 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
        CFRelease(trust_settings);
      }
    }

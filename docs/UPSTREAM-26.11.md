@@ -1,17 +1,37 @@
 # Node 26 upstream line
 
-`upstream-base.txt` pins the official tag `v26.12.0`
-(`26e72d85a611e222e3f06025de8a3c496923bacd`), which follows the reviewed
-26.11.1 line described below. The rebase re-emitted the same 24 patches;
-only context/line-number changes and the workflow-removal patch's updated
-upstream file contents differ. The mobile version is `26.12.0-0`, and
-`expected-tree.txt` records the new source-tree checksum.
+`upstream-base.txt` pins the official tag `v26.12.1`
+(`bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1`), upstream's security release
+for this line, which follows the reviewed 26.12.0 line described below. The
+rebase re-emitted the same 24 patches; only context and line-number changes
+differ, and the two mobile-owned upstream files this release touches
+(`common.gypi` and `src/crypto/crypto_context.cc`) keep their mobile hunks
+unchanged. The mobile version is `26.12.1-0`, and `expected-tree.txt`
+records the new source-tree checksum.
+
+The release carries ten CVE fixes, four of them High: tls non-canonical IP
+addresses and the IP-normalization regression, dns resolve null bytes, http
+agent data guard, brotli block-switch decoding, zlib ZIP local headers,
+permission-model wildcard and `realpathSync` checks, and crypto snapshot
+random caches. It also updates c-ares to 1.34.9, undici to 8.12.2 and the
+root certificates to NSS 3.131.1, and reverts "module: synchronously load
+most ES modules".
 
 On top of this line, Android links a prebuilt OpenSSL 4.0.3 static tree
 ([OPENSSL-4.md](OPENSSL-4.md)); iOS and the bundled-OpenSSL fallback are
 unchanged. The OpenSSL 4 ECH/H3 APIs and QUIC patches apply unchanged to
-26.12.0; rebuild and device validation remain required before switching an
-app to this runtime.
+26.12.1; rebuild and device validation remain required before switching an
+app to this runtime. Android takes OpenSSL from that prebuilt 4.0.3 tree, so
+this release's bundled-OpenSSL 3.5.9 update does not reach the Android
+runtime.
+
+## Previous 26.12 line
+
+`upstream-base.txt` pinned the official tag `v26.12.0`
+(`26e72d85a611e222e3f06025de8a3c496923bacd`), which follows the reviewed
+26.11.1 line described below. The rebase re-emitted the same 24 patches;
+only context/line-number changes and the workflow-removal patch's updated
+upstream file contents differ. The mobile version was `26.12.0-0`.
 
 ## Previous 26.11 line
 

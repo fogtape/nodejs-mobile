@@ -101,7 +101,7 @@ index d163311dc1..e3e5d0f1fc 100644
      ciphers,
      groups,
 diff --git a/lib/internal/tls/wrap.js b/lib/internal/tls/wrap.js
-index 60c1634b02..fdad8a9821 100644
+index 20f043e26c..d9673f3cb7 100644
 --- a/lib/internal/tls/wrap.js
 +++ b/lib/internal/tls/wrap.js
 @@ -1770,6 +1770,16 @@ function normalizeConnectArgs(listArgs) {
@@ -162,7 +162,7 @@ index 60c1634b02..fdad8a9821 100644
      // If user provided the socket, it's their responsibility to manage its
      // connectivity. If we created one internally, we connect it.
 diff --git a/lib/tls.js b/lib/tls.js
-index a1d978c50f..bcc83eec30 100644
+index ba395be5eb..36cd0a16d1 100644
 --- a/lib/tls.js
 +++ b/lib/tls.js
 @@ -21,6 +21,9 @@
@@ -176,7 +176,7 @@ index a1d978c50f..bcc83eec30 100644
    Array,
    ArrayIsArray,
 diff --git a/src/crypto/crypto_tls.cc b/src/crypto/crypto_tls.cc
-index fbc5fc8c39..c1633ee186 100644
+index ef258b0f33..8bd62cfe17 100644
 --- a/src/crypto/crypto_tls.cc
 +++ b/src/crypto/crypto_tls.cc
 @@ -25,6 +25,7 @@
@@ -187,7 +187,7 @@ index fbc5fc8c39..c1633ee186 100644
  #include "crypto/crypto_context.h"
  #include "crypto/crypto_util.h"
  #include "debug_utils-inl.h"
-@@ -1511,6 +1512,27 @@ void TLSWrap::GetServername(const FunctionCallbackInfo<Value>& args) {
+@@ -1482,6 +1483,27 @@ void TLSWrap::GetServername(const FunctionCallbackInfo<Value>& args) {
    }
  }
  
@@ -215,7 +215,7 @@ index fbc5fc8c39..c1633ee186 100644
  void TLSWrap::SetServername(const FunctionCallbackInfo<Value>& args) {
    TLSWrap* wrap;
    ASSIGN_OR_RETURN_UNWRAP(&wrap, args.This());
-@@ -2346,6 +2368,7 @@ void TLSWrap::Initialize(
+@@ -2317,6 +2339,7 @@ void TLSWrap::Initialize(
    SetMethod(context, target, "wrap", TLSWrap::Wrap);
  
    NODE_DEFINE_CONSTANT(target, HAVE_SSL_TRACE);
@@ -223,7 +223,7 @@ index fbc5fc8c39..c1633ee186 100644
  
    Local<FunctionTemplate> t = AsyncWrap::MakeLazilyInitializedJSTemplate(env);
    Local<String> tlsWrapString =
-@@ -2384,6 +2407,8 @@ void TLSWrap::Initialize(
+@@ -2355,6 +2378,8 @@ void TLSWrap::Initialize(
    SetProtoMethod(isolate, t, "setKeyCert", SetKeyCert);
    SetProtoMethod(isolate, t, "setOCSPResponse", SetOCSPResponse);
    SetProtoMethod(isolate, t, "setServername", SetServername);
@@ -232,7 +232,7 @@ index fbc5fc8c39..c1633ee186 100644
    SetProtoMethod(isolate, t, "setSession", SetSession);
    SetProtoMethod(isolate, t, "setVerifyMode", SetVerifyMode);
    SetProtoMethod(isolate, t, "start", Start);
-@@ -2456,6 +2481,8 @@ void TLSWrap::RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+@@ -2427,6 +2452,8 @@ void TLSWrap::RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(SetALPNProtocols);
    registry->Register(SetOCSPResponse);
    registry->Register(SetServername);
@@ -293,18 +293,18 @@ index d83c1cbb89..e3257e40aa 100644
    auto& tls = tls_session();
    auto peerVerifyError = tls.VerifyPeerIdentity(env());
 diff --git a/src/quic/tlscontext.cc b/src/quic/tlscontext.cc
-index b5106d27e1..82a5d40946 100644
+index 081af891b9..c8b9a6a54e 100644
 --- a/src/quic/tlscontext.cc
 +++ b/src/quic/tlscontext.cc
-@@ -3,6 +3,7 @@
- #include <async_wrap-inl.h>
+@@ -4,6 +4,7 @@
  #include <base_object-inl.h>
+ #include <crypto/crypto_context.h>
  #include <crypto/crypto_tls_certificates.h>
 +#include <crypto/crypto_ech.h>
  #include <crypto/crypto_util.h>
  #include <debug_utils-inl.h>
  #include <env-inl.h>
-@@ -791,6 +792,14 @@ Maybe<TLSContext::Options> TLSContext::Options::From(Environment* env,
+@@ -796,6 +797,14 @@ Maybe<TLSContext::Options> TLSContext::Options::From(Environment* env,
      return Nothing<Options>();
    }
  
@@ -319,7 +319,7 @@ index b5106d27e1..82a5d40946 100644
    return Just<Options>(options);
  }
  
-@@ -831,6 +840,7 @@ void TLSContext::Options::MemoryInfo(MemoryTracker* tracker) const {
+@@ -836,6 +845,7 @@ void TLSContext::Options::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("certs", certs);
    tracker->TrackField("ca", ca);
    tracker->TrackField("crl", crl);
@@ -327,7 +327,7 @@ index b5106d27e1..82a5d40946 100644
  }
  
  const TLSContext::Options TLSContext::Options::kDefault = {};
-@@ -932,7 +942,17 @@ void TLSSession::Initialize(
+@@ -937,7 +947,17 @@ void TLSSession::Initialize(
          }
        }
  
@@ -346,7 +346,7 @@ index b5106d27e1..82a5d40946 100644
          const auto& sessionTicket = *maybeSessionTicket;
          uv_buf_t buf = sessionTicket.ticket();
          SSLSessionPointer ticket = crypto::GetTLSSession(
-@@ -1003,6 +1023,10 @@ TLSSession::VerifyPeerIdentity(Environment* env) {
+@@ -1008,6 +1028,10 @@ TLSSession::VerifyPeerIdentity(Environment* env) {
    return PeerIdentityValidationError{reason, code};
  }
  
