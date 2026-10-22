@@ -46,7 +46,7 @@
 </table>
 
 <a id="26.12.1-0"></a>
-## 2026-10-21, Version 26.12.1-0 (Current)
+## 2026-10-22, Version 26.12.1-0 (Current)
 
 - Rebase onto the official Node.js `v26.12.1` security release
   (`bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1`); the regenerated series
@@ -94,7 +94,7 @@
   reviewed steps.
 
 <a id="26.12.0-0"></a>
-## 2026-10-18, Version 26.12.0-0 (Current)
+## 2026-10-18, Version 26.12.0-0
 
 - Rebase the mobile patch series onto the official Node.js `v26.12.0` tag
   (`26e72d85a611e222e3f06025de8a3c496923bacd`). All 24 patches apply; the
@@ -113,7 +113,7 @@
   reviewed steps.
 
 <a id="26.11.1-0"></a>
-## 2026-10-14, Version 26.11.1-0 (Current)
+## 2026-10-14, Version 26.11.1-0
 
 - Rebase onto the official Node.js `v26.11.1` release tag
   (`364593d0631def13e3043dd84f77ebca2c767ce5`); the regenerated series
@@ -127,7 +127,7 @@
   OpenSSL fallback retain their previous library and no ECH support.
 
 <a id="26.11.0-0"></a>
-## 2026-10-07, Version 26.11.0-0 (Current)
+## 2026-10-07, Version 26.11.0-0
 
 - Pin official Node.js release proposal [#66546](https://github.com/nodejs/node/pull/66546)
   at `49072a0be4c7410982557aebf5b5c924fe7db597` and rebase the mobile patch series.
