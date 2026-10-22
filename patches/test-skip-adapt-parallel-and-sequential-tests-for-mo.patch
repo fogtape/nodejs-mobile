@@ -19,7 +19,7 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- test/parallel/parallel.status                 | 1713 +++++++++++++++++
+ test/parallel/parallel.status                 | 1718 +++++++++++++++++
  test/parallel/test-bench-stream.js            |    3 +-
  test/parallel/test-common-wpt-inspect.js      |   10 +-
  test/parallel/test-crypto-x509.js             |   55 +-
@@ -66,13 +66,13 @@ Assisted-by: Codex
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
  ...test-vm-timeout-escape-promise-module-2.js |    6 +-
- 47 files changed, 2144 insertions(+), 88 deletions(-)
+ 47 files changed, 2149 insertions(+), 88 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 0fe217d4e4..45d53a6a60 100644
+index 0fe217d4e4..d330d34400 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -138,6 +138,1719 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -138,6 +138,1724 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -210,6 +210,9 @@ index 0fe217d4e4..45d53a6a60 100644
 +test-common-expect-warning: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++# Node 26.12 full-suite triage: switching the FIPS provider at runtime does not
++# finish inside the suite timeout on a mobile device, like test-crypto-fips.
++test-webcrypto-fips-refresh: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -991,6 +994,8 @@ index 0fe217d4e4..45d53a6a60 100644
 +test-common-expect-warning: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++# Node 26.12 full-suite triage: same runtime FIPS provider switch as Android.
++test-webcrypto-fips-refresh: SKIP
 +test-crypto-no-algorithm: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP

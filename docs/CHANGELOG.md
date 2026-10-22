@@ -80,6 +80,9 @@
   and `sequential/test-benchmark-node-bench-tools` are excluded because they
   spawn child Node executables, and `test-sqlite-statement` because its
   oversized-string cases outgrow the app heap.
+- Exclude `test-webcrypto-fips-refresh` on both platforms: switching the FIPS
+  provider at runtime does not finish inside the suite timeout on a device,
+  the same limitation that already excludes `test-crypto-fips`.
 - Android QUIC key-update and H3 regressions are excluded with their reason
   recorded: seven tests abort inside ngtcp2 with
   `conn->state == NGTCP2_CS_POST_HANDSHAKE` in `conn_initiate_key_update`.
