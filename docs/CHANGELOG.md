@@ -42,7 +42,7 @@
 </table>
 
 <a id="24.22.1-0"></a>
-## 2026-10-21, Version 24.22.1-0 (Current)
+## 2026-10-22, Version 24.22.1-0 (Current)
 
 - Move off the 24.22.0 release-proposal snapshot to the official Node.js
   `v24.22.1` security release
@@ -78,7 +78,7 @@
   the line, and arming a version is the reviewed Cut release step.
 
 <a id="24.22.0-0"></a>
-## 2026-10-13, Version 24.22.0-0 (Current)
+## 2026-10-13, Version 24.22.0-0
 
 This prerelease updates the mobile runtime from Node.js 24.21.0 to the
 Node.js 24.22.0 LTS release proposal [nodejs/node#66667](https://github.com/nodejs/node/pull/66667),
