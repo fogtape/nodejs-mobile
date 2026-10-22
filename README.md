@@ -9,18 +9,18 @@ in-app, with npm modules and N-API native addons.
 | Android | `libnode.so` + headers | `arm64-v8a`, `armeabi-v7a`, `x86_64` (16 KB page size) |
 | iOS | `NodeMobile.xcframework` | `arm64` device, `arm64` simulator |
 
-Current line: **Node.js 24 LTS**, previewing the `v24.22.0` release proposal
-[#66667](https://github.com/nodejs/node/pull/66667) at a fixed commit. The
-official upstream tag is not published yet. `process.version` reports the
+Current line: **Node.js 24 LTS** (`v24.22.1`, official security release).
+The pin is the official tag `v24.22.1` at commit
+`ce7aaf1cee78b8cf0ce17364260535c418d3ed26`. `process.version` reports the
 upstream version unchanged, so version-parsing tools keep working; the
-mobile build is identified by `process.versions.mobile` (`"24.22.0-0"`).
-See [the 24.22 preview notes](docs/UPSTREAM-24.22.md) for source provenance.
+mobile build is identified by `process.versions.mobile` (`"24.22.1-0"`).
+See [the 24.22 line notes](docs/UPSTREAM-24.22.md) for source provenance.
 
 ## Maintained version lines
 
 | Branch | Node.js base | Purpose |
 | --- | --- | --- |
-| [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe) | 24.22.0 proposal | Node 24 LTS maintenance and CI previews |
+| [`recipe`](https://github.com/fogtape/nodejs-mobile/tree/recipe) | 24.22.1 (official tag) | Node 24 LTS maintenance and CI previews |
 | [`recipe-v26`](https://github.com/fogtape/nodejs-mobile/tree/recipe-v26) | 26.1.0 | Independent Node 26 port and CI previews |
 
 Each branch owns its upstream tag, patches, source-tree checksum and toolchain.

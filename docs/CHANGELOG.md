@@ -6,6 +6,7 @@
 </tr>
 <tr>
 <td>
+<a href="#24.22.1-0">24.22.1-0</a><br/>
 <a href="#24.22.0-0">24.22.0-0</a><br/>
 <a href="#24.21.0-0">24.21.0-0</a><br/>
 <a href="#24.20.0-0">24.20.0-0</a><br/>
@@ -39,6 +40,42 @@
 </td>
 </tr>
 </table>
+
+<a id="24.22.1-0"></a>
+## 2026-10-21, Version 24.22.1-0 (Current)
+
+- Move off the 24.22.0 release-proposal snapshot to the official Node.js
+  `v24.22.1` security release
+  (`ce7aaf1cee78b8cf0ce17364260535c418d3ed26`). The reviewed proposal commit
+  differs from the published `v24.22.0` tag only in
+  `doc/changelogs/CHANGELOG_V24.md`. The rebase re-emitted 20 patches; only
+  `common.gypi` and the mobile adjustment in `src/crypto/crypto_context.cc`
+  changed, and only in context/line numbers.
+- Pick up upstream's seven CVE fixes for this line: tls IP normalization and
+  non-canonical IP addresses, dns resolve null bytes, the http agent data
+  guard, the permission model in `realpathSync`, crypto snapshot random
+  caches and brotli block-switch decoding. Also carry OpenSSL 3.5.9,
+  c-ares 1.34.9, undici 7.30.1, tzdata 2026e, root certificates NSS 3.131.1
+  and the rejection of certificate chains with blocked public keys.
+- Exclude the new `test-crypto-random-cache-snapshot` regression on Android
+  and iOS: it builds and runs snapshots through `common/snapshot`, which
+  spawns child Node executables. The remaining new in-process regressions
+  (tls non-canonical IP and SPKI blocklist, dns null bytes, http agent
+  pending read, X.509 name conversion) stay runnable; the full device suite
+  confirms them.
+- Run `test-crypto-x509`'s malformed-certificate legacy conversion in-process
+  on Android and iOS instead of in a child Node. Upstream added the child to
+  report a native regression as a signal; an app cannot spawn one (Android's
+  `process.execPath` is `app_process`, which aborts with "Error changing
+  dalvik-cache ownership : Permission denied"). The same conversion and
+  assertions run in-process, and a native abort still fails the run through
+  the harness crash verdict.
+- Runtime and flavor configuration is unchanged: complete ICU API, the
+  reviewed danmu lite data profile, Android JIT/native WebAssembly and
+  pointer compression, iOS jitless V8 with polywasm.
+- This source upgrade does not itself publish. `release-ready.txt` and
+  `release-upstream-snapshot.txt` are left empty: an official tag now backs
+  the line, and arming a version is the reviewed Cut release step.
 
 <a id="24.22.0-0"></a>
 ## 2026-10-13, Version 24.22.0-0 (Current)

@@ -23,7 +23,7 @@ Co-authored-by: João Matos <joao@tritao.eu>
  1 file changed, 118 insertions(+), 7 deletions(-)
 
 diff --git a/common.gypi b/common.gypi
-index bc690955d3..b3a74cb587 100644
+index b416129334..ad5d99fb7f 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -115,7 +115,7 @@

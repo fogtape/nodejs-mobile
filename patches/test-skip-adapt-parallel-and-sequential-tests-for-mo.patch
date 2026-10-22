@@ -16,7 +16,8 @@ series itself.
 Co-authored-by: Jaime Bernardo <jaime@janeasystems.com>
 Co-authored-by: Andre Staltz <andre@staltz.com>
 ---
- test/parallel/parallel.status                 | 1511 +++++++++++++++++
+ test/parallel/parallel.status                 | 1519 +++++++++++++++++
+ test/parallel/test-crypto-x509.js             |   55 +-
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
@@ -55,13 +56,13 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
  test/sequential/sequential.status             |  132 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
- 39 files changed, 1834 insertions(+), 51 deletions(-)
+ 40 files changed, 1876 insertions(+), 72 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index d13efc8ac1..fccf6d71a2 100644
+index d13efc8ac1..61a2c70d1f 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -160,6 +160,1517 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -160,6 +160,1525 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -119,6 +120,10 @@ index d13efc8ac1..fccf6d71a2 100644
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
 +test-crypto-provider-cache-snapshot: SKIP
++# Added by the v24.22.1 security rebase: the new snapshot regression builds
++# and runs snapshots through common/snapshot, which spawns child Node
++# executables (the same limitation as the entry above).
++test-crypto-random-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -790,6 +795,10 @@ index d13efc8ac1..fccf6d71a2 100644
 +test-crypto-fips: SKIP
 +test-crypto-no-algorithm: SKIP
 +test-crypto-provider-cache-snapshot: SKIP
++# Added by the v24.22.1 security rebase: the new snapshot regression builds
++# and runs snapshots through common/snapshot, which spawns child Node
++# executables (the same limitation as the entry above).
++test-crypto-random-cache-snapshot: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -1579,6 +1588,72 @@ index d13efc8ac1..fccf6d71a2 100644
  [$asan==on]
  # https://github.com/nodejs/node/issues/39655
  test-cluster-primary-error: PASS, FLAKY
+diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
+index 8e8ae2773d..b02fe84c48 100644
+--- a/test/parallel/test-crypto-x509.js
++++ b/test/parallel/test-crypto-x509.js
+@@ -498,27 +498,40 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+   if (!isBoringSSL) {
+     const cert = new X509Certificate(certPem);
+ 
+-    // Run the legacy conversion in a child so a native regression is reported
+-    // as a signal rather than terminating the test runner.
+-    const child = spawnSync(process.execPath, [
+-      '-e',
+-      `
+-        'use strict';
+-        const assert = require('node:assert');
+-        const { X509Certificate } = require('node:crypto');
+-        const cert = new X509Certificate(process.argv[1]);
+-        const legacy = cert.toLegacyObject();
+-        assert.strictEqual(legacy.modulus, undefined);
+-        assert.strictEqual(legacy.exponent, undefined);
+-        assert.strictEqual(legacy.pubkey, undefined);
+-      `,
+-      '--',
+-      certPem,
+-    ], {
+-      encoding: 'utf8',
+-    });
+-    assert.strictEqual(child.signal, null, child.stderr || child.stdout);
+-    assert.strictEqual(child.status, 0, child.stderr || child.stdout);
++    if (common.isAndroid || common.isIOS) {
++      // nodejs-mobile patch: an app cannot spawn a child Node. Android's
++      // process.execPath is app_process, which aborts with "Error changing
++      // dalvik-cache ownership : Permission denied", and the iOS app has no
++      // executable to spawn either. Run the legacy conversion in-process and
++      // keep the same assertions; a native abort still fails the run through
++      // the crash verdict the harness records.
++      const legacy = cert.toLegacyObject();
++      assert.strictEqual(legacy.modulus, undefined);
++      assert.strictEqual(legacy.exponent, undefined);
++      assert.strictEqual(legacy.pubkey, undefined);
++    } else {
++      // Run the legacy conversion in a child so a native regression is
++      // reported as a signal rather than terminating the test runner.
++      const child = spawnSync(process.execPath, [
++        '-e',
++        `
++          'use strict';
++          const assert = require('node:assert');
++          const { X509Certificate } = require('node:crypto');
++          const cert = new X509Certificate(process.argv[1]);
++          const legacy = cert.toLegacyObject();
++          assert.strictEqual(legacy.modulus, undefined);
++          assert.strictEqual(legacy.exponent, undefined);
++          assert.strictEqual(legacy.pubkey, undefined);
++        `,
++        '--',
++        certPem,
++      ], {
++        encoding: 'utf8',
++      });
++      assert.strictEqual(child.signal, null, child.stderr || child.stdout);
++      assert.strictEqual(child.status, 0, child.stderr || child.stdout);
++    }
+ 
+     assert.throws(() => cert.publicKey, {
+       message: hasOpenSSL(3) ? /decode error/ : /wrong tag/,
 diff --git a/test/parallel/test-dgram-bind-fd.js b/test/parallel/test-dgram-bind-fd.js
 index daf7f8064b..76c2ce82dd 100644
 --- a/test/parallel/test-dgram-bind-fd.js
