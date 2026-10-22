@@ -27,7 +27,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/auto-start-ci.yml           |  93 -----
  .github/workflows/benchmark.yml               | 271 -------------
  .github/workflows/build-shared.yml            |  93 -----
- .github/workflows/build-tarball.yml           | 137 -------
+ .github/workflows/build-tarball.yml           | 132 -------
  .github/workflows/close-stalled.yml           |  36 --
  .github/workflows/codeql.yml                  |  44 ---
  .github/workflows/comment-labeled.yml         |  57 ---
@@ -38,7 +38,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/coverage-linux.yml          |  90 -----
  .github/workflows/coverage-windows.yml        | 106 -----
  .github/workflows/create-release-proposal.yml |  81 ----
- .github/workflows/daily-wpt-fyi.yml           | 163 --------
+ .github/workflows/daily-wpt-fyi.yml           | 164 --------
  .github/workflows/daily.yml                   |  30 --
  .github/workflows/doc.yml                     |  41 --
  .../workflows/find-inactive-collaborators.yml |  50 ---
@@ -60,7 +60,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/stress-test.yml             | 114 ------
  .github/workflows/test-internet.yml           |  70 ----
  .github/workflows/test-linux-perfetto.yml     |  73 ----
- .github/workflows/test-linux-quic.yml         |  80 ----
+ .github/workflows/test-linux-quic.yml         |  81 ----
  .github/workflows/test-linux.yml              | 100 -----
  .github/workflows/test-macos.yml              | 142 -------
  .github/workflows/test-shared.yml             | 273 -------------
@@ -69,7 +69,7 @@ is read only from the default branch and is left untouched.
  .github/workflows/update-openssl.yml          |  69 ----
  .github/workflows/update-v8.yml               |  57 ---
  .github/workflows/update-wpt.yml              |  95 -----
- 49 files changed, 4758 deletions(-)
+ 49 files changed, 4755 deletions(-)
  delete mode 100644 .github/ISSUE_TEMPLATE/config.yml
  delete mode 100644 .github/SUPPORT.md
  delete mode 100644 .github/label-pr-config.yml
@@ -570,7 +570,7 @@ index 85f3e92f2f..0000000000
 -          MAX_WORKLOAD: ${{ vars.AUTO_START_CI_MAX_WORKLOAD || '15' }}
 diff --git a/.github/workflows/benchmark.yml b/.github/workflows/benchmark.yml
 deleted file mode 100644
-index 0e901de78d..0000000000
+index 9f4ed58447..0000000000
 --- a/.github/workflows/benchmark.yml
 +++ /dev/null
 @@ -1,271 +0,0 @@
@@ -716,7 +716,7 @@ index 0e901de78d..0000000000
 -            --arg withPerfetto ${{ matrix.perfetto || false }} \
 -            --arg ccache '(import <nixpkgs> {}).sccache' \
 -            --run '
--                make build-ci -j4 V=1
+-                make build-ci -j4 V=1 ${{ contains(format(' {0} ', inputs.category), ' napi ') && '&& make bench-addons-build' || '' }}
 -            ' tools/nix/ci-shell.nix
 -        env:
 -          SCCACHE_LOCAL_RW_MODE: READ_ONLY
@@ -946,10 +946,10 @@ index 73f7ec6afb..0000000000
 -            ' "$TAR_DIR/tools/nix/ci-shell.nix"
 diff --git a/.github/workflows/build-tarball.yml b/.github/workflows/build-tarball.yml
 deleted file mode 100644
-index 53e625ef88..0000000000
+index b3ac6aad47..0000000000
 --- a/.github/workflows/build-tarball.yml
 +++ /dev/null
-@@ -1,137 +0,0 @@
+@@ -1,132 +0,0 @@
 -name: Build from tarball
 -
 -on:
@@ -1016,10 +1016,9 @@ index 53e625ef88..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
--  NODE_VERSION: lts/*
 -
 -permissions:
 -  contents: read
@@ -1037,10 +1036,6 @@ index 53e625ef88..0000000000
 -        with:
 -          python-version: ${{ env.PYTHON_VERSION }}
 -          allow-prereleases: true
--      - name: Use Node.js ${{ env.NODE_VERSION }}
--        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
--        with:
--          node-version: ${{ env.NODE_VERSION }}
 -      - name: Make tarball
 -        run: |
 -          export DISTTYPE=nightly
@@ -1662,7 +1657,7 @@ index 4035ea9320..0000000000
 -            gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body-file -
 diff --git a/.github/workflows/coverage-linux-without-intl.yml b/.github/workflows/coverage-linux-without-intl.yml
 deleted file mode 100644
-index 9b8f8e2fd8..0000000000
+index 4ab6975305..0000000000
 --- a/.github/workflows/coverage-linux-without-intl.yml
 +++ /dev/null
 @@ -1,90 +0,0 @@
@@ -1702,7 +1697,7 @@ index 9b8f8e2fd8..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -1753,12 +1748,12 @@ index 9b8f8e2fd8..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
+-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-linux.yml b/.github/workflows/coverage-linux.yml
 deleted file mode 100644
-index 0c7fc292d3..0000000000
+index a642c0fada..0000000000
 --- a/.github/workflows/coverage-linux.yml
 +++ /dev/null
 @@ -1,90 +0,0 @@
@@ -1798,7 +1793,7 @@ index 0c7fc292d3..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -1849,12 +1844,12 @@ index 0c7fc292d3..0000000000
 -      - name: Clean tmp
 -        run: rm -rf coverage/tmp && rm -rf out
 -      - name: Upload
--        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
+-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/coverage-windows.yml b/.github/workflows/coverage-windows.yml
 deleted file mode 100644
-index a4db4ccc08..0000000000
+index c2ce5c3401..0000000000
 --- a/.github/workflows/coverage-windows.yml
 +++ /dev/null
 @@ -1,106 +0,0 @@
@@ -1920,7 +1915,7 @@ index a4db4ccc08..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  RUSTC_VERSION: '1.86'
 -
@@ -1961,7 +1956,7 @@ index a4db4ccc08..0000000000
 -      - name: Clean tmp
 -        run: npx rimraf ./coverage/tmp
 -      - name: Upload
--        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4  # v7.1.0
+-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
 -        with:
 -          directory: ./coverage
 diff --git a/.github/workflows/create-release-proposal.yml b/.github/workflows/create-release-proposal.yml
@@ -2053,10 +2048,10 @@ index 735b15ffd1..0000000000
 -          BOT_TOKEN: ${{ secrets.GH_USER_TOKEN }}
 diff --git a/.github/workflows/daily-wpt-fyi.yml b/.github/workflows/daily-wpt-fyi.yml
 deleted file mode 100644
-index d15f21010c..0000000000
+index b16b640a08..0000000000
 --- a/.github/workflows/daily-wpt-fyi.yml
 +++ /dev/null
-@@ -1,163 +0,0 @@
+@@ -1,164 +0,0 @@
 -# This workflow runs every night and tests various releases of Node.js
 -# (latest nightly, current, and two latest LTS release lines) against the
 -# `epochs/daily` branch of WPT.
@@ -2072,6 +2067,7 @@ index d15f21010c..0000000000
 -    - cron: 30 0 * * *
 -
 -env:
+-  # WPT's pywebsocket3 still uses CGIHTTPRequestHandler, removed in Python 3.15.
 -  PYTHON_VERSION: '3.14'
 -
 -permissions:
@@ -2488,7 +2484,7 @@ index 35d780ae66..0000000000
 -        run: gh issue edit "$NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "$LABELS"
 diff --git a/.github/workflows/label-pr.yml b/.github/workflows/label-pr.yml
 deleted file mode 100644
-index 03aa1fa9a8..0000000000
+index 3c50701224..0000000000
 --- a/.github/workflows/label-pr.yml
 +++ /dev/null
 @@ -1,18 +0,0 @@
@@ -2506,7 +2502,7 @@ index 03aa1fa9a8..0000000000
 -    runs-on: ubuntu-slim
 -
 -    steps:
--      - uses: nodejs/node-pr-labeler@d4cf1b8b9f23189c37917000e5e17e796c770a6b  # v1
+-      - uses: nodejs/node-pr-labeler@dfe5eb3b099a487644e32567a482744620876ab3  # v1
 -        with:
 -          repo-token: ${{ secrets.GH_USER_TOKEN }}
 -          configuration-path: .github/label-pr-config.yml
@@ -2556,7 +2552,7 @@ index 3bdf3fc31d..0000000000
 -          labels: meta
 diff --git a/.github/workflows/lint-release-proposal.yml b/.github/workflows/lint-release-proposal.yml
 deleted file mode 100644
-index 027aee336a..0000000000
+index 9652eea91b..0000000000
 --- a/.github/workflows/lint-release-proposal.yml
 +++ /dev/null
 @@ -1,119 +0,0 @@
@@ -2572,7 +2568,7 @@ index 027aee336a..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  NODE_VERSION: lts/*
 -
 -permissions:
@@ -2681,7 +2677,7 @@ index 027aee336a..0000000000
 -          GH_TOKEN: ${{ github.token }}
 diff --git a/.github/workflows/linters.yml b/.github/workflows/linters.yml
 deleted file mode 100644
-index 9afdb2ef5a..0000000000
+index a4997b3d4c..0000000000
 --- a/.github/workflows/linters.yml
 +++ /dev/null
 @@ -1,278 +0,0 @@
@@ -2701,7 +2697,7 @@ index 9afdb2ef5a..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  NODE_VERSION: lts/*
 -
 -permissions:
@@ -3590,7 +3586,7 @@ index eb5921edb9..0000000000
 -          remove-stale-when-updated: true
 diff --git a/.github/workflows/stress-test.yml b/.github/workflows/stress-test.yml
 deleted file mode 100644
-index 17393eb571..0000000000
+index e47c114d2f..0000000000
 --- a/.github/workflows/stress-test.yml
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -3629,7 +3625,7 @@ index 17393eb571..0000000000
 -        type: string
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  XCODE_VERSION: '16.4'
 -  CLANG_VERSION: '19'
 -  RUSTC_VERSION: '1.86'
@@ -3710,7 +3706,7 @@ index 17393eb571..0000000000
 -            "$TEST_PATH"
 diff --git a/.github/workflows/test-internet.yml b/.github/workflows/test-internet.yml
 deleted file mode 100644
-index 43d71f5f31..0000000000
+index 09f52ed2aa..0000000000
 --- a/.github/workflows/test-internet.yml
 +++ /dev/null
 @@ -1,70 +0,0 @@
@@ -3747,7 +3743,7 @@ index 43d71f5f31..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -3786,7 +3782,7 @@ index 43d71f5f31..0000000000
 -        run: make test-internet -j4 V=1;
 diff --git a/.github/workflows/test-linux-perfetto.yml b/.github/workflows/test-linux-perfetto.yml
 deleted file mode 100644
-index d2bfbfbd68..0000000000
+index befb170070..0000000000
 --- a/.github/workflows/test-linux-perfetto.yml
 +++ /dev/null
 @@ -1,73 +0,0 @@
@@ -3812,7 +3808,7 @@ index d2bfbfbd68..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -3865,10 +3861,10 @@ index d2bfbfbd68..0000000000
 -        run: git add -A && git diff --name-only --exit-code --staged
 diff --git a/.github/workflows/test-linux-quic.yml b/.github/workflows/test-linux-quic.yml
 deleted file mode 100644
-index 0eded996fe..0000000000
+index f9ccef8597..0000000000
 --- a/.github/workflows/test-linux-quic.yml
 +++ /dev/null
-@@ -1,80 +0,0 @@
+@@ -1,81 +0,0 @@
 -name: Test Linux (with QUIC)
 -
 -on:
@@ -3879,6 +3875,7 @@ index 0eded996fe..0000000000
 -      - configure.py
 -      - node.gyp
 -      - node.gypi
+-      - deps/v8/**
 -      - deps/ngtcp2/**
 -      - deps/nghttp3/**
 -      - deps/openssl/**
@@ -3901,7 +3898,7 @@ index 0eded996fe..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -3951,7 +3948,7 @@ index 0eded996fe..0000000000
 -        run: git add -A && git diff --name-only --exit-code --staged
 diff --git a/.github/workflows/test-linux.yml b/.github/workflows/test-linux.yml
 deleted file mode 100644
-index 74dc45ae8c..0000000000
+index cf10c65467..0000000000
 --- a/.github/workflows/test-linux.yml
 +++ /dev/null
 @@ -1,100 +0,0 @@
@@ -3996,7 +3993,7 @@ index 74dc45ae8c..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  FLAKY_TESTS: keep_retrying
 -  CLANG_VERSION: '19'
 -  CC: ${{ (github.base_ref == 'main' || github.ref_name == 'main') && 'sccache' || '' }} clang-19
@@ -4057,7 +4054,7 @@ index 74dc45ae8c..0000000000
 -          DIR: dir%20with $unusual"chars?'åß∂ƒ©∆¬…`
 diff --git a/.github/workflows/test-macos.yml b/.github/workflows/test-macos.yml
 deleted file mode 100644
-index 6954112115..0000000000
+index 22292f2112..0000000000
 --- a/.github/workflows/test-macos.yml
 +++ /dev/null
 @@ -1,142 +0,0 @@
@@ -4128,7 +4125,7 @@ index 6954112115..0000000000
 -  cancel-in-progress: true
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -  XCODE_VERSION: '16.4'
 -  FLAKY_TESTS: keep_retrying
 -  RUSTC_VERSION: '1.86'
@@ -4564,7 +4561,7 @@ index abe4516db4..0000000000
 -          update-pull-request-title-and-body: true
 diff --git a/.github/workflows/tools.yml b/.github/workflows/tools.yml
 deleted file mode 100644
-index 497a5c1230..0000000000
+index 8e4c279475..0000000000
 --- a/.github/workflows/tools.yml
 +++ /dev/null
 @@ -1,365 +0,0 @@
@@ -4618,7 +4615,7 @@ index 497a5c1230..0000000000
 -          - zstd
 -
 -env:
--  PYTHON_VERSION: '3.14'
+-  PYTHON_VERSION: '3.15'
 -
 -permissions:
 -  contents: read

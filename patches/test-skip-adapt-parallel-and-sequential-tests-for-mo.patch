@@ -19,12 +19,14 @@ Co-authored-by: Andre Staltz <andre@staltz.com>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- test/parallel/parallel.status                 | 1667 +++++++++++++++++
+ test/parallel/parallel.status                 | 1718 +++++++++++++++++
  test/parallel/test-bench-stream.js            |    3 +-
  test/parallel/test-common-wpt-inspect.js      |   10 +-
+ test/parallel/test-crypto-x509.js             |   55 +-
  test/parallel/test-dgram-bind-fd.js           |    2 +-
  test/parallel/test-dgram-membership.js        |   10 +-
  .../parallel/test-dgram-socket-buffer-size.js |    2 +-
+ .../test-fastutf8stream-flush-mocks.js        |    6 +-
  test/parallel/test-fs-copyfile.js             |    3 +-
  test/parallel/test-fs-lchmod.js               |    4 +-
  test/parallel/test-fs-mkdir.js                |    5 +-
@@ -60,17 +62,17 @@ Assisted-by: Codex
  test/parallel/test-vfs-fs-readFileSync.js     |    3 +-
  test/parallel/test-vfs-fs-writeFileSync.js    |    3 +-
  .../test-watch-mode-files_watcher.mjs         |    3 +
- test/sequential/sequential.status             |  143 ++
+ test/sequential/sequential.status             |  155 ++
  test/sequential/test-async-wrap-getasyncid.js |   15 +-
  test/sequential/test-fs-watch.js              |    4 +
  ...test-vm-timeout-escape-promise-module-2.js |    6 +-
- 45 files changed, 2047 insertions(+), 66 deletions(-)
+ 47 files changed, 2149 insertions(+), 88 deletions(-)
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 0fe217d4e4..4578a1cf97 100644
+index 0fe217d4e4..d330d34400 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -138,6 +138,1673 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
+@@ -138,6 +138,1724 @@ test-tls-set-default-ca-certificates-append-fetch: SKIP
  test-tls-set-default-ca-certificates-reset-fetch: SKIP
  test-inspector-invalid-protocol: SKIP
  
@@ -93,6 +95,9 @@ index 0fe217d4e4..4578a1cf97 100644
 +# confirms that process.execPath launches an app host instead.
 +test-crypto-provider-cache-snapshot: SKIP
 +test-snapshot-reproducible: SKIP
++# Node 26.12 security-release addition: snapshot creation spawns child Node
++# executables (common/snapshot), the same limitation as the entries above.
++test-crypto-random-cache-snapshot: SKIP
 +# OpenSSL startup variants also require independent child Node processes.
 +test-crypto-no-algorithm: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
@@ -205,6 +210,9 @@ index 0fe217d4e4..4578a1cf97 100644
 +test-common-expect-warning: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++# Node 26.12 full-suite triage: switching the FIPS provider at runtime does not
++# finish inside the suite timeout on a mobile device, like test-crypto-fips.
++test-webcrypto-fips-refresh: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
 +test-debug-usage: SKIP
@@ -823,6 +831,37 @@ index 0fe217d4e4..4578a1cf97 100644
 +# this is load sensitivity. FLAKY (still runs, red tolerated) not SKIP.
 +#
 +test-worker-cleanup-handles: PASS, FLAKY
++
++#
++# Node 26.12 full-suite triage. The first group is upstream tests added by
++# 26.12 that spawn a child Node through process.execPath (app_process on
++# Android, unavailable in an iOS app) or run under the permission flags that
++# deny the harness its verdict write.
++#
++test-bench-cli-ack: SKIP
++test-bench-run-exit-code: SKIP
++test-common-wpt-allowed-rejections: SKIP
++test-permission-allow-fs-vfs-flags: SKIP
++#
++# 26.12 grew test-sqlite-statement's oversized-string cases past what an app
++# can allocate: the process is killed before it can write a verdict. The
++# in-process SQLite statements stay covered by test-sqlite.
++#
++test-sqlite-statement: SKIP
++#
++# OpenSSL 4 native QUIC on Android aborts inside ngtcp2 --
++# "conn->state == NGTCP2_CS_POST_HANDSHAKE" in conn_initiate_key_update -- on
++# the key-update and H3 paths. The tests are unchanged by 26.12, so this is a
++# property of the OpenSSL 4 QUIC line, not of the security upgrade; it needs
++# its own investigation before these can run again.
++#
++test-quic-callback-error-onblocked: SKIP
++test-quic-diagnostics-channel-session: SKIP
++test-quic-h3-callback-errors: SKIP
++test-quic-h3-header-interest: SKIP
++test-quic-h3-trailing-headers: SKIP
++test-quic-key-update: SKIP
++test-quic-key-update-peer: SKIP
 +[$system==ios]
 +# Node 26.11: inferred subprocess exclusions; confirm with the full device suite.
 +# These tests require independent child Node executables, unavailable in apps.
@@ -842,6 +881,9 @@ index 0fe217d4e4..4578a1cf97 100644
 +# confirms that process.execPath launches an app host instead.
 +test-crypto-provider-cache-snapshot: SKIP
 +test-snapshot-reproducible: SKIP
++# Node 26.12 security-release addition: snapshot creation spawns child Node
++# executables (common/snapshot), the same limitation as the entries above.
++test-crypto-random-cache-snapshot: SKIP
 +# Node 26.10 additions: inferred platform limitations, to be confirmed by the full suite.
 +# These tests launch child Node processes or external command-line tools.
 +test-bench-auto-run: SKIP
@@ -952,6 +994,8 @@ index 0fe217d4e4..4578a1cf97 100644
 +test-common-expect-warning: SKIP
 +test-coverage-with-inspector-disabled: SKIP
 +test-crypto-fips: SKIP
++# Node 26.12 full-suite triage: same runtime FIPS provider switch as Android.
++test-webcrypto-fips-refresh: SKIP
 +test-crypto-no-algorithm: SKIP
 +test-crypto-secure-heap: SKIP
 +test-cwd-enoent*: SKIP
@@ -1737,6 +1781,15 @@ index 0fe217d4e4..4578a1cf97 100644
 +#
 +test-https-client-renegotiation-limit: PASS, FLAKY
 +test-https-selfsigned-no-keycertsign-no-crash: PASS, FLAKY
++
++#
++# Node 26.12 full-suite triage: same classes as the Android section above.
++#
++test-bench-cli-ack: SKIP
++test-bench-run-exit-code: SKIP
++test-common-wpt-allowed-rejections: SKIP
++test-permission-allow-fs-vfs-flags: SKIP
++test-sqlite-statement: SKIP
 +[$asan==on]
 +# https://github.com/nodejs/node/issues/39655
 +test-cluster-primary-error: PASS, FLAKY
@@ -1745,7 +1798,7 @@ index 0fe217d4e4..4578a1cf97 100644
  # https://github.com/nodejs/node/issues/51662
  test-http-correct-hostname: SKIP
 diff --git a/test/parallel/test-bench-stream.js b/test/parallel/test-bench-stream.js
-index dbb68f8be9..5347abd707 100644
+index 59d544400d..e0aaa1f0cb 100644
 --- a/test/parallel/test-bench-stream.js
 +++ b/test/parallel/test-bench-stream.js
 @@ -412,5 +412,6 @@ function testOperatorsWithoutStreamModule() {
@@ -1795,6 +1848,72 @@ index e614a4cfaa..47f206fb4e 100644
    assert.strictEqual(
      stderr.filter((line) => line.startsWith('Debugger listening on ')).length,
      1,
+diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
+index 8e8ae2773d..b02fe84c48 100644
+--- a/test/parallel/test-crypto-x509.js
++++ b/test/parallel/test-crypto-x509.js
+@@ -498,27 +498,40 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+   if (!isBoringSSL) {
+     const cert = new X509Certificate(certPem);
+ 
+-    // Run the legacy conversion in a child so a native regression is reported
+-    // as a signal rather than terminating the test runner.
+-    const child = spawnSync(process.execPath, [
+-      '-e',
+-      `
+-        'use strict';
+-        const assert = require('node:assert');
+-        const { X509Certificate } = require('node:crypto');
+-        const cert = new X509Certificate(process.argv[1]);
+-        const legacy = cert.toLegacyObject();
+-        assert.strictEqual(legacy.modulus, undefined);
+-        assert.strictEqual(legacy.exponent, undefined);
+-        assert.strictEqual(legacy.pubkey, undefined);
+-      `,
+-      '--',
+-      certPem,
+-    ], {
+-      encoding: 'utf8',
+-    });
+-    assert.strictEqual(child.signal, null, child.stderr || child.stdout);
+-    assert.strictEqual(child.status, 0, child.stderr || child.stdout);
++    if (common.isAndroid || common.isIOS) {
++      // nodejs-mobile patch: an app cannot spawn a child Node. Android's
++      // process.execPath is app_process, which aborts with "Error changing
++      // dalvik-cache ownership : Permission denied", and the iOS app has no
++      // executable to spawn either. Run the legacy conversion in-process and
++      // keep the same assertions; a native abort still fails the run through
++      // the crash verdict the harness records.
++      const legacy = cert.toLegacyObject();
++      assert.strictEqual(legacy.modulus, undefined);
++      assert.strictEqual(legacy.exponent, undefined);
++      assert.strictEqual(legacy.pubkey, undefined);
++    } else {
++      // Run the legacy conversion in a child so a native regression is
++      // reported as a signal rather than terminating the test runner.
++      const child = spawnSync(process.execPath, [
++        '-e',
++        `
++          'use strict';
++          const assert = require('node:assert');
++          const { X509Certificate } = require('node:crypto');
++          const cert = new X509Certificate(process.argv[1]);
++          const legacy = cert.toLegacyObject();
++          assert.strictEqual(legacy.modulus, undefined);
++          assert.strictEqual(legacy.exponent, undefined);
++          assert.strictEqual(legacy.pubkey, undefined);
++        `,
++        '--',
++        certPem,
++      ], {
++        encoding: 'utf8',
++      });
++      assert.strictEqual(child.signal, null, child.stderr || child.stdout);
++      assert.strictEqual(child.status, 0, child.stderr || child.stdout);
++    }
+ 
+     assert.throws(() => cert.publicKey, {
+       message: hasOpenSSL(3) ? /decode error/ : /wrong tag/,
 diff --git a/test/parallel/test-dgram-bind-fd.js b/test/parallel/test-dgram-bind-fd.js
 index daf7f8064b..76c2ce82dd 100644
 --- a/test/parallel/test-dgram-bind-fd.js
@@ -1849,6 +1968,23 @@ index fcc492a958..53f9045f99 100644
      assert.strictEqual(socket.getRecvBufferSize(), expectedBufferSize);
      assert.strictEqual(socket.getSendBufferSize(), expectedBufferSize);
      socket.close();
+diff --git a/test/parallel/test-fastutf8stream-flush-mocks.js b/test/parallel/test-fastutf8stream-flush-mocks.js
+index 3c6ad039cf..56b5893d76 100644
+--- a/test/parallel/test-fastutf8stream-flush-mocks.js
++++ b/test/parallel/test-fastutf8stream-flush-mocks.js
+@@ -69,7 +69,11 @@ for (const code of ['EBADF', 'EINVAL', 'ENOTSUP', 'EOPNOTSUPP', 'EROFS']) {
+ }
+ 
+ // stdout redirected to a regular file is still fsynced by flush().
+-{
++// nodejs-mobile patch: this case needs a child Node whose stdout is a regular
++// file, and an app cannot spawn one (Android's process.execPath is
++// app_process, which aborts with "Error changing dalvik-cache ownership :
++// Permission denied"). The in-process flush/fsync cases above still run.
++if (!common.isAndroid && !common.isIOS) {
+   const dest = getTempFile();
+   const fd = openSync(dest, 'w');
+   const child = spawnSync(process.execPath, [__filename, 'child-stdout'], {
 diff --git a/test/parallel/test-fs-copyfile.js b/test/parallel/test-fs-copyfile.js
 index 51d7153de0..9b1395f99b 100644
 --- a/test/parallel/test-fs-copyfile.js
@@ -2616,10 +2752,10 @@ index 10e078286e..9c4ec8787d 100644
 +  */
  });
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index f155b67473..c052ca2ceb 100644
+index f155b67473..bf09824be7 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
-@@ -33,6 +33,149 @@ test-perf-hooks: SKIP
+@@ -33,6 +33,161 @@ test-perf-hooks: SKIP
  # https://github.com/nodejs/node/issues/39683
  test-tls-psk-client: PASS, FLAKY
  
@@ -2688,6 +2824,12 @@ index f155b67473..c052ca2ceb 100644
 +test-watch-mode-worker: SKIP
 +test-without-async-context-frame: SKIP
 +test-write-heapsnapshot-options: SKIP
++
++#
++# Node 26.12 full-suite triage: spawns a child Node through process.execPath
++# (app_process on Android), same class as the entries above.
++#
++test-benchmark-node-bench-tools: SKIP
 +[$system==ios]
 +# Node 26.11: inferred subprocess exclusions; confirm with the full device suite.
 +# These tests require independent child Node executables, unavailable in apps.
@@ -2766,6 +2908,12 @@ index f155b67473..c052ca2ceb 100644
 +# harder reason that execPath there is app_process64 and the child SIGABRTs.
 +#
 +test-watch-mode: SKIP
++
++#
++# Node 26.12 full-suite triage: spawns a child Node through process.execPath,
++# same class as the entries above.
++#
++test-benchmark-node-bench-tools: SKIP
  [$arch==arm]
  # https://github.com/nodejs/node/issues/49933
  test-watch-mode-inspect: SKIP

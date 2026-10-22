@@ -23,7 +23,8 @@ PR snapshots can run normal builds and produce CI preview packages. Cut release
 and prerelease publication reject a SHA baseline. After upstream releases,
 compare the proposal commit with the official tag, rebase/regenerate as needed,
 update the tree checksum, and complete the build/device gates before release
-preparation. The [26.11 preview](UPSTREAM-26.11.md) records the current pin.
+preparation. The [26.11 provenance](UPSTREAM-26.11.md) records the current
+pin and the earlier proposal snapshot.
 
 ## Re-base the series
 

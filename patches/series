@@ -20,3 +20,5 @@ ci-remove-upstream-only-workflows-and-config.patch
 lib-install-a-WebAssembly-polyfill-when-the-engine-h.patch
 build-mobile-Temporal-Rust-toolsets-and-libffi-iOS-c.patch
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch
+src-fix-QUIC-receive-time-after-session-creation.patch

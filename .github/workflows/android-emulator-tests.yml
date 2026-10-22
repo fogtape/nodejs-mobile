@@ -23,6 +23,16 @@ on:
         required: false
         default: ""
   workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Build run containing the combined Android artifacts
+        type: string
+        required: true
+      flavor:
+        description: Runtime flavors available in that build
+        type: choice
+        options: [both, full, lite]
+        default: both
 
 env:
   ANDROID_NDK_VERSION: r29
@@ -51,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor: [full, lite]
+        flavor: ${{ fromJSON(inputs.flavor == 'lite' && '["lite"]' || inputs.flavor == 'full' && '["full"]' || '["full","lite"]') }}
 
     runs-on: ubuntu-24.04
     timeout-minutes: 90

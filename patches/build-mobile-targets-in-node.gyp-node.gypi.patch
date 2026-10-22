@@ -22,15 +22,27 @@ Co-authored-by: Julia Samól <j.samol@papers.ch>
 Signed-off-by: fogtape <lilixu3210@gmail.com>
 Assisted-by: Codex
 ---
- node.gyp  | 18 +++++++++++++++---
- node.gypi | 22 ++++++++++++++++++----
- 2 files changed, 33 insertions(+), 7 deletions(-)
+ node.gyp  | 23 ++++++++++++++++++++---
+ node.gypi | 51 +++++++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 63 insertions(+), 11 deletions(-)
 
 diff --git a/node.gyp b/node.gyp
-index 587df5cace..c1d6e6735f 100644
+index 5334b8a746..ca26defa34 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -77,6 +77,11 @@
+@@ -29,6 +29,11 @@
+     'node_shared_nbytes%': 'false',
+     'node_shared_nghttp2%': 'false',
+     'node_shared_openssl%': 'false',
++    # nodejs-mobile: lib directory of an external OpenSSL tree to link into
++    # the node targets (empty = bundled OpenSSL). android_configure.py sets it
++    # through GYP_DEFINES; node.gypi applies the -L/-l flags so that host
++    # tools never see the target ABI's archives.
++    'nodejs_mobile_openssl_libpath%': '',
+     'node_shared_perfetto%': 'false',
+     'node_shared_sqlite%': 'false',
+     'node_shared_ffi%': 'false',
+@@ -78,6 +83,11 @@
        'deps/acorn/acorn/dist/acorn.js',
        'deps/acorn/acorn-walk/dist/walk.js',
        'deps/minimatch/index.js',
@@ -42,7 +54,7 @@ index 587df5cace..c1d6e6735f 100644
        '<@(node_builtin_shareable_builtins)',
      ],
      'node_sources': [
-@@ -580,6 +585,11 @@
+@@ -581,6 +591,11 @@
        ['OS=="linux" and clang==1', {
          'libraries': ['-latomic'],
        }],
@@ -54,7 +66,7 @@ index 587df5cace..c1d6e6735f 100644
      ],
    },
  
-@@ -1427,8 +1437,9 @@
+@@ -1428,8 +1443,9 @@
          ['OS=="solaris"', {
            'ldflags': [ '-I<(SHARED_INTERMEDIATE_DIR)' ]
          }],
@@ -66,7 +78,7 @@ index 587df5cace..c1d6e6735f 100644
            'type': 'none',
          }],
          [ 'node_shared=="true"', {
-@@ -1652,7 +1663,8 @@
+@@ -1653,7 +1669,8 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -77,7 +89,7 @@ index 587df5cace..c1d6e6735f 100644
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 9eb972adc4..67d8100fa5 100644
+index 9eb972adc4..56a8f45516 100644
 --- a/node.gypi
 +++ b/node.gypi
 @@ -280,6 +280,11 @@
@@ -120,7 +132,51 @@ index 9eb972adc4..67d8100fa5 100644
              # -force_load or --whole-archive are not applicable for
              # the static library
              [ 'force_load=="true"', {
-@@ -484,5 +493,10 @@
+@@ -445,6 +454,22 @@
+               ],
+             }],
+           ]
++        }, {
++          # nodejs-mobile patch: link an external OpenSSL tree (see
++          # tools/android_openssl.sh). node.gypi is included only by the
++          # node/libnode targets, so the host tools never see these target
++          # archives; a global --shared-openssl-libpath would break their
++          # link lines. The path is set through GYP_DEFINES by
++          # android_configure.py.
++          'conditions': [
++            [ 'nodejs_mobile_openssl_libpath!=""', {
++              'libraries': [
++                '-L<(nodejs_mobile_openssl_libpath)',
++                '-lssl',
++                '-lcrypto',
++              ],
++            }],
++          ],
+         }],
+       ]
+     }, {
+@@ -472,17 +497,27 @@
+     }],
+     [ 'node_use_quic=="true"', {
+       'conditions': [
+-        [ 'node_shared_openssl=="false"', {
++        [ 'node_shared_openssl=="false" or (OS=="android" and nodejs_mobile_openssl_libpath!="")', {
+           'dependencies': [
+             './deps/ngtcp2/ngtcp2.gyp:ngtcp2',
+             './deps/ngtcp2/ngtcp2.gyp:nghttp3',
+ 
+-            # For tests
+-            './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_server',
+-            './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_client',
++          ],
++          'conditions': [
++            [ 'OS not in "android ios"', {
++              'dependencies': [
++                './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_server',
++                './deps/ngtcp2/ngtcp2.gyp:ngtcp2_test_client',
++              ],
++            }],
+           ],
          }],
        ],
      }],

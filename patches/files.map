@@ -36,9 +36,11 @@ test-mobile-test-harness.patch	tools/test.py
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/parallel.status
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-bench-stream.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-common-wpt-inspect.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-crypto-x509.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-bind-fd.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-membership.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-dgram-socket-buffer-size.js
+test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fastutf8stream-flush-mocks.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-copyfile.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-lchmod.js
 test-skip-adapt-parallel-and-sequential-tests-for-mo.patch	test/parallel/test-fs-mkdir.js
@@ -138,3 +140,14 @@ build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	deps/icu-small/source/t
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/danmu-lite.json
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/icu-generic.gyp
 build-profile-ICU-data-for-danmu_api-lite-runtimes.patch	tools/icu/prepare-mobile-icu.py
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	deps/ngtcp2/ngtcp2.gyp
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/internal/quic/quic.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/internal/tls/wrap.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	lib/tls.js
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/crypto/crypto_tls.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/crypto/crypto_tls.h
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/bindingdata.h
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/session.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.cc
+src-expose-required-ECH-for-TLS-and-QUIC-clients.patch	src/quic/tlscontext.h
+src-fix-QUIC-receive-time-after-session-creation.patch	src/quic/endpoint.cc

@@ -6,6 +6,9 @@
 </tr>
 <tr>
 <td>
+<a href="#26.12.1-0">26.12.1-0</a><br/>
+<a href="#26.12.0-0">26.12.0-0</a><br/>
+<a href="#26.11.1-0">26.11.1-0</a><br/>
 <a href="#26.11.0-0">26.11.0-0</a><br/>
 <a href="#26.10.0-0">26.10.0-0</a><br/>
 <a href="#26.1.0-0">26.1.0-0</a><br/>
@@ -41,6 +44,87 @@
 </td>
 </tr>
 </table>
+
+<a id="26.12.1-0"></a>
+## 2026-10-21, Version 26.12.1-0 (Current)
+
+- Rebase onto the official Node.js `v26.12.1` security release
+  (`bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1`); the regenerated series
+  changes only patch context and line numbers, and the mobile hunks in the
+  two upstream files it touches (`common.gypi`,
+  `src/crypto/crypto_context.cc`) are unchanged.
+- Pick up upstream's ten CVE fixes (four High): tls non-canonical IP
+  addresses and IP normalization, dns resolve null bytes, the http agent
+  data guard, brotli block-switch decoding, zlib ZIP local headers,
+  permission-model wildcard/`realpathSync` checks and crypto snapshot
+  random caches. Also carry c-ares 1.34.9, undici 8.12.2, root certificates
+  NSS 3.131.1 and the "synchronously load most ES modules" revert.
+- Android keeps the prebuilt static OpenSSL 4.0.3 tree with native ECH/H3,
+  so this release's bundled-OpenSSL 3.5.9 update does not apply to the
+  Android runtime. iOS and the bundled fallback keep their existing line.
+- Keep the danmu lite feature contract unchanged: complete ICU API with the
+  reviewed data profile, web encodings, Chinese collation and normalization;
+  omit Temporal, FFI, Inspector, SQLite/Web Storage, Amaro and SEA.
+- Exclude the new `test-crypto-random-cache-snapshot` regression on Android
+  and iOS: it builds and runs snapshots through `common/snapshot`, which
+  spawns child Node executables. The remaining new in-process regressions
+  (tls non-canonical IP and SPKI blocklist, dns null bytes, http agent
+  pending read, X.509 name conversion, permission audit `realpathSync`) stay
+  runnable.
+- Triage the rest of the full device suite. `test-crypto-x509` runs its
+  malformed-certificate legacy conversion in-process on both platforms
+  instead of in a child, and `test-fastutf8stream-flush-mocks` keeps every
+  in-process case while guarding only the one that needs a child with a
+  regular-file stdout. `test-bench-cli-ack`, `test-bench-run-exit-code`,
+  `test-common-wpt-allowed-rejections`, `test-permission-allow-fs-vfs-flags`
+  and `sequential/test-benchmark-node-bench-tools` are excluded because they
+  spawn child Node executables, and `test-sqlite-statement` because its
+  oversized-string cases outgrow the app heap.
+- Exclude `test-webcrypto-fips-refresh` on both platforms: switching the FIPS
+  provider at runtime does not finish inside the suite timeout on a device,
+  the same limitation that already excludes `test-crypto-fips`.
+- Android QUIC key-update and H3 regressions are excluded with their reason
+  recorded: seven tests abort inside ngtcp2 with
+  `conn->state == NGTCP2_CS_POST_HANDSHAKE` in `conn_initiate_key_update`.
+  They are unchanged by 26.12, so this belongs to the OpenSSL 4 QUIC line and
+  is carried as a follow-up rather than a regression of this upgrade; the
+  other 261 QUIC tests still run on Android.
+- This source upgrade does not itself switch `danmu-api-android` to 26.12.1.
+  A new runtime archive, checksum update and device validation are separate,
+  reviewed steps.
+
+<a id="26.12.0-0"></a>
+## 2026-10-18, Version 26.12.0-0 (Current)
+
+- Rebase the mobile patch series onto the official Node.js `v26.12.0` tag
+  (`26e72d85a611e222e3f06025de8a3c496923bacd`). All 24 patches apply; the
+  OpenSSL 4 ECH/H3 and QUIC changes carry forward unchanged, and the
+  upstream-workflow removal patch absorbs 16 upstream workflow edits.
+- 26.12.0 is a regular Current minor release with no security designation:
+  V8, libuv, npm and OpenSSL versions are unchanged from 26.11.1. Relevant
+  mobile changes are upstream HTTP/stream/ESM fixes and the new
+  `http.websocketMask()` / `websocketUnmask()` helpers.
+- Keep the danmu lite feature contract unchanged: complete ICU API with the
+  reviewed data profile, web encodings, Chinese collation and normalization;
+  omit Temporal, FFI, Inspector, SQLite/Web Storage, Amaro and SEA. Android
+  retains JIT/native WASM, JNI/ECH/H3 and 16 KB page alignment.
+- This source upgrade does not itself switch `danmu-api-android` to 26.12.
+  A new runtime archive, checksum update and device validation are separate,
+  reviewed steps.
+
+<a id="26.11.1-0"></a>
+## 2026-10-14, Version 26.11.1-0 (Current)
+
+- Rebase onto the official Node.js `v26.11.1` release tag
+  (`364593d0631def13e3043dd84f77ebca2c767ce5`); the regenerated series
+  changes only the upstream-workflow removal patch.
+- Android links a prebuilt static OpenSSL 4.0.3 tree built by
+  `tools/android_openssl.sh` (`--shared-openssl`, SHA-256-verified release
+  asset) instead of the bundled 3.5.x line. Android enables native QUIC/H3
+  with the vendored ngtcp2/nghttp3 libraries. TLS and QUIC client options
+  accept a mandatory ECHConfigList and expose authenticated acceptance;
+  rejected ECH cannot fall back to plaintext SNI. iOS and the bundled
+  OpenSSL fallback retain their previous library and no ECH support.
 
 <a id="26.11.0-0"></a>
 ## 2026-10-07, Version 26.11.0-0 (Current)
